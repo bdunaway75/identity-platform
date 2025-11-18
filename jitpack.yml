@@ -1,0 +1,9 @@
+jdk:
+  - openjdk17
+
+install:
+  - echo "Using Maven 3.9.8"
+  - sdk install maven 3.9.8
+  - sdk use maven 3.9.8
+  - mvn -v
+  - mvn -B -U -DskipTests=true -f auth-server-client/pom.xml clean install

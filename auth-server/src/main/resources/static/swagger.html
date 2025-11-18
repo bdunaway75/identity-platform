@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+    <title>Auth API</title>
+    <link rel="stylesheet" href="/webjars/swagger-ui/5.17.14/swagger-ui.css"/>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="/webjars/swagger-ui/5.17.14/swagger-ui-bundle.js"></script>
+<script src="/webjars/swagger-ui/5.17.14/swagger-ui-standalone-preset.js"></script>
+<script>
+    const context = location.pathname.replace(/\/swagger\.html$/, "");
+    const specUrl = location.origin + context + "/api/openapi.json";
+    window.ui = SwaggerUIBundle({
+        url: specUrl,
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+        layout: "StandaloneLayout"
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# IntelliJ IDEA
+auth-server/.idea/
+auth-server-client/.idea/
+
+# Optional
+auth-server/HELP.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+.env.*
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+
+# Build / dependency tools
+.gradle/
+.mvn/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# NPM if used later
+node_modules/
+
+# System files
+*.swp
