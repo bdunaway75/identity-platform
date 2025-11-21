@@ -34,13 +34,13 @@ public class RegisteredClientApiService implements RegisterClientApi {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public Response registerClient(RegisteredClientDto dto) {
+    public Response registerClient(final RegisteredClientDto dto) {
         try {
-            RegisteredClientModel saved =
+            final RegisteredClientModel saved =
                     registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientDtoToRegisteredClientModel(dto));
 
-            String id = saved.getClientId();
-            URI location = URI.create("/clients/" + id);
+            final String id = saved.getClientId();
+            final URI location = URI.create("/clients/" + id);
             return Response.created(location)
                            .type(MediaType.APPLICATION_JSON_TYPE)
                            .entity(saved)
@@ -58,9 +58,9 @@ public class RegisteredClientApiService implements RegisterClientApi {
     }
 
     @Override
-    public Response updateClient(RegisteredClientDto dto) {
+    public Response updateClient(final RegisteredClientDto dto) {
         try {
-            RegisteredClientModel updated =
+            final RegisteredClientModel updated =
                     registeredClientService.updateRegisteredClient(registeredClientMapper.registeredClientDtoToRegisteredClientModel(dto));
             return Response.ok()
                            .type(MediaType.APPLICATION_JSON_TYPE)
@@ -78,11 +78,11 @@ public class RegisteredClientApiService implements RegisterClientApi {
         }
     }
 
-    private Response problem(Status status, String code, String message) {
+    private Response problem(final Status status, final String code, final String message) {
         return problem(status, code, message, Map.of());
     }
 
-    private Response problem(Status status, String code, String message, Map<String, Object> extras) {
+    private Response problem(final Status status, final String code, final String message, final Map<String, Object> extras) {
         Map<String, Object> body = new HashMap<>();
         body.put("code", code);
         body.put("message", message);

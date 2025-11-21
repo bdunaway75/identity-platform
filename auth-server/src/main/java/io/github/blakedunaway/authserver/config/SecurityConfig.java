@@ -36,7 +36,7 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
-    SecurityFilterChain asChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain asChain(final HttpSecurity http) throws Exception {
         OAuth2AuthorizationServerConfigurer as = OAuth2AuthorizationServerConfigurer.authorizationServer();
         RequestMatcher endpoints = as.getEndpointsMatcher();
 
@@ -46,7 +46,7 @@ public class SecurityConfig {
                     .authorizationEndpoint(ep -> ep.authorizationRequestConverters(converters -> {
                         converters.removeIf(conv ->
                                                     conv instanceof OAuth2AuthorizationConsentAuthenticationConverter
-                                                    || conv instanceof OAuth2AuthorizationCodeRequestAuthenticationConverter);
+                                                            || conv instanceof OAuth2AuthorizationCodeRequestAuthenticationConverter);
 
                         converters.add(0, new OAuth2AuthorizationConsentAuthenticationConverter());
                         converters.add(new OAuth2AuthorizationCodeRequestAuthenticationConverter());
@@ -61,15 +61,14 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    SecurityFilterChain appChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(a -> a
-                        .requestMatchers("/login", "/ui/**", "/assets/**")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated())
-                .formLogin(Customizer.withDefaults())
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/login"));
+    SecurityFilterChain appChain(final HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(a -> a
+                    .requestMatchers("/login", "/ui/**", "/assets/**")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+            .formLogin(Customizer.withDefaults())
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/login"));
         return http.build();
     }
 
@@ -83,7 +82,6 @@ public class SecurityConfig {
     JWKSource<SecurityContext> javaWebKeySource(final SigningKeyStore signingKeyStore) {
         return signingKeyStore.jwkSource();
     }
-
 
     @Bean
     JwtDecoder jwtSelfVerifier(final JWKSource<SecurityContext> jwkSource) {
@@ -100,15 +98,13 @@ public class SecurityConfig {
         return new HttpSessionRequestCache();
     }
 
-    // todo is this needed?
     @Bean
     Jackson2ObjectMapperBuilderCustomizer oauth2SecurityJackson() {
         return builder -> {
-            // 1) Register core Spring Security mixins (instances)
-            final List<com.fasterxml.jackson.databind.Module> securityModules = SecurityJackson2Modules.getModules(SecurityConfig.class.getClassLoader());
+            final List<com.fasterxml.jackson.databind.Module> securityModules = SecurityJackson2Modules.getModules(
+                    SecurityConfig.class.getClassLoader());
             builder.modules(securityModules);
 
-            // 2) Register OAuth2 client + Authorization Server + JavaTime (by class)
             builder.modulesToInstall(
                     OAuth2ClientJackson2Module.class,
                     OAuth2AuthorizationServerJackson2Module.class,

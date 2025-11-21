@@ -88,7 +88,7 @@ public final class ClientRegistrationValidator implements ConstraintValidator<Va
             valid = false;
         }
         if (!valid) {
-            return false; // prevent NPEs below
+            return false;
         }
 
         if (clientModel.getRedirectUris() != null) {

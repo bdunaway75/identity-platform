@@ -38,30 +38,30 @@ class ClientAwareDaoAuthProviderSpec extends TestSpec {
 
     @Autowired
     @Subject
-    ClientAwareDaoAuthProvider provider
+    private ClientAwareDaoAuthProvider provider
 
     @Autowired
-    UserService userService
+    private UserService userService
 
     @Autowired
-    UserJpaRepository userRepository
+    private UserJpaRepository userRepository
 
     @Autowired
-    RegisteredClientService registeredClientService
+    private RegisteredClientService registeredClientService
 
     @Autowired
-    RegisteredClientMapper registeredClientMapper
+    private RegisteredClientMapper registeredClientMapper
 
     @Autowired
-    UserMapper userMapper
+    private UserMapper userMapper
 
     @Autowired
-    PasswordEncoder passwordEncoder
+    private PasswordEncoder passwordEncoder
 
     // ---------------- helpers ----------------
-    private User user(String email,
-                      String rcId,
-                      String rawPassword,
+    private User user(final String email,
+                      final String rcId,
+                      final String rawPassword,
                       boolean locked = false,
                       boolean disabled = false,
                       boolean accountExpired = false,
@@ -74,7 +74,7 @@ class ClientAwareDaoAuthProviderSpec extends TestSpec {
                 .verified(!disabled)
                 .createdAt(now)
                 .updatedAt(now)
-                .authorities { it.clear() }   // non-null, empty is fine
+                .authorities { it.clear() }
                 .locked(locked)
                 .expired(accountExpired)
                 .credentialsExpired(credentialsExpired)
@@ -95,20 +95,17 @@ class ClientAwareDaoAuthProviderSpec extends TestSpec {
                 .build()
     }
 
-    private static RegisterDto dto(String email, String password, String rcId) {
-        def d = new RegisterDto()
-        d.setEmail(email)
-        d.setPassword(password)
-        d.setRegisteredClientId(rcId)
-        return d
+    private static RegisterDto dto(final String email, final String password, final String rcId) {
+        def register = new RegisterDto()
+        register.setEmail(email)
+        register.setPassword(password)
+        register.setRegisteredClientId(rcId)
+        return register
     }
 
     private static UsernamePasswordWithClientAuthenticationToken unauthenticatedToken(RegisterDto d) {
-        // assuming factory as used in provider for the authenticated path
         return UsernamePasswordWithClientAuthenticationToken.unauthenticated(d, new HashSet<GrantedAuthority>())
     }
-
-    // ---------------- tests ----------------
 
     @DirtiesContext
     def "authenticate succeeds with correct client, user, and password"() {

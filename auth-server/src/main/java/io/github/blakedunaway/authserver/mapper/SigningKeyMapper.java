@@ -6,17 +6,32 @@ import io.github.blakedunaway.authserver.integration.entity.SigningKeyEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Mapper
+@Mapper(uses = AuthTokenMapper.class)
 public abstract class SigningKeyMapper {
 
-    @Mapping(target = "tokens", source = "authTokenIds", qualifiedByName = "idsToTokens")
+    @Autowired
+    AuthTokenMapper authTokenMapper;
+
+    @Mapping(target = "tokens", qualifiedByName = "authTokenToAuthTokenEntity")
     public abstract SigningKeyEntity toEntity(final SigningKey signingKey);
+
+    public SigningKey toSigningKey(final SigningKeyEntity signingKeyEntity) {
+        return SigningKey.from(signingKeyEntity.getId())
+                         .keys(signingKeyEntity.getPrivateKey(), signingKeyEntity.getPublicKey())
+                         .signingKeyStatus(signingKeyEntity.getStatus())
+                         .algorithm(signingKeyEntity.getAlgorithm())
+                         .createdAt(signingKeyEntity.getCreatedAt())
+                         .authTokens(authTokenMapper.authTokenEntitySetToAuthToken(signingKeyEntity.getTokens()))
+                         .kid(signingKeyEntity.getKid())
+                         .build();
+    }
 
     public List<SigningKey> toSigningKeyList(final List<SigningKeyEntity> signingKeyEntityList) {
         return signingKeyEntityList.stream()
@@ -26,31 +41,19 @@ public abstract class SigningKeyMapper {
                                                         .kid(sk.getKid())
                                                         .signingKeyStatus(sk.getStatus())
                                                         .createdAt(sk.getCreatedAt())
-                                                        .authTokens(sk.getTokens() == null ?
-                                                                            null :
-                                                                            sk.getTokens()
-                                                                              .stream()
-                                                                              .map(AuthTokenEntity::getTokenId)
-                                                                              .collect(Collectors.toSet()))
+                                                        .authTokens(sk.getTokens() == null
+                                                                    ? null
+                                                                    : authTokenMapper.authTokenEntitySetToAuthToken(sk.getTokens()))
                                                         .build())
                                    .collect(Collectors.toList());
     }
 
     public Set<UUID> authTokenEntitySetToAuthTokenIdSet(final Set<AuthTokenEntity> authTokenEntityList) {
-        return authTokenEntityList == null ? null : authTokenEntityList.stream()
-                                                                       .map(AuthTokenEntity::getTokenId)
-                                                                       .collect(Collectors.toSet());
-    }
-
-    @Named("idsToTokens")
-    public Set<AuthTokenEntity> authTokenIdSetToAuthTokenEntitySet(final Set<UUID> authTokenIdSet) {
-        return authTokenIdSet == null ? null : authTokenIdSet.stream()
-                                                             .map(AuthTokenEntity::createFromId)
-                                                             .collect(Collectors.toSet());
-    }
-
-    public SigningKeyEntity kIdToSigningKeyEntity(final String kid) {
-        return SigningKeyEntity.createFromKid(kid);
+        return authTokenEntityList == null
+               ? null
+               : authTokenEntityList.stream()
+                                    .map(AuthTokenEntity::getTokenId)
+                                    .collect(Collectors.toSet());
     }
 
 }

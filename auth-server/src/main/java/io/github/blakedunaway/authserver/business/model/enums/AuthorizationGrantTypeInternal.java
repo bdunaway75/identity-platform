@@ -15,7 +15,7 @@ public enum AuthorizationGrantTypeInternal {
 
     private final AuthorizationGrantType authorizationGrantType;
 
-    public static AuthorizationGrantTypeInternal findByName(String wireName) {
+    public static AuthorizationGrantTypeInternal findByName(final String wireName) {
         for (AuthorizationGrantTypeInternal authorizationGrantTypeInternal : AuthorizationGrantTypeInternal.values()) {
             if (authorizationGrantTypeInternal.getWireName().equals(wireName)) {
                 return authorizationGrantTypeInternal;

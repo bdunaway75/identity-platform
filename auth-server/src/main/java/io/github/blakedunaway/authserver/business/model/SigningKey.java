@@ -31,7 +31,7 @@ public class SigningKey {
 
     private final LocalDateTime createdAt;
 
-    private final Set<UUID> authTokenIds;
+    private final Set<AuthToken> tokens;
 
     private final boolean encoded;
 
@@ -48,7 +48,7 @@ public class SigningKey {
                          .encoded(this.isEncoded())
                          .keys(this.getPrivateKey(), this.getPublicKey())
                          .signingKeyStatus(SigningKeyStatus.INACTIVE)
-                         .authTokens(this.getAuthTokenIds())
+                         .authTokens(this.getTokens())
                          .algorithm(this.getAlgorithm())
                          .createdAt(this.getCreatedAt())
                          .kid(this.getKid())
@@ -71,7 +71,7 @@ public class SigningKey {
 
         private SigningKeyStatus status;
 
-        private Set<UUID> authTokensIds;
+        private Set<AuthToken> authTokens;
 
         private LocalDateTime createdAt;
 
@@ -136,8 +136,8 @@ public class SigningKey {
             return this;
         }
 
-        public Builder authTokens(final Set<UUID> authTokensIds) {
-            this.authTokensIds = authTokensIds;
+        public Builder authTokens(final Set<AuthToken> authTokens) {
+            this.authTokens = authTokens;
             return this;
         }
 
@@ -154,7 +154,7 @@ public class SigningKey {
                                   this.getAlgorithm(),
                                   this.getStatus(),
                                   this.getCreatedAt(),
-                                  this.getAuthTokensIds(),
+                                  this.getAuthTokens(),
                                   this.isEncoded());
         }
 

@@ -17,12 +17,7 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity
@@ -59,23 +54,28 @@ public class RegisteredClientEntity implements Persistable<String> {
     private Map<String, Object> tokenSettings = new LinkedHashMap<>();
 
     // ---------- children ----------
-    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
+            orphanRemoval = true)
     private Set<RegisteredClientAuthMethodEntity> clientAuthenticationMethods = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
+            orphanRemoval = true)
     private Set<RegisteredClientGrantTypeEntity> authorizationGrantTypes = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
+            orphanRemoval = true)
     private Set<RegisteredClientRedirectUriEntity> redirectUris = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
+            orphanRemoval = true)
     private Set<RegisteredClientPostLogoutRedirectUriEntity> postLogoutRedirectUris = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, orphanRemoval = true)
+    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
+            orphanRemoval = true)
     private Set<RegisteredClientScopeEntity> scopes = new LinkedHashSet<>();
 
-    public static RegisteredClientEntity createFromId(String registeredClientId) {
-        RegisteredClientEntity rc = new RegisteredClientEntity();
+    public static RegisteredClientEntity createFromId(final String registeredClientId) {
+        final RegisteredClientEntity rc = new RegisteredClientEntity();
         rc.registeredClientId = registeredClientId;
         return rc;
     }
@@ -84,41 +84,38 @@ public class RegisteredClientEntity implements Persistable<String> {
      * Factory for mappers/services
      */
     public static RegisteredClientEntity create(
-            String registeredClientId,
-            String clientId,
-            LocalDateTime clientIdIssuedAt,
-            String clientSecret,
-            LocalDateTime clientSecretExpiresAt,
-            String clientName,
-            Map<String, Object> clientSettings,
-            Map<String, Object> tokenSettings) {
-        RegisteredClientEntity clientEntity = new RegisteredClientEntity();
+            final String registeredClientId,
+            final String clientId,
+            final LocalDateTime clientIdIssuedAt,
+            final String clientSecret,
+            final LocalDateTime clientSecretExpiresAt,
+            final String clientName,
+            final Map<String, Object> clientSettings,
+            final Map<String, Object> tokenSettings) {
+        final RegisteredClientEntity clientEntity = new RegisteredClientEntity();
         clientEntity.registeredClientId = registeredClientId;
         clientEntity.clientId = clientId;
         clientEntity.clientIdIssuedAt = clientIdIssuedAt;
         clientEntity.clientSecret = clientSecret;
         clientEntity.clientSecretExpiresAt = clientSecretExpiresAt;
         clientEntity.clientName = clientName;
-        clientEntity.clientSettings = new java.util.LinkedHashMap<>(
-                clientSettings != null ? clientSettings : Map.of()
+        clientEntity.clientSettings = new LinkedHashMap<>(
+                clientSettings != null ? clientSettings : new HashMap<>()
         );
-        clientEntity.tokenSettings = new java.util.LinkedHashMap<>(
-                tokenSettings != null ? tokenSettings : Map.of()
+        clientEntity.tokenSettings = new LinkedHashMap<>(
+                tokenSettings != null ? tokenSettings : new HashMap<>()
         );
         return clientEntity;
     }
 
-    /**
-     * Public on purpose so mapper in another package can update basics safely
-     */
     public void overwriteBasics(
-            String clientId,
-            LocalDateTime clientIdIssuedAt,
-            String clientSecret,
-            LocalDateTime clientSecretExpiresAt,
-            String clientName,
-            Map<String, Object> clientSettings,
-            Map<String, Object> tokenSettings
+            final String clientId,
+            final LocalDateTime clientIdIssuedAt,
+            final String clientSecret,
+            final LocalDateTime clientSecretExpiresAt,
+            final String clientName,
+            final Map<String, Object> clientSettings,
+            final Map<String, Object> tokenSettings
     ) {
         this.clientId = clientId;
         this.clientIdIssuedAt = clientIdIssuedAt;
@@ -137,64 +134,59 @@ public class RegisteredClientEntity implements Persistable<String> {
         }
     }
 
-    // ---------- helpers: AUTH METHODS ----------
-    public void addClientAuthenticationMethod(String method) {
+    public void addClientAuthenticationMethod(final String method) {
         if (method == null || method.isBlank()) {
             return;
         }
-        boolean exists = clientAuthenticationMethods.stream().anyMatch(e -> method.equals(e.getClientAuthMethod()));
+        boolean exists =
+                clientAuthenticationMethods.stream().anyMatch(e -> method.equals(e.getClientAuthMethod()));
         if (!exists) {
             clientAuthenticationMethods.add(new RegisteredClientAuthMethodEntity(this, method));
         }
     }
 
-    public void removeClientAuthenticationMethod(String method) {
-        if (method == null) {
-            return;
-        }
-        clientAuthenticationMethods.removeIf(e -> method.equals(e.getClientAuthMethod())); // orphanRemoval deletes
-    }
-
-    public void replaceClientAuthenticationMethods(Collection<String> methods) {
-        var target = methods == null
-                     ? Set.<String>of()
-                     : methods.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+    public void replaceClientAuthenticationMethods(final Collection<String> methods) {
+        Set<String> target =
+                methods == null ?
+                        Set.<String>of()
+                        : methods.stream()
+                                 .filter(Objects::nonNull)
+                                 .map(String::trim)
+                                 .filter(s -> !s.isEmpty())
+                                 .collect(Collectors.toSet());
         clientAuthenticationMethods.removeIf(e -> !target.contains(e.getClientAuthMethod()));
-        for (String m : target) {
-            addClientAuthenticationMethod(m);
+        for (final String method : target) {
+            addClientAuthenticationMethod(method);
         }
     }
 
-    // ---------- helpers: GRANT TYPES ----------
-    public void addAuthorizationGrantType(String grantType) {
+    public void addAuthorizationGrantType(final String grantType) {
         if (grantType == null || grantType.isBlank()) {
             return;
         }
-        boolean exists = authorizationGrantTypes.stream().anyMatch(e -> grantType.equals(e.getAuthorizationGrantType()));
+        boolean exists = authorizationGrantTypes.stream()
+                                                .anyMatch(e -> grantType.equals(e.getAuthorizationGrantType()));
         if (!exists) {
             authorizationGrantTypes.add(new RegisteredClientGrantTypeEntity(this, grantType));
         }
     }
 
-    public void removeAuthorizationGrantType(String grantType) {
-        if (grantType == null) {
-            return;
-        }
-        authorizationGrantTypes.removeIf(e -> grantType.equals(e.getAuthorizationGrantType()));
-    }
-
-    public void replaceAuthorizationGrantTypes(Collection<String> grantTypes) {
-        var target = grantTypes == null
-                     ? Set.<String>of()
-                     : grantTypes.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+    public void replaceAuthorizationGrantTypes(final Collection<String> grantTypes) {
+        Set<String> target =
+                grantTypes == null ?
+                        Set.<String>of()
+                        : grantTypes.stream()
+                                    .filter(Objects::nonNull)
+                                    .map(String::trim)
+                                    .filter(s -> !s.isEmpty())
+                                    .collect(Collectors.toSet());
         authorizationGrantTypes.removeIf(e -> !target.contains(e.getAuthorizationGrantType()));
-        for (String g : target) {
-            addAuthorizationGrantType(g);
+        for (final String grant : target) {
+            addAuthorizationGrantType(grant);
         }
     }
 
-    // ---------- helpers: REDIRECT URIS ----------
-    public void addRedirectUri(String uri) {
+    public void addRedirectUri(final String uri) {
         if (uri == null || uri.isBlank()) {
             return;
         }
@@ -204,25 +196,22 @@ public class RegisteredClientEntity implements Persistable<String> {
         }
     }
 
-    public void removeRedirectUri(String uri) {
-        if (uri == null) {
-            return;
-        }
-        redirectUris.removeIf(e -> uri.equals(e.getRedirectUri()));
-    }
-
-    public void replaceRedirectUris(Collection<String> uris) {
-        var target = uris == null
-                     ? Set.<String>of()
-                     : uris.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+    public void replaceRedirectUris(final Collection<String> uris) {
+        Set<String> target =
+                uris == null ?
+                        Set.<String>of()
+                        : uris.stream()
+                              .filter(Objects::nonNull)
+                              .map(String::trim)
+                              .filter(s -> !s.isEmpty())
+                              .collect(Collectors.toSet());
         redirectUris.removeIf(e -> !target.contains(e.getRedirectUri()));
-        for (String u : target) {
-            addRedirectUri(u);
+        for (final String uri : target) {
+            addRedirectUri(uri);
         }
     }
 
-    // ---------- helpers: POST-LOGOUT REDIRECT URIS ----------
-    public void addPostLogoutRedirectUri(String uri) {
+    public void addPostLogoutRedirectUri(final String uri) {
         if (uri == null || uri.isBlank()) {
             return;
         }
@@ -232,25 +221,22 @@ public class RegisteredClientEntity implements Persistable<String> {
         }
     }
 
-    public void removePostLogoutRedirectUri(String uri) {
-        if (uri == null) {
-            return;
-        }
-        postLogoutRedirectUris.removeIf(e -> uri.equals(e.getPostLogoutRedirectUri()));
-    }
-
-    public void replacePostLogoutRedirectUris(Collection<String> uris) {
-        var target = uris == null
-                     ? Set.<String>of()
-                     : uris.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+    public void replacePostLogoutRedirectUris(final Collection<String> uris) {
+        Set<String> target =
+                uris == null ?
+                        Set.<String>of()
+                        : uris.stream()
+                              .filter(Objects::nonNull)
+                              .map(String::trim)
+                              .filter(s -> !s.isEmpty())
+                              .collect(Collectors.toSet());
         postLogoutRedirectUris.removeIf(e -> !target.contains(e.getPostLogoutRedirectUri()));
-        for (String u : target) {
-            addPostLogoutRedirectUri(u);
+        for (final String uri : target) {
+            addPostLogoutRedirectUri(uri);
         }
     }
 
-    // ---------- helpers: SCOPES ----------
-    public void addScope(String scope) {
+    public void addScope(final String scope) {
         if (scope == null || scope.isBlank()) {
             return;
         }
@@ -260,25 +246,23 @@ public class RegisteredClientEntity implements Persistable<String> {
         }
     }
 
-    public void removeScope(String scope) {
-        if (scope == null) {
-            return;
-        }
-        scopes.removeIf(e -> scope.equals(e.getScope()));
-    }
-
-    public void replaceScopes(Collection<String> newScopes) {
-        var target = newScopes == null
-                     ? Set.<String>of()
-                     : newScopes.stream().filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
+    public void replaceScopes(final Collection<String> newScopes) {
+        Set<String> target =
+                newScopes == null ?
+                        Set.<String>of()
+                        : newScopes.stream()
+                                   .filter(Objects::nonNull)
+                                   .map(String::trim)
+                                   .filter(s -> !s.isEmpty())
+                                   .collect(Collectors.toSet());
         scopes.removeIf(e -> !target.contains(e.getScope()));
-        for (String s : target) {
-            addScope(s);
+        for (final String scope : target) {
+            addScope(scope);
         }
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -291,7 +275,7 @@ public class RegisteredClientEntity implements Persistable<String> {
     @Override
     public int hashCode() {
         return 31;
-    } // stable for transient entities
+    }
 
     @Override
     public String getId() {
@@ -305,7 +289,6 @@ public class RegisteredClientEntity implements Persistable<String> {
     public boolean isNew() {
         return isNew;
     }
-
 
     @PostLoad
     @PostPersist

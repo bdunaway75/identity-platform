@@ -17,11 +17,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.util.Assert;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType.BEARER;
@@ -46,7 +42,7 @@ public final class AuthToken {
 
     private final TokenType tokenType;
 
-    private final Set<String> scopes;            // meaningful for ACCESS
+    private final Set<String> scopes;
 
     private final String subject;
 
@@ -55,20 +51,21 @@ public final class AuthToken {
 
     private final Map<String, Object> metadata;
 
-    private final Map<String, Object> claims;    // derived from metadata["claims"]
+    private final Map<String, Object> claims;
 
-    public static Builder fromId(UUID id) {
+    public static Builder fromId(final UUID id) {
         return new Builder(id);
     }
 
     public static Builder fromSpring(final OAuth2Authorization.Token<?> token) {
         Assert.notNull(token, "OAuth2Token cannot be null");
-        return Builder.initTokenFromOAuth2Token(TokenType.getTokenTypeByOAuthTokenClass(token.getToken().getClass()), token);
-
+        return Builder.initTokenFromOAuth2Token(TokenType.getTokenTypeByOAuthTokenClass(token.getToken()
+                                                                                             .getClass()), token);
     }
 
     public boolean isHashedToken(final String hashedTokenValue) {
-        return this.getHashedTokenValue().equals(hashedTokenValue);
+        return this.getHashedTokenValue()
+                   .equals(hashedTokenValue);
     }
 
     private OAuth2Token toOAuth2Token(final String tokenValue) {
@@ -79,29 +76,34 @@ public final class AuthToken {
             case REFRESH -> new OAuth2RefreshToken(tokenValue, this.getIssuedAt(), this.getExpiresAt());
             case AUTHORIZATION_CODE -> new OAuth2AuthorizationCode(tokenValue, this.getIssuedAt(), this.getExpiresAt());
             case ID_TOKEN ->
-                    new OidcIdToken(tokenValue, this.getIssuedAt(), this.getExpiresAt(), (this.getClaims() == null) ? Map.of() : this.getClaims());
+                    new OidcIdToken(tokenValue, this.getIssuedAt(), this.getExpiresAt(), (this.getClaims() == null) ? new HashMap<>() : this.getClaims());
         };
     }
 
     public OAuth2Authorization.Builder attachToAuthorization(final OAuth2Authorization.Builder builder, final String tokenValue) {
         final OAuth2Token token = toOAuth2Token(tokenValue);
+        final Set<String> reserved = new HashSet<>(Set.of(CLAIMS_METADATA_NAME,
+                                                          MetaDataKeys.REVOKED_AT.getValue(),
+                                                          MetaDataKeys.KID.getValue()));
         builder.token(token, meta -> {
-            if (!this.getClaims().isEmpty()) {
+            if (!this.getClaims()
+                     .isEmpty()) {
                 meta.put(CLAIMS_METADATA_NAME, this.getClaims());
             }
             if (this.getRevokedAt() != null) {
                 meta.put(INVALIDATED_METADATA_NAME, Boolean.TRUE);
                 meta.put(MetaDataKeys.REVOKED_AT.getValue(), this.getRevokedAt());
+                reserved.add(INVALIDATED_METADATA_NAME);
             }
-            if (this.getKid() != null && !this.getKid().isBlank()) {
+            if (this.getKid() != null && !this.getKid()
+                                              .isBlank()) {
                 meta.put(MetaDataKeys.KID.getValue(), this.getKid());
             }
-            Set<String> reserved = Set.of(CLAIMS_METADATA_NAME,
-                                          INVALIDATED_METADATA_NAME,
-                                          MetaDataKeys.REVOKED_AT.getValue(),
-                                          MetaDataKeys.KID.getValue());
-            if (!this.getMetadata().isEmpty()) {
-                for (final Map.Entry<String, Object> e : this.getMetadata().entrySet()) {
+
+            if (!this.getMetadata()
+                     .isEmpty()) {
+                for (final Map.Entry<String, Object> e : this.getMetadata()
+                                                             .entrySet()) {
                     if (!reserved.contains(e.getKey())) {
                         meta.put(e.getKey(), e.getValue());
                     }
@@ -112,7 +114,7 @@ public final class AuthToken {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -124,13 +126,13 @@ public final class AuthToken {
             return this.id.equals(other.id);
         }
         return this.tokenType == other.tokenType
-               && java.util.Objects.equals(this.hashedTokenValue, other.hashedTokenValue);
+                && java.util.Objects.equals(this.hashedTokenValue, other.hashedTokenValue);
     }
 
     @Override
     public int hashCode() {
         return (id != null) ? id.hashCode()
-                            : java.util.Objects.hash(tokenType, hashedTokenValue);
+                : java.util.Objects.hash(tokenType, hashedTokenValue);
     }
 
     public Builder toBuilder() {
@@ -192,7 +194,6 @@ public final class AuthToken {
             Assert.notNull(kid, "Token must have an attached key ID");
             if (tokenType == TokenType.ID_TOKEN) {
                 final OidcIdToken id = (OidcIdToken) oAuthToken;
-
                 if (!metaData.containsKey(CLAIMS_METADATA_NAME) && id.getClaims() != null) {
                     metaData.put(CLAIMS_METADATA_NAME, id.getClaims());
                 }
@@ -295,14 +296,16 @@ public final class AuthToken {
             Assert.notNull(this.getExpiresAt(), "expiresAt");
             Assert.hasText(this.getHashedTokenValue(), "hashedTokenValue must not be null or empty");
             Assert.notNull(this.getKid(), "Key ID must not be null");
-            if (!this.getIssuedAt().isBefore(this.getExpiresAt())) {
+            if (!this.getIssuedAt()
+                     .isBefore(this.getExpiresAt())) {
                 throw new IllegalArgumentException("issuedAt must be before expiresAt");
             }
 
             claims(claimsMutator ->
                            claimsMutator.putAll(AuthenticationUtility.parseJsonKeyWithJsonMapValue(CLAIMS_METADATA_NAME, this.getMetadata())));
 
-            if (this.getTokenType() == TokenType.ID_TOKEN && this.getClaims().isEmpty()) {
+            if (this.getTokenType() == TokenType.ID_TOKEN && this.getClaims()
+                                                                 .isEmpty()) {
                 throw new IllegalStateException("ID_TOKEN requires non-empty claims");
             }
 
@@ -314,11 +317,11 @@ public final class AuthToken {
                     this.getExpiresAt(),
                     this.getRevokedAt(),
                     this.getTokenType(),
-                    this.getScopes() == null ? Set.of() : Set.copyOf(this.getScopes()),
+                    this.getScopes() == null ? Set.of() : this.getScopes(),
                     this.getSubject(),
                     this.getHashedTokenValue(),
-                    Map.copyOf(new LinkedHashMap<>(this.getMetadata())),
-                    Map.copyOf(new LinkedHashMap<>(this.getClaims()))
+                    this.getMetadata(),
+                    this.getClaims()
             );
         }
 

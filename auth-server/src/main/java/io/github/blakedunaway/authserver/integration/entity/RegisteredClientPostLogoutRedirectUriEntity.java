@@ -27,7 +27,7 @@ public class RegisteredClientPostLogoutRedirectUriEntity {
     @Column(name = "post_logout_redirect_uri", nullable = false)
     private String postLogoutRedirectUri;
 
-    public RegisteredClientPostLogoutRedirectUriEntity(RegisteredClientEntity parent, String uri) {
+    public RegisteredClientPostLogoutRedirectUriEntity(final RegisteredClientEntity parent, final String uri) {
         this.registeredClient = parent;
         this.postLogoutRedirectUri = uri;
     }

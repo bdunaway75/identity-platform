@@ -23,7 +23,7 @@ public class ClientController {
     @Operation(summary = "Register a client")
     @PostMapping
     public ResponseEntity<?> register(@RequestBody final RegisteredClientDto dto) {
-        final Response jaxrs = service.registerClient(dto); // reuse your existing service
+        final Response jaxrs = service.registerClient(dto);
         return ResponseEntity.status(jaxrs.getStatus()).body(jaxrs.getEntity());
     }
 }

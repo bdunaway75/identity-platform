@@ -21,7 +21,7 @@ public class RegisteredClientRepositoryAdapterImpl implements RegisteredClientRe
     @Override
     @Transactional
     public void save(final RegisteredClient rc) {
-        internal.save(mapper.registeredClientToRegisteredClientModel(rc)); // this will only ever be called to update a client, i take care of actual new clients
+        internal.save(mapper.registeredClientToRegisteredClientModel(rc));
     }
 
     @Override

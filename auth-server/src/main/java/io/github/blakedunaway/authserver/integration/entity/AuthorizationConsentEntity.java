@@ -65,7 +65,11 @@ public class AuthorizationConsentEntity implements Persistable<String> {
         return isNew;
     }
 
-    public static AuthorizationConsentEntity create(UUID consentId, String registeredClientId, String principalName, boolean isNew, Set<AuthoritiesEntity> authorities) {
+    public static AuthorizationConsentEntity create(final UUID consentId,
+                                                    final String registeredClientId,
+                                                    final String principalName,
+                                                    boolean isNew,
+                                                    final Set<AuthoritiesEntity> authorities) {
         Assert.notNull(consentId, "consentId cannot be null");
         Assert.notNull(principalName, "principalName cannot be null");
         Assert.notNull(registeredClientId, "registeredClientId cannot be null");

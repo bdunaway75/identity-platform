@@ -27,7 +27,7 @@ public class RegisteredClientAuthMethodEntity {
     @Column(name = "client_auth_method", nullable = false)
     private String clientAuthMethod;
 
-    public RegisteredClientAuthMethodEntity(RegisteredClientEntity parent, String method) {
+    public RegisteredClientAuthMethodEntity(final RegisteredClientEntity parent, final String method) {
         this.registeredClient = parent;
         this.clientAuthMethod = method;
     }

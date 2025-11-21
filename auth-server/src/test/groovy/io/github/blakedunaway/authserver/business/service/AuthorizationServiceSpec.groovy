@@ -3,7 +3,7 @@ package io.github.blakedunaway.authserver.business.service
 import io.github.blakedunaway.authserver.TestSpec
 import io.github.blakedunaway.authserver.business.model.SigningKey
 import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus
-import com.blakedunaway.springbackendauth.config.TestConfig
+import io.github.blakedunaway.authserver.config.TestConfig
 import io.github.blakedunaway.authserver.integration.repository.implementation.AuthorizationRepositoryImpl
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper
 import org.springframework.beans.factory.annotation.Autowired
@@ -45,19 +45,32 @@ class AuthorizationServiceSpec extends TestSpec {
     @Autowired
     private AuthorizationRepositoryImpl authRepo
 
+    private String kid;
+
+    def setup() {
+        kid = "kid-" + UUID.randomUUID()
+        signingKeyStore.save(SigningKey.from(UUID.randomUUID().toString())
+                .kid(kid)
+                .algorithm("RS256")
+                .signingKeyStatus(SigningKeyStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .keys(signingKeyStore.generateRsaKey())
+                .build())
+    }
+
     @DirtiesContext
-    def "save -> findById roundtrip with ACCESS token persists authorization and scopes"() {
+    def "save -> findById with ACCESS token persists authorization and scopes"() {
         given:
         def rc = minimalRegisteredClient()
         def rawAccess = "raw-access-${UUID.randomUUID()}"
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, rawAccess, now, now.plusSeconds(900), Set.of("read", "write"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("alice")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read", "write"))
-                                      .token(access) { _ -> /* no-op metadata */ }
-                                      .build()
+                .principalName("alice")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read", "write"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth)
@@ -75,18 +88,18 @@ class AuthorizationServiceSpec extends TestSpec {
     }
 
     @DirtiesContext
-    def "save with kid -> findById roundtrip with ACCESS token persists authorization and scopes"() {
+    def "save with kid -> findById with ACCESS token persists authorization and scopes"() {
         given:
         def rc = minimalRegisteredClient()
         def rawAccess = "raw-access-${UUID.randomUUID()}"
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, rawAccess, now, now.plusSeconds(900), Set.of("read", "write"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("alice")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read", "write"))
-                                      .token(access) { _ -> }
-                                      .build()
+                .principalName("alice")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read", "write"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth)
@@ -111,12 +124,12 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, rawAccess, now, now.plusSeconds(600), Set.of("read"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .id(UUID.randomUUID().toString())
-                                      .principalName("bob")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read"))
-                                      .token(access, { _ -> })
-                                      .build()
+                .id(UUID.randomUUID().toString())
+                .principalName("bob")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read"))
+                .token(access, { meta -> meta.put("kid", kid) })
+                .build()
         registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientToRegisteredClientModel(rc))
         service.save(auth)
 
@@ -126,7 +139,6 @@ class AuthorizationServiceSpec extends TestSpec {
         then:
         resolved != null
         resolved.principalName == "bob"
-        // Don’t assert tokenValue equality; you’re not storing raw values. Presence is enough:
         resolved.accessToken != null
     }
 
@@ -156,12 +168,12 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, rawAccess, now, now.plusSeconds(600), Set.of("read"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .id(UUID.randomUUID().toString())
-                                      .principalName("carol")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read"))
-                                      .token(access, { _ -> })
-                                      .build()
+                .id(UUID.randomUUID().toString())
+                .principalName("carol")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read"))
+                .token(access, { meta -> meta.put("kid", kid) })
+                .build()
         service.save(auth)
         assert authRepo.findAll().size() == 1
 
@@ -180,11 +192,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("read"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("idempotent")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read"))
-                                      .token(access) { _ -> }
-                                      .build()
+                .principalName("idempotent")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth)
@@ -192,7 +204,7 @@ class AuthorizationServiceSpec extends TestSpec {
         def firstTokenHashes = first.tokens.collect { it.hashedTokenValue } as Set
 
         and:
-        service.save(auth) // call again with same object
+        service.save(auth)
         def second = authRepo.findAll().first()
         def secondTokenHashes = second.tokens.collect { it.hashedTokenValue } as Set
 
@@ -209,11 +221,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("r"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("hashed-check")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("r"))
-                                      .token(access) { _ -> }
-                                      .build()
+                .principalName("hashed-check")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
         registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientToRegisteredClientModel(rc))
         service.save(auth)
 
@@ -224,7 +236,7 @@ class AuthorizationServiceSpec extends TestSpec {
         then:
         resolved != null
         resolved.accessToken != null
-        resolved.accessToken.token.tokenValue != raw  // raw should never leak here
+        resolved.accessToken.token.tokenValue != raw
     }
 
     @DirtiesContext
@@ -235,11 +247,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("read"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("bytoken")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read"))
-                                      .token(access) { _ -> }
-                                      .build()
+                .principalName("bytoken")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
         registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientToRegisteredClientModel(rc))
         service.save(auth)
 
@@ -249,7 +261,7 @@ class AuthorizationServiceSpec extends TestSpec {
         then:
         resolved != null
         resolved.accessToken != null
-        resolved.accessToken.token.tokenValue == raw  // raw only in this path
+        resolved.accessToken.token.tokenValue == raw
     }
 
     @DirtiesContext
@@ -259,11 +271,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def refresh1 = new OAuth2RefreshToken("r1-" + UUID.randomUUID(), now, now.plusSeconds(600))
         def auth1 = OAuth2Authorization.withRegisteredClient(rc)
-                                       .principalName("rotate")
-                                       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                       .authorizedScopes(Set.of("r"))
-                                       .token(refresh1) { _ -> }
-                                       .build()
+                .principalName("rotate")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(refresh1) { meta -> meta.put("kid", kid) }
+                .build()
         service.save(auth1)
         def before = authRepo.findAll().first()
         def oldHash = before.tokens.first().hashedTokenValue
@@ -271,12 +283,12 @@ class AuthorizationServiceSpec extends TestSpec {
         and:
         def refresh2 = new OAuth2RefreshToken("r2-" + UUID.randomUUID(), now, now.plusSeconds(600))
         def auth2 = OAuth2Authorization.withRegisteredClient(rc)
-                                       .id(before.id.toString())
-                                       .principalName("rotate")
-                                       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                       .authorizedScopes(Set.of("r"))
-                                       .token(refresh2) { _ -> }
-                                       .build()
+                .id(before.id.toString())
+                .principalName("rotate")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(refresh2) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth2)
@@ -296,11 +308,16 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("read"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("revoked")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read"))
-                                      .token(access) { meta -> meta.put(OAuth2Authorization.Token.INVALIDATED_METADATA_NAME, true) }
-                                      .build()
+                .principalName("revoked")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read"))
+                .token(access) { meta ->
+                    meta << [
+                            (OAuth2Authorization.Token.INVALIDATED_METADATA_NAME): true,
+                            kid                                                  : kid
+                    ]
+                }
+                .build()
 
         when:
         registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientToRegisteredClientModel(rc))
@@ -320,11 +337,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def raw1 = "raw-" + UUID.randomUUID()
         def access1 = new OAuth2AccessToken(BEARER, raw1, now, now.plusSeconds(600), Set.of("r"))
         def auth1 = OAuth2Authorization.withRegisteredClient(rc)
-                                       .principalName("norm")
-                                       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                       .authorizedScopes(Set.of("r"))
-                                       .token(access1) { _ -> }
-                                       .build()
+                .principalName("norm")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(access1) { meta -> meta.put("kid", kid) }
+                .build()
         service.save(auth1)
         def persisted = authRepo.findAll().get(0)
         def hash1 = persisted.tokens.getAt(0).hashedTokenValue;
@@ -333,13 +350,15 @@ class AuthorizationServiceSpec extends TestSpec {
         def raw2 = "raw-" + UUID.randomUUID()
         def access2 = new OAuth2RefreshToken(raw2, now, now.plusSeconds(600))
         def auth2 = OAuth2Authorization.withRegisteredClient(rc)
-                                       .id(persisted.id.toString())
-                                       .principalName("norm")
-                                       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                       .authorizedScopes(Set.of("r"))
-                                       .token(new OAuth2AccessToken(BEARER, hash1, now, now.plusSeconds(600), Set.of("r"))) { _ -> }
-                                       .token(access2) { _ -> }
-                                       .build()
+                .id(persisted.id.toString())
+                .principalName("norm")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(new OAuth2AccessToken(BEARER, hash1, now, now.plusSeconds(600), Set.of("r"))) {
+                    meta -> meta.put("kid", kid)
+                }
+                .token(access2) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth2)
@@ -365,12 +384,12 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("read", "write"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("attrs")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read", "write"))
-                                      .attribute("foo", "bar")
-                                      .token(access) { meta -> meta.put("x", "y") }
-                                      .build()
+                .principalName("attrs")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read", "write"))
+                .attribute("foo", "bar")
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientToRegisteredClientModel(rc))
@@ -392,11 +411,11 @@ class AuthorizationServiceSpec extends TestSpec {
                 "id-" + UUID.randomUUID(), now, now.plusSeconds(300), Map.of("sub", "user-123")
         )
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("oidc")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("openid"))
-                                      .token(idTok) { _ -> }
-                                      .build()
+                .principalName("oidc")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("openid"))
+                .token(idTok) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth)
@@ -414,11 +433,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("r"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("remove")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("r"))
-                                      .token(access) { _ -> }
-                                      .build()
+                .principalName("remove")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
         service.save(auth)
         assert authRepo.findAll().size() == 1
 
@@ -437,11 +456,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("r"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("persistable")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("r"))
-                                      .token(access) { _ -> }
-                                      .build()
+                .principalName("persistable")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth)
@@ -454,14 +473,6 @@ class AuthorizationServiceSpec extends TestSpec {
     @DirtiesContext
     def "save new key to DB"() {
         given: "an ACTIVE signing key already in DB"
-        def kid = "kid-" + UUID.randomUUID()
-        def keyEntity = signingKeyStore.save(SigningKey.from(UUID.randomUUID().toString())
-                                                       .kid(kid)
-                                                       .algorithm("RS256")
-                                                       .signingKeyStatus(SigningKeyStatus.ACTIVE)
-                                                       .createdAt(LocalDateTime.now())
-                                                       .keys(signingKeyStore.generateRsaKey())
-                                                       .build())
 
         and: "an OAuth2Authorization with an access token whose metadata contains the kid"
         def rc = minimalRegisteredClient()
@@ -469,11 +480,11 @@ class AuthorizationServiceSpec extends TestSpec {
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("read"))
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("alice")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("read"))
-                                      .token(access) { meta -> meta.put("kid", kid) }
-                                      .build()
+                .principalName("alice")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("read"))
+                .token(access) { meta -> meta.put("kid", kid) }
+                .build()
 
         when:
         service.save(auth)
@@ -495,30 +506,30 @@ class AuthorizationServiceSpec extends TestSpec {
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(600), Set.of("r"))
         def bogusKid = "does-not-exist-" + UUID.randomUUID()
         def auth = OAuth2Authorization.withRegisteredClient(rc)
-                                      .principalName("no-key")
-                                      .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                                      .authorizedScopes(Set.of("r"))
-                                      .token(access) { meta -> meta.put("kid", bogusKid) }
-                                      .build()
+                .principalName("no-key")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(access) { meta -> meta.put("kid", bogusKid) }
+                .build()
 
         when:
         service.save(auth)
 
         then:
         def e = thrown(IllegalStateException)
-        e.message.contains("Unknown signing kid")
+        e.message.contains("Signing keys not found")
     }
 
-    private static RegisteredClient minimalRegisteredClient() {
+    static RegisteredClient minimalRegisteredClient() {
         RegisteredClient.withId("rc-" + UUID.randomUUID().toString())
-                        .clientId("client-" + UUID.randomUUID().toString())
-                        .clientSecret("secret")
-                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                        .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                        .tokenSettings(TokenSettings.builder().build())
-                        .clientSettings(ClientSettings.builder().requireProofKey(false).build())
-                        .clientIdIssuedAt(Instant.now())
-                        .clientSecretExpiresAt(Instant.now())
-                        .build()
+                .clientId("client-" + UUID.randomUUID().toString())
+                .clientSecret("secret")
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .tokenSettings(TokenSettings.builder().build())
+                .clientSettings(ClientSettings.builder().requireProofKey(false).build())
+                .clientIdIssuedAt(Instant.now())
+                .clientSecretExpiresAt(Instant.now())
+                .build()
     }
 }

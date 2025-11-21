@@ -30,5 +30,4 @@ public final class Authorities {
         return new SimpleGrantedAuthority(this.getName().toUpperCase());
     }
 
-
 }

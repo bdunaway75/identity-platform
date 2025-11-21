@@ -27,7 +27,7 @@ public class AuthoritiesEntity {
     @Column(name = "authority_name")
     private String name;
 
-    public static AuthoritiesEntity create(String name) {
+    public static AuthoritiesEntity create(final String name) {
         AuthoritiesEntity authorities = new AuthoritiesEntity();
         authorities.name = name;
         return authorities;

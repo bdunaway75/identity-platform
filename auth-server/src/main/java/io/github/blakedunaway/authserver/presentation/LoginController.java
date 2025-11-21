@@ -71,10 +71,10 @@ public class LoginController {
 
     @PostMapping("/signUp")
     public String signUp(@ModelAttribute("registerDto") @Valid final RegisterDto registerDto,
-                         BindingResult bindingResult,
-                         HttpServletRequest request, HttpServletResponse response) {
+                         final BindingResult bindingResult,
+                         final HttpServletRequest request, HttpServletResponse response) {
         if (bindingResult.hasErrors()) {
-            return "signUp"; // Return the form with errors displayed
+            return "signUp";
         }
         final SavedRequest saved = requestCache.getRequest(request, response);
         if (saved != null) {

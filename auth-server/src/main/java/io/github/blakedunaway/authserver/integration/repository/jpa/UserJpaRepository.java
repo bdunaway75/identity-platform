@@ -13,7 +13,5 @@ public interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByEmailIgnoreCase(final String email);
 
-    List<UserEntity> findByEmail(final String email);
-
     UserEntity findByRegisteredClient_IdAndEmail(final String registeredClientId, final String email);
 }

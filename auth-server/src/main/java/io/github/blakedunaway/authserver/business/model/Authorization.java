@@ -11,12 +11,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.util.Assert;
 
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -88,7 +83,7 @@ public final class Authorization {
                 .principalName(this.getPrincipalName())
                 .authorizationGrantType((this.getAuthorizationGrantTypeInternal().getAuthorizationGrantType()))
                 .authorizedScopes(Optional.ofNullable(this.getAuthorizedScopes()).orElse(Set.of()))
-                .attributes(attrs -> attrs.putAll(Optional.ofNullable(this.getAttributes()).orElse(Map.of())));
+                .attributes(attrs -> attrs.putAll(Optional.ofNullable(this.getAttributes()).orElse(new HashMap<>())));
     }
 
     public OAuth2Authorization.Builder toSpringAuthorization(final RegisteredClient registeredClient) {
@@ -97,22 +92,20 @@ public final class Authorization {
                 .principalName(this.getPrincipalName())
                 .authorizationGrantType((this.getAuthorizationGrantTypeInternal().getAuthorizationGrantType()))
                 .authorizedScopes(Optional.ofNullable(this.getAuthorizedScopes()).orElse(Set.of()))
-                .attributes(attrs -> attrs.putAll(Optional.ofNullable(this.getAttributes()).orElse(Map.of())));
+                .attributes(attrs -> attrs.putAll(Optional.ofNullable(this.getAttributes()).orElse(new HashMap<>())));
     }
 
     public OAuth2Authorization.Builder attachTokenToSpringAuthorization(final OAuth2Authorization.Builder builder,
                                                                         final String rawToken,
                                                                         final AuthToken tokenToAttach) {
         Assert.notNull(tokenToAttach, "Auth token must not be null");
-        final OAuth2Authorization.Builder updated = tokenToAttach.attachToAuthorization(builder, rawToken);
-        return updated;
+        return tokenToAttach.attachToAuthorization(builder, rawToken);
     }
 
     public OAuth2Authorization.Builder attachTokensToSpringAuthorization(final OAuth2Authorization.Builder builder) {
         if (this.getTokens() == null || this.getTokens().isEmpty()) {
             return builder;
         }
-
         this.getTokens().forEach(token -> token.attachToAuthorization(builder, token.getHashedTokenValue()));
         return builder;
     }
@@ -202,7 +195,7 @@ public final class Authorization {
                     this.getPrincipalName(),
                     this.getGrant(),
                     this.getScopes() == null ? Set.of() : Set.copyOf(this.getScopes()),
-                    this.getAttrs() == null ? Map.of() : Map.copyOf(this.getAttrs()),
+                    this.getAttrs() == null ? new HashMap<>() : this.getAttrs(),
                     this.getTokens() == null
                     ? Set.of()
                     : Set.copyOf(this.getTokens().stream().map(AuthToken.Builder::build).collect(Collectors.toSet()))
