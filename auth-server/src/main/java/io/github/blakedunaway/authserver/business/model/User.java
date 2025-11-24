@@ -209,7 +209,5 @@ public final class User {
                             this.isCredentialsExpired(),
                             this.getId());
         }
-
     }
-
 }

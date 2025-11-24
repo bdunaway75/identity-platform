@@ -1,14 +1,14 @@
 package io.github.blakedunaway.authserver.business.service;
 
-import io.github.blakedunaway.authserver.business.model.SigningKey;
-import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus;
-import io.github.blakedunaway.authserver.integration.repository.gateway.SigningKeyRepository;
 import com.nimbusds.jose.Algorithm;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import io.github.blakedunaway.authserver.business.model.SigningKey;
+import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus;
+import io.github.blakedunaway.authserver.integration.repository.gateway.SigningKeyRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Service
 public class SigningKeyStore {
-
-    //TODO add purging abilities to keys that dont have active tokens attached.
 
     private final SigningKeyRepository signingKeyRepository;
 
@@ -78,14 +76,20 @@ public class SigningKeyStore {
     public void rotateSigningKeys() {
         SigningKey newKey = createSigningKey();
         signingKeyRepository.save(newKey);
-        signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE).stream()
+        signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE)
+                            .stream()
                             .filter(k -> !k.getKid().equals(newKey.getKid()))
                             .forEach(k -> signingKeyRepository.save(k.retire()));
     }
 
+    @Scheduled(cron = "0 0 0 * 1/2 ?")
+    public void purgeSigningKeys() {
+        signingKeyRepository.purgeInactiveKeys();
+    }
+
     public KeyPair generateRsaKey() {
         try {
-            var kpg = KeyPairGenerator.getInstance("RSA");
+            final KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
             kpg.initialize(2048);
             return kpg.generateKeyPair();
         } catch (Exception e) {
@@ -93,14 +97,14 @@ public class SigningKeyStore {
         }
     }
 
-    private RSAKey toRsaKey(SigningKey signingKey) {
+    private RSAKey toRsaKey(final SigningKey signingKey) {
         try {
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            RSAPublicKey pub = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(signingKey.getPublicKey())));
-            RSAPrivateKey pri = signingKey.getStatus() == SigningKeyStatus.INACTIVE
+            final KeyFactory kf = KeyFactory.getInstance("RSA");
+            final RSAPublicKey pub = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(signingKey.getPublicKey())));
+            final RSAPrivateKey pri = signingKey.getStatus() == SigningKeyStatus.INACTIVE
                                 ? null
                                 : (RSAPrivateKey) kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(signingKey.getPrivateKey())));
-            RSAKey.Builder rBuilder = new RSAKey.Builder(pub).keyUse(KeyUse.SIGNATURE)
+            final RSAKey.Builder rBuilder = new RSAKey.Builder(pub).keyUse(KeyUse.SIGNATURE)
                                                              .algorithm(new Algorithm(signingKey.getAlgorithm()))
                                                              .keyID(signingKey.getKid());
             if (pri != null) {

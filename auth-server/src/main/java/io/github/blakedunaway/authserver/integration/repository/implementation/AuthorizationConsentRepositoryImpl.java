@@ -29,12 +29,16 @@ public class AuthorizationConsentRepositoryImpl implements AuthorizationConsentR
     @Override
     @Transactional
     public AuthorizationConsent save(final AuthorizationConsent authorizationConsent) {
-        final AuthorizationConsentEntity entity = authorizationConsentMapper.authorizationConsentToAuthorizationConsentEntity(authorizationConsent);
-        final Set<AuthoritiesEntity> authoritiesEntities = authoritiesJpaRepository.findAllByNameIn(entity.getAuthorities()
+        final AuthorizationConsentEntity entity =
+                authorizationConsentMapper.authorizationConsentToAuthorizationConsentEntity(
+                authorizationConsent);
+        final Set<AuthoritiesEntity> authoritiesEntities =
+                authoritiesJpaRepository.findAllByNameIn(entity.getAuthorities()
                                                                                                           .stream()
                                                                                                           .map(AuthoritiesEntity::getName)
                                                                                                           .map(String::toUpperCase)
-                                                                                                          .collect(Collectors.toSet()));
+                                                                                                          .collect(
+                                                                                                                  Collectors.toSet()));
         authoritiesEntities.addAll(entity.getAuthorities());
         entity.setAuthorities(authoritiesEntities);
         authoritiesEntities.forEach(auth -> {
@@ -42,19 +46,23 @@ public class AuthorizationConsentRepositoryImpl implements AuthorizationConsentR
                 authoritiesEntities.add(authoritiesJpaRepository.save(auth));
             }
         });
-        return authorizationConsentMapper.authorizationConsentEntityToAuthorizationConsent(authorizationConsentJpaRepository.save(entity));
+        return authorizationConsentMapper.authorizationConsentEntityToAuthorizationConsent(
+                authorizationConsentJpaRepository.save(entity));
     }
 
     @Override
     @Transactional
     public void remove(final AuthorizationConsent authorizationConsent) {
-        final AuthorizationConsentEntity entity = authorizationConsentJpaRepository.findByRegisteredClientIdAndPrincipalName(authorizationConsent.getRegisteredClientId(),
-                                                                                                                             authorizationConsent.getPrincipalName())
+        final AuthorizationConsentEntity entity =
+                authorizationConsentJpaRepository.findByRegisteredClientIdAndPrincipalName(
+                                                                                           authorizationConsent.getRegisteredClientId(),
+                                                                                           authorizationConsent.getPrincipalName())
                                                                                    .orElse(null);
         if (entity == null) {
             throw new EntityNotFoundException("Error: AuthorizationConsent not found with principal name " + authorizationConsent.getPrincipalName());
         }
-        authorizationConsentJpaRepository.deleteByRegisteredClientIdAndPrincipalName(entity.getRegisteredClientId(), entity.getPrincipalName());
+        authorizationConsentJpaRepository.deleteByRegisteredClientIdAndPrincipalName(entity.getRegisteredClientId(),
+                                                                                     entity.getPrincipalName());
     }
 
     @Override
@@ -62,9 +70,10 @@ public class AuthorizationConsentRepositoryImpl implements AuthorizationConsentR
         if (registeredClientId == null || principalName == null) {
             return null;
         }
-        final AuthorizationConsentEntity entity = authorizationConsentJpaRepository.findByRegisteredClientIdAndPrincipalName(registeredClientId,
-                                                                                                                             principalName)
-                                                                                   .orElse(null);
+        final AuthorizationConsentEntity entity =
+                authorizationConsentJpaRepository.findByRegisteredClientIdAndPrincipalName(registeredClientId,
+                                                                                           principalName)
+                                                 .orElse(null);
         if (entity == null) {
             return null;
         }

@@ -2,7 +2,7 @@ package io.github.blakedunaway.authserver.business.service
 
 import io.github.blakedunaway.authserver.TestSpec
 import io.github.blakedunaway.authserver.business.model.User
-import com.blakedunaway.springbackendauth.config.TestConfig
+import io.github.blakedunaway.authserver.config.TestConfig
 import io.github.blakedunaway.authserver.integration.repository.gateway.UserRepository
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper
 import io.github.blakedunaway.authserver.mapper.UserMapper

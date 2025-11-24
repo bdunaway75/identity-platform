@@ -11,7 +11,6 @@ public class EmailDomainValidator implements ConstraintValidator<ValidEmail, Str
 
     private final EmailValidator hibernateEmailValidator = new EmailValidator();
 
-
     @Override
     public boolean isValid(final String email, final ConstraintValidatorContext context) {
         if (hibernateEmailValidator.isValid(email, context)) {

@@ -75,15 +75,15 @@ public class AuthorizationEntity implements Persistable<String> {
     private Set<AuthTokenEntity> tokens = new HashSet<>();
 
     public static AuthorizationEntity create(
-            UUID id,
+            final UUID id,
             boolean isNew,
-            String registeredClientId,
-            String principalName,
-            String authorizationGrantType,
-            Set<String> authorizedScopes,
-            Map<String, Object> attributes,
-            Set<AuthTokenEntity> tokens) {
-        AuthorizationEntity authorization = new AuthorizationEntity();
+            final String registeredClientId,
+            final String principalName,
+            final String authorizationGrantType,
+            final Set<String> authorizedScopes,
+            final Map<String, Object> attributes,
+            final Set<AuthTokenEntity> tokens) {
+        final AuthorizationEntity authorization = new AuthorizationEntity();
         authorization.setNew(isNew);
         authorization.setAuthId(id);
         authorization.setRegisteredClientId(registeredClientId);
@@ -104,7 +104,7 @@ public class AuthorizationEntity implements Persistable<String> {
         return isNew;
     }
 
-    public void addAuthorizedScope(String scope) {
+    public void addAuthorizedScope(final String scope) {
         if (scope != null) {
             if (authorizedScopes.isEmpty()) {
                 authorizedScopes = new HashSet<>();
@@ -113,13 +113,13 @@ public class AuthorizationEntity implements Persistable<String> {
         }
     }
 
-    public void removeAuthorizedScope(String scope) {
+    public void removeAuthorizedScope(final String scope) {
         if (scope != null && !authorizedScopes.isEmpty()) {
             authorizedScopes.remove(scope);
         }
     }
 
-    public void replaceAuthorizedScopes(Set<String> newScopes) {
+    public void replaceAuthorizedScopes(final Set<String> newScopes) {
         if (newScopes == null) {
             this.authorizedScopes.clear();
             return;
@@ -130,7 +130,7 @@ public class AuthorizationEntity implements Persistable<String> {
     }
 
 
-    public void addToken(AuthTokenEntity token) {
+    public void addToken(final AuthTokenEntity token) {
         if (tokens == null) {
             tokens = new HashSet<>();
         }
@@ -140,13 +140,13 @@ public class AuthorizationEntity implements Persistable<String> {
         }
     }
 
-    public void removeToken(AuthTokenEntity token) {
+    public void removeToken(final AuthTokenEntity token) {
         if (tokens != null) {
             tokens.removeIf(t -> t.equals(token));
         }
     }
 
-    public void replaceTokens(Set<AuthTokenEntity> tokens) {
+    public void replaceTokens(final Set<AuthTokenEntity> tokens) {
         this.tokens.clear();
         if (tokens != null) {
             tokens.forEach(this::addToken);
@@ -173,7 +173,7 @@ public class AuthorizationEntity implements Persistable<String> {
     @Override
     public int hashCode() {
         return 31;
-    } // stable for transient entities
+    }
 
 
 }

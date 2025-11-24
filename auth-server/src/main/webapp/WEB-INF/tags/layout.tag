@@ -12,7 +12,6 @@
 
     <title>${not empty title ? title : "Semantics Authentication"}</title>
 
-    <!-- Bootstrap 5.3.3 from WebJars -->
     <link rel="stylesheet" href="/webjars/bootstrap/5.3.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>

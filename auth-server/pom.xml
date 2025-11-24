@@ -178,8 +178,8 @@
         </dependency>
         <dependency>
             <groupId>com.github.bdunaway75</groupId>
-            <artifactId>semantic-matching</artifactId>
-            <version>v1.0.19</version>
+            <artifactId>identity-platform-private</artifactId>
+            <version>v1.1.1</version>
         </dependency>
         <!-- Spock -->
         <dependency>

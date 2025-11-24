@@ -2,7 +2,7 @@ package io.github.blakedunaway.authserver.business.service
 
 import io.github.blakedunaway.authserver.TestSpec
 import io.github.blakedunaway.authserver.business.model.User
-import com.blakedunaway.springbackendauth.config.TestConfig
+import io.github.blakedunaway.authserver.config.TestConfig
 import io.github.blakedunaway.authserver.integration.repository.gateway.UserRepository
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper
 import org.springframework.beans.factory.annotation.Autowired
@@ -57,7 +57,6 @@ class OAuth2AuthorizeSpec extends TestSpec {
 
     @Autowired
     private AuthorizationServerSettings asSettings
-
 
     private static final String REDIRECT = "https://client.example.com/callback"
 
@@ -124,7 +123,7 @@ class OAuth2AuthorizeSpec extends TestSpec {
         def now = LocalDateTime.now()
         def u = User.fromEmail(email)
                 .passwordHash(passwordEncoder.encode(raw))
-                .registeredClientId(registeredCId) // not needed for /authorize; principal is already authenticated
+                .registeredClientId(registeredCId)
                 .plan("FREE")
                 .verified(true)
                 .createdAt(now)
@@ -146,7 +145,7 @@ class OAuth2AuthorizeSpec extends TestSpec {
 
         when:
         def state = UUID.randomUUID().toString()
-        def req = get("/oauth2/authorize")
+        def req = get(asSettings.authorizationEndpoint)
                 .queryParam("response_type", "code")
                 .queryParam("client_id", rc.clientId)
                 .queryParam("redirect_uri", REDIRECT)
@@ -189,7 +188,7 @@ class OAuth2AuthorizeSpec extends TestSpec {
 
         def session = (MockHttpSession) getRes.request.getSession(false)
         def html = getRes.response.getContentAsString()
-        def matcher = (html =~ /name="state"\s+value="([^"]+)"/) // find the minted state from the response
+        def matcher = (html =~ /name="state"\s+value="([^"]+)"/)
         assert matcher.find()
         def consentState = matcher.group(1)
         assert session != null
@@ -226,7 +225,7 @@ class OAuth2AuthorizeSpec extends TestSpec {
                 .build()
         def state = UUID.randomUUID().toString()
         when: "user hits authorize endpoint, SAS shows consent form."
-        def getResult = mvc.perform(post("/oauth2/authorize")
+        def getResult = mvc.perform(post(asSettings.authorizationEndpoint)
                 .with(user(principal))
                 .with(csrf())
                 .param("response_type", "code")
@@ -240,7 +239,7 @@ class OAuth2AuthorizeSpec extends TestSpec {
         MockHttpSession session = (MockHttpSession) getResult.request.getSession(false)
 
         then: "user cancels on consent page (SAS just wipes scopes)"
-        mvc.perform(post("/oauth2/authorize")
+        mvc.perform(post(asSettings.authorizationEndpoint)
                 .session(session)
                 .with(user(principal))
                 .with(csrf())
@@ -251,7 +250,7 @@ class OAuth2AuthorizeSpec extends TestSpec {
 
     def "unknown client -> 400 invalid request"() {
         expect:
-        mvc.perform(get("/oauth2/authorize")
+        mvc.perform(get(asSettings.authorizationEndpoint)
                 .param("response_type", "code")
                 .param("client_id", "does-not-exist")
                 .param("redirect_uri", REDIRECT)
@@ -266,7 +265,7 @@ class OAuth2AuthorizeSpec extends TestSpec {
         registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientToRegisteredClientModel(rc))
 
         expect:
-        mvc.perform(post("/oauth2/authorize")
+        mvc.perform(post(asSettings.authorizationEndpoint)
                 .param("response_type", "code")
                 .param("client_id", rc.clientId)
                 .param("redirect_uri", INVALID_REDIR)
@@ -279,7 +278,8 @@ class OAuth2AuthorizeSpec extends TestSpec {
         given:
         def rc = pkcePublicClient()
         registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientToRegisteredClientModel(rc))
-        def principal = org.springframework.security.core.userdetails.User.withUsername("u").password("{noop}p").authorities(new SimpleGrantedAuthority("ROLE_USER")).build()
+        def principal =
+                org.springframework.security.core.userdetails.User.withUsername("u").password("{noop}p").authorities(new SimpleGrantedAuthority("ROLE_USER")).build()
 
         expect:
         mvc.perform(post(asSettings.authorizationEndpoint)
@@ -297,7 +297,8 @@ class OAuth2AuthorizeSpec extends TestSpec {
         given:
         def rc = clientRequiringConsent()
         registeredClientRepository.save(rc)
-        def principal = org.springframework.security.core.userdetails.User.withUsername("u").password("{noop}p").authorities(new SimpleGrantedAuthority("ROLE_USER")).build()
+        def principal =
+                org.springframework.security.core.userdetails.User.withUsername("u").password("{noop}p").authorities(new SimpleGrantedAuthority("ROLE_USER")).build()
 
         expect:
         mvc.perform(post(asSettings.authorizationEndpoint)

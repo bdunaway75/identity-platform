@@ -1,24 +1,35 @@
 package io.github.blakedunaway.authserver.business.service
 
-import io.github.blakedunaway.authserver.TestSpec
-import io.github.blakedunaway.authserver.business.model.SigningKey
-import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus
-import io.github.blakedunaway.authserver.config.TestConfig
-import io.github.blakedunaway.authserver.integration.repository.gateway.SigningKeyRepository
 import com.nimbusds.jose.jwk.JWK
 import com.nimbusds.jose.jwk.JWKMatcher
 import com.nimbusds.jose.jwk.JWKSelector
 import com.nimbusds.jose.jwk.RSAKey
+import io.github.blakedunaway.authserver.TestSpec
+import io.github.blakedunaway.authserver.business.model.SigningKey
+import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys
+import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus
+import io.github.blakedunaway.authserver.config.TestConfig
+import io.github.blakedunaway.authserver.integration.repository.gateway.SigningKeyRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.security.oauth2.core.AuthorizationGrantType
+import org.springframework.security.oauth2.core.OAuth2AccessToken
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization
 import org.springframework.test.annotation.DirtiesContext
 import spock.lang.Subject
+
+import java.time.Instant
+
+import static org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType.BEARER
 
 @Import(TestConfig)
 class SigningStoreServiceSpec extends TestSpec {
     @Autowired
     @Subject
     private SigningKeyStore signingKeyStore
+
+    @Autowired
+    private AuthorizationService service
 
     @Autowired
     private SigningKeyRepository signingKeyRepository
@@ -104,6 +115,111 @@ class SigningStoreServiceSpec extends TestSpec {
         RSAKey jwk = (RSAKey) selected.first()
         !jwk.isPrivate()
         jwk.toRSAPublicKey() != null
+    }
+
+    @DirtiesContext
+    def "purgeInactiveKeys deletes INACTIVE keys with no tokens"() {
+        given:
+        def k = signingKeyRepository.save(signingKeyStore.createSigningKey().retire())
+
+        when:
+        def result = signingKeyRepository.purgeInactiveKeys()
+
+        then:
+        result*.kid == [k.kid]
+        signingKeyRepository.findByStatus(SigningKeyStatus.INACTIVE).isEmpty()
+    }
+
+    @DirtiesContext
+    def "purgeInactiveKeys deletes INACTIVE keys with only expired or revoked tokens"() {
+        given:
+        def key = signingKeyRepository.save(signingKeyStore.createSigningKey())
+
+        def rc = AuthorizationServiceSpec.minimalRegisteredClient()
+        def raw = "raw-" + UUID.randomUUID()
+        def now = Instant.now()
+        def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(1), Set.of("r"))
+        sleep(1000)
+
+        def auth = OAuth2Authorization.withRegisteredClient(rc)
+                .principalName("persistable")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(access) { meta ->
+                    meta << [
+                            kid                                 : key.kid,
+                            (MetaDataKeys.REVOKED_AT.getValue()): Instant.now()
+                    ]
+                }
+                .build()
+
+        when:
+        service.save(auth)
+
+        signingKeyRepository.save(key.retire())
+
+        and:
+        def purged = signingKeyRepository.purgeInactiveKeys()
+
+        then:
+        purged*.kid == [key.kid]
+        signingKeyRepository.findByStatus(SigningKeyStatus.INACTIVE).isEmpty()
+    }
+
+
+    @DirtiesContext
+    def "purgeInactiveKeys does not delete INACTIVE keys with a non-revoked unexpired token"() {
+        given:
+        // start with an ACTIVE key
+        def key = signingKeyRepository.save(signingKeyStore.createSigningKey())
+
+        def rc = AuthorizationServiceSpec.minimalRegisteredClient()
+        def raw = "raw-" + UUID.randomUUID()
+        def now = Instant.now()
+        def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(1), Set.of("r"))
+        sleep(1000) // 1 second so it expires
+
+        def auth = OAuth2Authorization.withRegisteredClient(rc)
+                .principalName("persistable")
+                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
+                .authorizedScopes(Set.of("r"))
+                .token(access) { meta ->
+                    meta << [
+                            kid: key.kid,
+                    ]
+                }
+                .build()
+
+        when:
+        service.save(auth)
+        def savedSigningKeyWithTokens = signingKeyRepository.findByKid(key.kid)
+
+        then:
+        savedSigningKeyWithTokens.isPresent()
+        savedSigningKeyWithTokens.get().kid == key.getKid()
+
+        and:
+        signingKeyRepository.save(savedSigningKeyWithTokens.get().retire())
+        def purged = signingKeyRepository.purgeInactiveKeys()
+
+        then:
+        !purged.isEmpty()
+        signingKeyRepository.findByStatus(SigningKeyStatus.INACTIVE).isEmpty()
+    }
+
+    @DirtiesContext
+    def "purgeInactiveKeys deletes multiple INACTIVE keys meeting purge conditions"() {
+        given:
+        def k1 = signingKeyRepository.save(signingKeyStore.createSigningKey().retire())
+        def k2 = signingKeyRepository.save(signingKeyStore.createSigningKey().retire())
+        def k3 = signingKeyRepository.save(signingKeyStore.createSigningKey().retire())
+
+        when:
+        def purged = signingKeyRepository.purgeInactiveKeys()
+
+        then:
+        purged*.kid as Set == [k1.kid, k2.kid, k3.kid] as Set
+        signingKeyRepository.findByStatus(SigningKeyStatus.INACTIVE).isEmpty()
     }
 
     //The keyStore generates a key on construction completion of the bean if theres no active keys, this always runs

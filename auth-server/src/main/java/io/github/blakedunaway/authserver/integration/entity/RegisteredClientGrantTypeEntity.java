@@ -27,7 +27,7 @@ public class RegisteredClientGrantTypeEntity {
     @Column(name = "authorization_grant_type", nullable = false)
     private String authorizationGrantType;
 
-    public RegisteredClientGrantTypeEntity(RegisteredClientEntity parent, String grantType) {
+    public RegisteredClientGrantTypeEntity(final RegisteredClientEntity parent, final String grantType) {
         this.registeredClient = parent;
         this.authorizationGrantType = grantType;
     }

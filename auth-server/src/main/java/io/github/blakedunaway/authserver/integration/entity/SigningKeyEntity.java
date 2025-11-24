@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -18,6 +19,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -55,13 +57,8 @@ public class SigningKeyEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "signingKey", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany
+    @JoinColumn(name = "kid", referencedColumnName = "kid", insertable = false, updatable = false)
     private Set<AuthTokenEntity> tokens;
-
-    public static SigningKeyEntity createFromKid(final String kId) {
-        final SigningKeyEntity signingKeyEntity = new SigningKeyEntity();
-        signingKeyEntity.kid = kId;
-        return signingKeyEntity;
-    }
 
 }

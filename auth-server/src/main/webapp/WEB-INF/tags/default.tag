@@ -19,8 +19,6 @@
       }
 
       html, body { height:100%; }
-
-      /* Page background (subtle, non-choppy) */
       .page {
         min-height:100vh;
         display:grid;
@@ -44,7 +42,6 @@
         opacity:.25;
         pointer-events:none;
       }
-      /* faint connective-lines pattern */
       .page::after{
         content:"";
         position:absolute; inset:-200% -200%;
@@ -54,7 +51,6 @@
         background-size:30px 30px, 30px 30px;
         opacity:.15;
         transform:translateZ(0);
-        /* very slow pan to avoid choppiness */
         animation:gridDrift 60s linear infinite;
       }
       @keyframes gridDrift {
@@ -62,7 +58,6 @@
         to   { transform: translate(0, 0) }
       }
 
-      /* Card */
       .login-card{
         width:min(92vw, 600px);
         display:grid;
@@ -146,12 +141,10 @@
         color:#0f5132; background:#d1e7dd; border:1px solid #badbcc;
       }
 
-      /* Respect reduced motion */
       @media (prefers-reduced-motion: reduce) {
         .float, .page::after { animation: none !important; }
       }
 
-      /* Small screens */
       @media (max-width: 560px){
         .login-card{ padding:1.4rem; }
       }

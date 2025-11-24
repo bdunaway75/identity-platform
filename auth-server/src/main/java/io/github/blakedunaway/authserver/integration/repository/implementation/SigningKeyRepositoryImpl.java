@@ -10,8 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
@@ -27,11 +29,12 @@ public class SigningKeyRepositoryImpl implements SigningKeyRepository {
     public SigningKey save(final SigningKey signingKey) {
         final Optional<SigningKeyEntity> signingKeyEntity = signingKeyJpaRepository.findByKid(signingKey.getKid());
         if (signingKeyEntity.isPresent()) {
-            final SigningKey updated = SigningKey.from(signingKeyEntity.get().getId())
+            final SigningKey updated = SigningKey.from(signingKeyEntity.get()
+                                                                       .getId())
                                                  .encoded(signingKey.isEncoded())
                                                  .keys(signingKey.getPrivateKey(), signingKey.getPublicKey())
                                                  .signingKeyStatus(signingKey.getStatus())
-                                                 .authTokens(signingKey.getAuthTokenIds())
+                                                 .authTokens(signingKey.getTokens())
                                                  .algorithm(signingKey.getAlgorithm())
                                                  .createdAt(signingKey.getCreatedAt())
                                                  .kid(signingKey.getKid())
@@ -39,21 +42,45 @@ public class SigningKeyRepositoryImpl implements SigningKeyRepository {
             signingKeyJpaRepository.save(signingKeyMapper.toEntity(updated));
             return updated;
         }
-        final SigningKeyEntity newKey = signingKeyJpaRepository.save(signingKeyMapper.toEntity(signingKey));
-        return SigningKey.from(newKey.getId())
-                         .encoded(signingKey.isEncoded())
-                         .keys(newKey.getPrivateKey(), newKey.getPublicKey())
-                         .signingKeyStatus(newKey.getStatus())
-                         .authTokens(signingKeyMapper.authTokenEntitySetToAuthTokenIdSet(newKey.getTokens()))
-                         .algorithm(newKey.getAlgorithm())
-                         .createdAt(newKey.getCreatedAt())
-                         .kid(newKey.getKid())
-                         .build();
+        return signingKeyMapper.toSigningKey(signingKeyJpaRepository.save(signingKeyMapper.toEntity(signingKey)));
     }
 
     @Override
     public List<SigningKey> findByStatus(final SigningKeyStatus status) {
         return signingKeyMapper.toSigningKeyList(signingKeyJpaRepository.findByStatus(status));
+    }
+
+    @Transactional
+    @Override
+    public List<SigningKey> purgeInactiveKeys() {
+        final Instant now = Instant.now();
+        final List<SigningKeyEntity> inactive = signingKeyJpaRepository.findByStatus(SigningKeyStatus.INACTIVE);
+
+        final List<SigningKeyEntity> toPurge = inactive.stream()
+                                                       .filter(sk -> sk.getTokens() == null ||
+                                                               sk.getTokens()
+                                                                 .stream()
+                                                                 .noneMatch(t -> t.getRevokedAt() == null &&
+                                                                         t.getExpiresAt()
+                                                                          .isAfter(now)))
+                                                       .toList();
+
+        //deleting for now, maybe keep for auditing
+        if (!toPurge.isEmpty()) {
+            signingKeyJpaRepository.deleteAllInBatch(toPurge);
+        }
+        return signingKeyMapper.toSigningKeyList(toPurge);
+    }
+
+    @Override
+    public Optional<SigningKey> findByKid(final String kid) {
+        return signingKeyJpaRepository.findByKid(kid)
+                                      .map(signingKeyMapper::toSigningKey);
+    }
+
+    @Override
+    public boolean existsByKids(Set<String> kids) {
+        return !signingKeyJpaRepository.findSigningKeyEntitiesByKidIn(kids).isEmpty();
     }
 
     @Override

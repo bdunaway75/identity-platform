@@ -16,29 +16,30 @@ import java.time.LocalDateTime
 class RegisteredClientModelApiServiceSpec extends TestSpec {
 
     @Autowired
-    RegisteredClientApiService service
+    private RegisteredClientApiService service
 
     @Autowired
-    RegisterClientJpaRepository repository
+    private RegisterClientJpaRepository repository
 
     @Autowired
-    RegisteredClientMapper mapper
+    private RegisteredClientMapper mapper
 
     def "public client registered"() {
-
         given:
         def client =
                 RegisteredClientDto.builder()
-                                   .clientAuthenticationMethods(Set.of("none"))
-                                   .authorizationGrantTypes(Set.of("authorization_code"))
-                                   .clientId("123")
-                                   .clientIdIssuedAt(LocalDateTime.now())
-                                   .clientSecretExpiresAt(LocalDateTime.now())
-                                   .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
-                                   .clientSettings(Map.of("settings.client.require-proof-key", true))
-                                   .redirectUris(Set.of("https://redirect/api"))
-                                   .clientName("test")
-                                   .build()
+                        .clientAuthenticationMethods(Set.of("none"))
+                        .authorizationGrantTypes(Set.of("authorization_code"))
+                        .clientId("123")
+                        .clientSecret("{noop}secret")
+                        .clientIdIssuedAt(LocalDateTime.now())
+                        .clientSecretExpiresAt(LocalDateTime.now())
+                        .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
+                        .clientSettings(Map.of("settings.client.require-proof-key", true))
+                        .redirectUris(Set.of("https://redirect/api"))
+                        .clientName("test")
+                        .build()
+
         when:
         def result = service.registerClient(client)
 
@@ -51,16 +52,18 @@ class RegisteredClientModelApiServiceSpec extends TestSpec {
         given:
         def client =
                 RegisteredClientDto.builder()
-                                   .clientAuthenticationMethods(Set.of("client_secret_basic"))
-                                   .authorizationGrantTypes(Set.of("authorization_code"))
-                                   .clientId("1234")
-                                   .clientIdIssuedAt(LocalDateTime.now())
-                                   .clientSecretExpiresAt(LocalDateTime.now())
-                                   .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
-                                   .clientSettings(Map.of("settings.client.require-proof-key", true))
-                                   .redirectUris(Set.of("https://redirect/api"))
-                                   .clientName("test")
-                                   .build()
+                        .clientAuthenticationMethods(Set.of("client_secret_basic"))
+                        .authorizationGrantTypes(Set.of("authorization_code"))
+                        .clientId("1234")
+                        .clientSecret("{noop}secret")
+                        .clientIdIssuedAt(LocalDateTime.now())
+                        .clientSecretExpiresAt(LocalDateTime.now())
+                        .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
+                        .clientSettings(Map.of("settings.client.require-proof-key", true))
+                        .redirectUris(Set.of("https://redirect/api"))
+                        .clientName("test")
+                        .build()
+
         when:
         def result = service.registerClient(client)
 
@@ -73,15 +76,17 @@ class RegisteredClientModelApiServiceSpec extends TestSpec {
         given:
         def client =
                 RegisteredClientDto.builder()
-                                   .clientAuthenticationMethods(Set.of("none"))
-                                   .authorizationGrantTypes(Set.of("client_credentials"))
-                                   .clientIdIssuedAt(LocalDateTime.now())
-                                   .clientSecretExpiresAt(LocalDateTime.now())
-                                   .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
-                                   .clientSettings(null)
-                                   .redirectUris(Set.of("https://redirect/api"))
-                                   .clientName("test")
-                                   .build()
+                        .clientAuthenticationMethods(Set.of("none"))
+                        .authorizationGrantTypes(Set.of("client_credentials"))
+                        .clientSecret("{noop}secret")
+                        .clientIdIssuedAt(LocalDateTime.now())
+                        .clientSecretExpiresAt(LocalDateTime.now())
+                        .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
+                        .clientSettings(null)
+                        .redirectUris(Set.of("https://redirect/api"))
+                        .clientName("test")
+                        .build()
+
         when:
         def result = service.registerClient(client)
 
@@ -93,16 +98,18 @@ class RegisteredClientModelApiServiceSpec extends TestSpec {
         given:
         def client =
                 RegisteredClientDto.builder()
-                                   .clientAuthenticationMethods(Set.of("client_secret_basic"))
-                                   .authorizationGrantTypes(Set.of("client_credentials"))
-                                   .clientId("123")
-                                   .clientIdIssuedAt(LocalDateTime.now())
-                                   .clientSecretExpiresAt(LocalDateTime.now())
-                                   .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
-                                   .clientSettings(Map.of("settings.client.require-proof-key", true))
-                                   .redirectUris(null)
-                                   .clientName("test")
-                                   .build()
+                        .clientAuthenticationMethods(Set.of("client_secret_basic"))
+                        .authorizationGrantTypes(Set.of("client_credentials"))
+                        .clientId("123")
+                        .clientSecret("{noop}secret")
+                        .clientIdIssuedAt(LocalDateTime.now())
+                        .clientSecretExpiresAt(LocalDateTime.now())
+                        .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
+                        .clientSettings(Map.of("settings.client.require-proof-key", true))
+                        .redirectUris(null)
+                        .clientName("test")
+                        .build()
+
         when:
         def result = service.registerClient(client)
 
@@ -114,17 +121,19 @@ class RegisteredClientModelApiServiceSpec extends TestSpec {
         given:
         def client =
                 RegisteredClientDto.builder()
-                                   .clientSecret("lol")
-                                   .clientAuthenticationMethods(Set.of("none"))
-                                   .authorizationGrantTypes(Set.of("client_credentials"))
-                                   .clientId("12345")
-                                   .clientIdIssuedAt(LocalDateTime.now())
-                                   .clientSecretExpiresAt(LocalDateTime.now())
-                                   .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
-                                   .clientSettings(Map.of("settings.client.require-proof-key", false))
-                                   .redirectUris(null)
-                                   .clientName("test")
-                                   .build()
+                        .clientSecret("lol")
+                        .clientAuthenticationMethods(Set.of("none"))
+                        .authorizationGrantTypes(Set.of("client_credentials"))
+                        .clientSecret("{noop}secret")
+                        .clientId("12345")
+                        .clientIdIssuedAt(LocalDateTime.now())
+                        .clientSecretExpiresAt(LocalDateTime.now())
+                        .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
+                        .clientSettings(Map.of("settings.client.require-proof-key", false))
+                        .redirectUris(null)
+                        .clientName("test")
+                        .build()
+
         when:
         service.registerClient(client)
         def result = service.updateClient(client.toBuilder().clientName("test2").build())
@@ -139,17 +148,19 @@ class RegisteredClientModelApiServiceSpec extends TestSpec {
         given:
         def client =
                 RegisteredClientDto.builder()
-                                   .clientAuthenticationMethods(Set.of("non"))
-                                   .clientSecret("lol1")
-                                   .authorizationGrantTypes(Set.of("client_credentials"))
-                                   .clientId("123456")
-                                   .clientIdIssuedAt(LocalDateTime.now())
-                                   .clientSecretExpiresAt(LocalDateTime.now())
-                                   .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
-                                   .clientSettings(Map.of("settings.client.require-proof-key", false))
-                                   .redirectUris(null)
-                                   .clientName("test")
-                                   .build()
+                        .clientAuthenticationMethods(Set.of("non"))
+                        .clientSecret("lol1")
+                        .authorizationGrantTypes(Set.of("client_credentials"))
+                        .clientSecret("{noop}secret")
+                        .clientId("123456")
+                        .clientIdIssuedAt(LocalDateTime.now())
+                        .clientSecretExpiresAt(LocalDateTime.now())
+                        .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10)))
+                        .clientSettings(Map.of("settings.client.require-proof-key", false))
+                        .redirectUris(null)
+                        .clientName("test")
+                        .build()
+
         when:
         service.registerClient(client)
         def result = service.updateClient(client.toBuilder().tokenSettings(null).build())

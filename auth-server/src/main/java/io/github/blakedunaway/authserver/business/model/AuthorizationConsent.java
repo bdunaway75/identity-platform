@@ -110,7 +110,5 @@ public final class AuthorizationConsent {
                                             this.getPrincipalName(),
                                             Set.copyOf(this.getAuthorities()));
         }
-
     }
-
 }

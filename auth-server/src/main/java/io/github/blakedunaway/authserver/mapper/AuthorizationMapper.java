@@ -22,45 +22,6 @@ public class AuthorizationMapper {
 
     private final AuthTokenMapper authTokenMapper;
 
-    static OAuth2AuthorizationRequest toAuthReq(final Map<String, Object> map) {
-        final OAuth2AuthorizationRequest.Builder authorizationRequest = OAuth2AuthorizationRequest.authorizationCode()
-                                                                                                  .authorizationUri((String) map.get(
-                                                                                                          "authorizationUri"))
-                                                                                                  .clientId((String) map.get("clientId"));
-
-        final String redirect = (String) map.get("redirectUri");
-        if (redirect != null) {
-            authorizationRequest.redirectUri(redirect);
-        }
-
-        final List<String> scopes = (List<String>) map.getOrDefault("scopes", java.util.List.of());
-        if (!scopes.isEmpty()) {
-            authorizationRequest.scopes(new java.util.LinkedHashSet<>(scopes));
-        }
-
-        final String state = (String) map.get("state");
-        if (state != null) {
-            authorizationRequest.state(state);
-        }
-
-        final Map<String, Object> additionalParameters = (java.util.Map<String, Object>) map.getOrDefault("additionalParameters", java.util.Map.of());
-        if (!additionalParameters.isEmpty()) {
-            authorizationRequest.additionalParameters(additionalParameters);
-        }
-
-        final Map<String, Object> attrs = (Map<String, Object>) map.getOrDefault("attributes", Map.of());
-        if (!attrs.isEmpty()) {
-            authorizationRequest.attributes(a -> a.putAll(attrs));
-        }
-
-        final String uri = (String) map.get("authorizationRequestUri");
-        if (uri != null) {
-            authorizationRequest.authorizationRequestUri(uri);
-        }
-
-        return authorizationRequest.build();
-    }
-
     public AuthorizationEntity authorizationToAuthorizationEntity(final Authorization authorization) {
         UUID id = null;
         if (authorization.getId() != null) {
@@ -103,13 +64,6 @@ public class AuthorizationMapper {
         final Map<String, Object> attributes = Optional.ofNullable(entity.getAttributes())
                                                        .orElseGet(Map::of);
 
-        // TODO test if jackson module properly serializes OAuth2Request class after fetching from DB
-//        final String key = OAuth2AuthorizationRequest.class.getName();
-//        final Object clazzContents = attributes.get(key);
-//        if (clazzContents != null && !(clazzContents instanceof OAuth2AuthorizationRequest)) {
-//            attributes.put(key, toAuthReq((Map<String, Object>) clazzContents));
-//        }
-
         return Authorization.fromId(entity.getAuthId().toString())
                             .registeredClientId(entity.getRegisteredClientId())
                             .principalName(entity.getPrincipalName())
@@ -125,7 +79,6 @@ public class AuthorizationMapper {
                             .isNew(entity.isNew())
                             .build();
     }
-
 
 }
 

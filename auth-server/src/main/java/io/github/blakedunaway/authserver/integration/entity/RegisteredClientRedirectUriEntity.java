@@ -27,7 +27,7 @@ public class RegisteredClientRedirectUriEntity {
     @Column(name = "redirect_uri", nullable = false)
     private String redirectUri;
 
-    public RegisteredClientRedirectUriEntity(RegisteredClientEntity parent, String uri) {
+    public RegisteredClientRedirectUriEntity(final RegisteredClientEntity parent, final String uri) {
         this.registeredClient = parent;
         this.redirectUri = uri;
     }

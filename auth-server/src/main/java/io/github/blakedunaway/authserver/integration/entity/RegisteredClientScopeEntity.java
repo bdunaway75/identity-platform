@@ -37,7 +37,7 @@ public class RegisteredClientScopeEntity {
     @Column(name = "scope", nullable = false)
     private String scope;
 
-    public RegisteredClientScopeEntity(RegisteredClientEntity parent, String scope) {
+    public RegisteredClientScopeEntity(final RegisteredClientEntity parent, final String scope) {
         this.registeredClient = parent;
         this.scope = scope;
     }

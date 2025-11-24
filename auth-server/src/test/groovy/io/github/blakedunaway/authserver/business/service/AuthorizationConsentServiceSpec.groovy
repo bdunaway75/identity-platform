@@ -16,20 +16,20 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @Autowired
     private AuthorizationConsentService service
 
-    private static OAuth2AuthorizationConsent consent(String rcId,
-                                                      String principal,
-                                                      Collection<String> authorities) {
-        def b = OAuth2AuthorizationConsent.withId(rcId, principal)
-        authorities.each { a -> b.authority(new SimpleGrantedAuthority(a)) }
-        return b.build()
+    private static OAuth2AuthorizationConsent consent(final String rcId,
+                                                      final String principal,
+                                                      final Collection<String> authorities) {
+        def consentBuilder = OAuth2AuthorizationConsent.withId(rcId, principal)
+        authorities.each { auths -> consentBuilder.authority(new SimpleGrantedAuthority(auths)) }
+        return consentBuilder.build()
     }
 
-    private static Set<String> authNames(OAuth2AuthorizationConsent c) {
-        new LinkedHashSet<>(c.getAuthorities().stream().map { it.authority }.collect(toSet()))
+    private static Set<String> authNames(final OAuth2AuthorizationConsent consent) {
+        new LinkedHashSet<>(consent.getAuthorities().stream().map { it.authority }.collect(toSet()))
     }
 
     @DirtiesContext
-    def "save -> findById roundtrip persists authorities for user+client"() {
+    def "save -> findById persists authorities for user+client"() {
         given:
         def rcId = "rc-${UUID.randomUUID()}"
         def principal = "alice"
@@ -73,12 +73,12 @@ class AuthorizationConsentServiceSpec extends TestSpec {
         def rcId = "rc-${UUID.randomUUID()}"
         def principal = "progress"
         def initial = consent(rcId, principal, ["SCOPE_READ"])
-        def later = consent(rcId, principal, ["SCOPE_READ", "SCOPE_WRITE"]) // request adds write
+        def later = consent(rcId, principal, ["SCOPE_READ", "SCOPE_WRITE"])
 
         when:
         service.save(initial)
         def afterInitial = service.findById(rcId, principal)
-        service.save(later) // expect union, not overwrite
+        service.save(later)
         def afterLater = service.findById(rcId, principal)
 
         then:

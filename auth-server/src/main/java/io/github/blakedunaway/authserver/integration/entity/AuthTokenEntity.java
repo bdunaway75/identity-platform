@@ -66,16 +66,11 @@ public class AuthTokenEntity implements Persistable<String> {
     @JoinColumn(name = "authorization_id", nullable = false)
     private AuthorizationEntity authorizationEntity;
 
-
     @Column(name = "token_value_hash", nullable = false, length = 64, unique = true)
     private String tokenValueHash;
 
     @Column(name = "kid", nullable = false)
     private String kid;
-
-    @ManyToOne(fetch = LAZY, optional = true)
-    @JoinColumn(name = "kid", referencedColumnName = "kid", insertable = false, updatable = false)
-    private SigningKeyEntity signingKey;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb", nullable = false)
@@ -84,22 +79,22 @@ public class AuthTokenEntity implements Persistable<String> {
     @Transient
     private boolean isNew = true;
 
-    public static AuthTokenEntity create(UUID id,
-                                         String kid,
+    public static AuthTokenEntity create(final UUID id,
+                                         final String kid,
                                          boolean isNew,
-                                         String tokenValueHash,
-                                         Instant issuedAt,
-                                         Instant expiresAt,
-                                         Instant revokedAt,
-                                         TokenType tokenType,
-                                         String subject,
-                                         Map<String, Object> metadataJson) {
+                                         final String tokenValueHash,
+                                         final Instant issuedAt,
+                                         final Instant expiresAt,
+                                         final Instant revokedAt,
+                                         final TokenType tokenType,
+                                         final String subject,
+                                         final Map<String, Object> metadataJson) {
         Objects.requireNonNull(tokenValueHash, "tokenValueHash must not be null");
         Objects.requireNonNull(issuedAt, "issuedAt must not be null");
         Objects.requireNonNull(expiresAt, "expiresAt must not be null");
         Objects.requireNonNull(tokenType, "tokenType must not be null");
 
-        AuthTokenEntity e = new AuthTokenEntity();
+        final AuthTokenEntity e = new AuthTokenEntity();
         e.isNew = isNew;
         e.tokenId = id;
         e.kid = kid;
@@ -113,30 +108,19 @@ public class AuthTokenEntity implements Persistable<String> {
         return e;
     }
 
-    public static AuthTokenEntity createFromId(UUID id) {
+    public static AuthTokenEntity createFromId(final UUID id) {
         final AuthTokenEntity authTokenEntity = new AuthTokenEntity();
         authTokenEntity.tokenId = id;
         return authTokenEntity;
     }
 
-    /**
-     * Used by your mapper merge path.
-     */
-    public void updateBasicFields(Instant expiresAt, Instant revokedAt, Map<String, Object> metadataJson) {
-        this.expiresAt = expiresAt;
-        this.revokedAt = revokedAt;
-        this.metadataJson = metadataJson;
-    }
-
-    /* ---------- Equality (by id once assigned) ---------- */
-
-    public AuthTokenEntity setAuthorizationEntity(AuthorizationEntity parent) {
+    public AuthTokenEntity setAuthorizationEntity(final AuthorizationEntity parent) {
         this.authorizationEntity = parent;
         return this;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -165,7 +149,6 @@ public class AuthTokenEntity implements Persistable<String> {
 
     @Override
     public int hashCode() {
-        // constant for transient entities; stable once persisted
         return 31;
     }
 

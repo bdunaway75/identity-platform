@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.business.model;
 
 import io.github.blakedunaway.authserver.business.validation.ValidClient;
+import io.github.blakedunaway.authserviceclient.dto.ClientFields;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,7 +20,7 @@ import java.util.Set;
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class RegisteredClientModel {
+public final class RegisteredClientModel implements ClientFields {
 
     private final String id;
 

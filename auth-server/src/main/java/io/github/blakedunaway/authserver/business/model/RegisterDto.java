@@ -30,7 +30,6 @@ public class RegisterDto {
 
     public static class UsernamePasswordWithClientAuthenticationToken extends AbstractAuthenticationToken {
 
-
         @Getter
         private RegisterDto registerDto;
 
@@ -43,7 +42,7 @@ public class RegisterDto {
                                                              Collection<? extends GrantedAuthority> authorities, boolean authenticated) {
             super(authorities);
             this.registerDto = registerDto;
-            super.setAuthenticated(authenticated); // must use super, as we override
+            super.setAuthenticated(authenticated);
         }
 
         public static UsernamePasswordWithClientAuthenticationToken authenticated(RegisterDto registerDto,

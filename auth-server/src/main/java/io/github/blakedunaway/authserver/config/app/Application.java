@@ -14,9 +14,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.security.jackson2.SecurityJackson2Modules;
 import org.springframework.security.oauth2.server.authorization.jackson2.OAuth2AuthorizationServerJackson2Module;
 
-@SpringBootApplication(scanBasePackages = "com.blakedunaway.springbackendauth")
-@EnableJpaRepositories(basePackages = "com.blakedunaway.springbackendauth.integration.repository")
-@EntityScan(basePackages = "com.blakedunaway.springbackendauth.integration.entity")
+@SpringBootApplication(scanBasePackages = "io.github.blakedunaway.authserver")
+@EnableJpaRepositories(basePackages = "io.github.blakedunaway.authserver.integration.repository")
+@EntityScan(basePackages = "io.github.blakedunaway.authserver.integration.entity")
 public class Application extends SpringBootServletInitializer {
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
@@ -24,7 +24,7 @@ public class Application extends SpringBootServletInitializer {
 
     @Bean
     public ObjectMapper objectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
+        final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.registerModules(SecurityJackson2Modules.getModules(getClass().getClassLoader()));
         objectMapper.registerModule(new OAuth2AuthorizationServerJackson2Module());

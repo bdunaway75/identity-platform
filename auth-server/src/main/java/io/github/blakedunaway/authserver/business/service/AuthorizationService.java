@@ -2,11 +2,14 @@ package io.github.blakedunaway.authserver.business.service;
 
 import io.github.blakedunaway.authserver.business.model.AuthToken;
 import io.github.blakedunaway.authserver.business.model.Authorization;
+import io.github.blakedunaway.authserver.business.model.SigningKey;
 import io.github.blakedunaway.authserver.business.model.enums.TokenType;
 import io.github.blakedunaway.authserver.integration.repository.gateway.AuthorizationRepository;
+import io.github.blakedunaway.authserver.integration.repository.gateway.SigningKeyRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.AuthTokenJpaRepository;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
@@ -14,11 +17,9 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -30,6 +31,8 @@ public class AuthorizationService implements OAuth2AuthorizationService {
     private final RegisteredClientRepository registeredClientRepository;
 
     private final AuthTokenJpaRepository authTokenJpaRepository;
+
+    private final SigningKeyRepository signingKeyRepository;
 
     public void save(final OAuth2Authorization src) {
         final Authorization.Builder authBuilder = Authorization.fromSpring(src);
@@ -53,17 +56,22 @@ public class AuthorizationService implements OAuth2AuthorizationService {
                                                                        .map(obj -> new TokenMetaData(obj, authBuilder.getId()))
                                                                        .collect(Collectors.toMap(TokenMetaData::getHashedTokenValue,
                                                                                                  TokenMetaData::getTokenId));
+        final Set<String> kidsToVerify = new  HashSet<>();
         for (final AuthToken.Builder authToken : loopableTokens) {
+            if (StringUtils.isEmpty(authToken.getKid())) {
+                throw new IllegalStateException("Token must be assigned a signable key");
+            }
+            kidsToVerify.add(authToken.getKid());
             if (allExistingIds.containsKey(authToken.getHashedTokenValue())) {
                 normalized.add(authToken.exists(allExistingIds.get(authToken.getHashedTokenValue())));
             } else {
                 normalized.add(authToken.isNew(true));
             }
         }
-
-        authBuilder.isNew(persisted == null)
-                   .replaceTokens(normalized);
-
+        authBuilder.isNew(persisted == null).replaceTokens(normalized);
+        if (!kidsToVerify.isEmpty() && !signingKeyRepository.existsByKids(kidsToVerify)) {
+            throw new IllegalStateException("Signing keys not found");
+        }
         authorizationRepository.save(authBuilder.build());
     }
 

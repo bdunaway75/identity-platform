@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.experimental.UtilityClass;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @UtilityClass
@@ -18,14 +19,14 @@ public class AuthenticationUtility {
 
     public static Map<String, Object> parseJsonKeyWithJsonMapValue(final String key, final Map<String, Object> jsonMap) {
         if (jsonMap == null || jsonMap.isEmpty() || key == null) {
-            return Map.of();
+            return new HashMap<>();
         }
         try {
             final Map<String, Object> results = MAPPER.convertValue(jsonMap.get(key), new TypeReference<>() {});
-            return results == null ? Map.of() : results;
+            return results == null ? new HashMap<>() : results;
         } catch (Exception e) {
             //TODO: add logging
-            return Map.of();
+            return new HashMap<>();
         }
     }
 

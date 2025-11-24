@@ -1,10 +1,11 @@
 package io.github.blakedunaway.authserver.business.service.api;
 
-import com.blakedunaway.iamclientapi.api.dto.RegisteredClientDto;
-import com.blakedunaway.iamclientapi.api.service.RegisterClientApi;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.service.RegisteredClientService;
+import io.github.blakedunaway.authserver.business.validation.ClientRegistrationValidator;
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper;
+import io.github.blakedunaway.authserviceclient.dto.RegisteredClientDto;
+import io.github.blakedunaway.authserviceclient.service.RegisterClientApi;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ValidationException;
@@ -14,11 +15,12 @@ import jakarta.ws.rs.core.Response.Status;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -31,20 +33,24 @@ public class RegisteredClientApiService implements RegisterClientApi {
 
     private final RegisteredClientService registeredClientService;
 
-    private final PasswordEncoder passwordEncoder;
-
     @Override
-    public Response registerClient(RegisteredClientDto dto) {
+    public Response registerClient(final RegisteredClientDto dto) {
         try {
-            RegisteredClientModel saved =
-                    registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientDtoToRegisteredClientModel(dto));
+            final Map<String, List<String>> errors = ClientRegistrationValidator.isValid(dto);
+            if (errors.isEmpty()) {
+                final RegisteredClientModel saved =
+                        registeredClientService.saveRegisteredClient(registeredClientMapper.registeredClientDtoToRegisteredClientModel(dto));
 
-            String id = saved.getClientId();
-            URI location = URI.create("/clients/" + id);
-            return Response.created(location)
-                           .type(MediaType.APPLICATION_JSON_TYPE)
-                           .entity(saved)
-                           .build();
+                final String id = saved.getClientId();
+                final URI location = URI.create("/clients/" + id);
+                return Response.created(location)
+                               .type(MediaType.APPLICATION_JSON_TYPE)
+                               .entity(saved)
+                               .build();
+            }
+            else  {
+                return problem(Status.BAD_REQUEST, Status.BAD_REQUEST.getReasonPhrase(), "Invalid client", Map.of("errors", errors));
+            }
         } catch (ValidationException e) {
             return problem(Status.BAD_REQUEST, Status.BAD_REQUEST.getReasonPhrase(), e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -58,14 +64,20 @@ public class RegisteredClientApiService implements RegisterClientApi {
     }
 
     @Override
-    public Response updateClient(RegisteredClientDto dto) {
+    public Response updateClient(final RegisteredClientDto dto) {
         try {
-            RegisteredClientModel updated =
-                    registeredClientService.updateRegisteredClient(registeredClientMapper.registeredClientDtoToRegisteredClientModel(dto));
-            return Response.ok()
-                           .type(MediaType.APPLICATION_JSON_TYPE)
-                           .entity(updated)
-                           .build();
+            final Map<String, List<String>> errors = ClientRegistrationValidator.isValid(dto);
+            if (errors.isEmpty()) {
+                final RegisteredClientModel updated =
+                        registeredClientService.updateRegisteredClient(registeredClientMapper.registeredClientDtoToRegisteredClientModel(dto));
+                return Response.ok()
+                               .type(MediaType.APPLICATION_JSON_TYPE)
+                               .entity(updated)
+                               .build();
+            }
+            else  {
+                return problem(Status.BAD_REQUEST, Status.BAD_REQUEST.getReasonPhrase(), "Invalid client", Map.of("errors", errors));
+            }
         } catch (ValidationException e) {
             return problem(Status.BAD_REQUEST, Status.BAD_REQUEST.getReasonPhrase(), e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -78,11 +90,11 @@ public class RegisteredClientApiService implements RegisterClientApi {
         }
     }
 
-    private Response problem(Status status, String code, String message) {
+    private Response problem(final Status status, final String code, final String message) {
         return problem(status, code, message, Map.of());
     }
 
-    private Response problem(Status status, String code, String message, Map<String, Object> extras) {
+    private Response problem(final Status status, final String code, final String message, final Map<String, Object> extras) {
         Map<String, Object> body = new HashMap<>();
         body.put("code", code);
         body.put("message", message);
