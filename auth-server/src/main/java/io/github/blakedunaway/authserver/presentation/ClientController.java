@@ -1,7 +1,7 @@
 package io.github.blakedunaway.authserver.presentation;
 
-import com.blakedunaway.iamclientapi.api.dto.RegisteredClientDto;
 import io.github.blakedunaway.authserver.business.service.api.RegisteredClientApiService;
+import io.github.blakedunaway.authserviceclient.dto.RegisteredClientDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.ws.rs.core.Response;

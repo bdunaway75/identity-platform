@@ -1,6 +1,6 @@
 package io.github.blakedunaway.authserver.business.model;
 
-import io.github.blakedunaway.authserver.business.validation.ValidClient;
+import io.github.blakedunaway.authserviceclient.dto.ClientFields;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,13 +13,16 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 import org.springframework.util.Assert;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-@ValidClient
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class RegisteredClientModel {
+public final class RegisteredClientModel implements ClientFields {
 
     private final String id;
 
@@ -46,6 +49,30 @@ public final class RegisteredClientModel {
     private final ClientSettings clientSettings;
 
     private final TokenSettings tokenSettings;
+
+    public Map<String, Object> getTokenSettings() {
+        return this.tokenSettings.getSettings();
+    }
+
+    public Map<String, Object> getClientSettings() {
+        return this.clientSettings.getSettings();
+    }
+
+    public Set<String> getAuthorizationGrantTypes() {
+        return this.authorizationGrantTypes.stream().map(AuthorizationGrantType::toString).collect(Collectors.toSet());
+    }
+
+    public Set<String> getClientAuthenticationMethods() {
+        return this.clientAuthenticationMethods.stream().map(ClientAuthenticationMethod::toString).collect(Collectors.toSet());
+    }
+
+    public LocalDateTime getClientIdIssuedAt() {
+        return LocalDateTime.ofInstant(this.clientIdIssuedAt, ZoneId.systemDefault());
+    }
+
+    public LocalDateTime getClientSecretExpiresAt() {
+        return LocalDateTime.ofInstant(this.clientSecretExpiresAt, ZoneId.systemDefault());
+    }
 
     public static class RegisteredClientModelBuilder {
         public RegisteredClient toOAuth2RegisteredClient() {

@@ -12,7 +12,7 @@ import java.util.Set;
 @Jacksonized
 @Builder(toBuilder = true)
 @Value
-public class RegisteredClientDto {
+public class RegisteredClientDto implements ClientFields {
 
     String clientId;
 
@@ -29,6 +29,8 @@ public class RegisteredClientDto {
     Set<String> authorizationGrantTypes;
 
     Set<String> redirectUris;
+
+    Set<String> postLogoutRedirectUris;
 
     Set<String> scopes;
 

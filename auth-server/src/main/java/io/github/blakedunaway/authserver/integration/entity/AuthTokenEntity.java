@@ -131,6 +131,11 @@ public class AuthTokenEntity implements Persistable<String> {
     }
 
     @Override
+    public int hashCode() {
+        return tokenId != null ? tokenId.hashCode() : 0;
+    }
+
+    @Override
     public String getId() {
         return tokenId != null ? tokenId.toString() : null;
     }
@@ -145,11 +150,6 @@ public class AuthTokenEntity implements Persistable<String> {
     @PostPersist
     void markNotNew() {
         this.isNew = false;
-    }
-
-    @Override
-    public int hashCode() {
-        return 31;
     }
 
 }

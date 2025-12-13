@@ -1,10 +1,10 @@
 package io.github.blakedunaway.authserver.business.service.api
 
-import com.blakedunaway.iamclientapi.api.dto.RegisteredClientDto
 import io.github.blakedunaway.authserver.TestSpec
 import io.github.blakedunaway.authserver.config.TestConfig
 import io.github.blakedunaway.authserver.integration.repository.jpa.RegisterClientJpaRepository
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper
+import io.github.blakedunaway.authserviceclient.dto.RegisteredClientDto
 import jakarta.ws.rs.core.Response
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
@@ -163,7 +163,9 @@ class RegisteredClientModelApiServiceSpec extends TestSpec {
 
         when:
         service.registerClient(client)
-        def result = service.updateClient(client.toBuilder().tokenSettings(null).build())
+        def result = service.updateClient(client.toBuilder()
+                .tokenSettings(Map.of("authorization-code-time-to-live", Duration.ofMinutes(10), "test", "test"))
+                .build())
 
         then:
         result.status == Response.Status.OK.statusCode

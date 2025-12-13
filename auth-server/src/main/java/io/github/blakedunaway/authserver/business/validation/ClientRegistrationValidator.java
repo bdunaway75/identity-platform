@@ -1,17 +1,21 @@
 package io.github.blakedunaway.authserver.business.validation;
 
-import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
-import jakarta.validation.ConstraintValidator;
-import jakarta.validation.ConstraintValidatorContext;
+import io.github.blakedunaway.authserviceclient.dto.ClientFields;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.util.CollectionUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-public final class ClientRegistrationValidator implements ConstraintValidator<ValidClient, RegisteredClientModel> {
+public final class ClientRegistrationValidator {
 
     private static final Set<ClientAuthenticationMethod> CONF_METHODS = Set.of(
             ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
@@ -22,10 +26,22 @@ public final class ClientRegistrationValidator implements ConstraintValidator<Va
             ClientAuthenticationMethod.SELF_SIGNED_TLS_CLIENT_AUTH
     );
 
-    private static boolean isPublicClient(final RegisteredClientModel c) {
-        final boolean hasSecret = c.getClientSecret() != null && !c.getClientSecret().isBlank();
-        final boolean declaresConfidential = c.getClientAuthenticationMethods() != null
-                                             && c.getClientAuthenticationMethods().stream().anyMatch(CONF_METHODS::contains);
+    private static final Set<AuthorizationGrantType> AUTH_METHODS = Set.of(
+            AuthorizationGrantType.AUTHORIZATION_CODE,
+            AuthorizationGrantType.CLIENT_CREDENTIALS,
+            AuthorizationGrantType.DEVICE_CODE,
+            AuthorizationGrantType.JWT_BEARER,
+            AuthorizationGrantType.REFRESH_TOKEN,
+            AuthorizationGrantType.TOKEN_EXCHANGE
+    );
+
+    private static boolean isPublicClient(final ClientFields clientFields) {
+        final boolean hasSecret = clientFields.getClientSecret() != null && !clientFields.getClientSecret().isBlank();
+        final boolean declaresConfidential = clientFields.getClientAuthenticationMethods() != null
+                                             && clientFields.getClientAuthenticationMethods()
+                                                            .stream()
+                                                            .map(ClientAuthenticationMethod::new)
+                                                            .anyMatch(CONF_METHODS::contains);
         return !(hasSecret || declaresConfidential);
     }
 
@@ -43,12 +59,6 @@ public final class ClientRegistrationValidator implements ConstraintValidator<Va
         return s == null || s.isBlank();
     }
 
-    private static void add(final ConstraintValidatorContext ctx, final String node, final String msg) {
-        ctx.buildConstraintViolationWithTemplate(msg)
-           .addPropertyNode(node)
-           .addConstraintViolation();
-    }
-
     private static boolean validateRedirectUri(final String redirectUri) {
         try {
             final URI validRedirectUri = new URI(redirectUri);
@@ -58,94 +68,95 @@ public final class ClientRegistrationValidator implements ConstraintValidator<Va
         }
     }
 
-    @Override
-    public boolean isValid(final RegisteredClientModel clientModel, final ConstraintValidatorContext ctx) {
-        if (clientModel == null) {
-            return true;
+    private static void add(final Map<String, List<String>> map, final String key, final String value) {
+        map.computeIfAbsent(key, k -> new ArrayList<>()).add(value);
+    }
+
+    public static Map<String, List<String>> isValid(final ClientFields clientFields) {
+        final Map<String, List<String>> validations = new HashMap<>();
+
+        if (clientFields == null) {
+            return validations;
         }
 
         boolean valid = true;
-        ctx.disableDefaultConstraintViolation();
 
-        if (isBlank(clientModel.getClientName())) {
-            add(ctx, "clientName", "client_name is required");
+        if (isBlank(clientFields.getClientName())) {
+            add(validations, "clientName", "client_name is required");
             valid = false;
         }
-        if (isBlank(clientModel.getClientId())) {
-            add(ctx, "clientId", "client_id is required");
+        if (isBlank(clientFields.getClientId())) {
+            add(validations, "clientId", "client_id is required");
             valid = false;
         }
-        if (clientModel.getClientSettings() == null) {
-            add(ctx, "clientSettings", "client_settings is required");
+        if (clientFields.getClientSettings() == null) {
+            add(validations, "clientSettings", "client_settings is required");
             valid = false;
         }
-        if (clientModel.getTokenSettings() == null) {
-            add(ctx, "tokenSettings", "token_settings is required");
+        if (clientFields.getTokenSettings() == null) {
+            add(validations, "tokenSettings", "token_settings is required");
             valid = false;
         }
-        if (clientModel.getAuthorizationGrantTypes() == null || clientModel.getAuthorizationGrantTypes().isEmpty()) {
-            add(ctx, "authorizationGrantTypes", "at least one authorization_grant_type is required");
+        if (clientFields.getAuthorizationGrantTypes() == null || clientFields.getAuthorizationGrantTypes().isEmpty()) {
+            add(validations, "authorizationGrantTypes", "at least one authorization_grant_type is required");
             valid = false;
         }
         if (!valid) {
-            return false;
+            return validations;
         }
 
-        if (clientModel.getRedirectUris() != null) {
-            valid = validateRedirectUris(clientModel, ctx);
+        if (clientFields.getRedirectUris() != null) {
+            validateRedirectUris(clientFields, validations);
         }
-        if (clientModel.getScopes() != null) {
-            valid = validateScopes(clientModel, ctx);
+        if (clientFields.getScopes() != null) {
+            validateScopes(clientFields, validations);
         }
-        if (clientModel.getPostLogoutRedirectUris() != null) {
-            valid = validatePostLogoutRedirectUris(clientModel, ctx);
+        if (clientFields.getPostLogoutRedirectUris() != null) {
+            validatePostLogoutRedirectUris(clientFields, validations);
         }
 
-        final boolean isPublic = isPublicClient(clientModel);
+        final Set<AuthorizationGrantType> normalizedAuthGrants = clientFields.getAuthorizationGrantTypes()
+                                                                             .stream()
+                                                                             .map(AuthorizationGrantType::new)
+                                                                             .collect(Collectors.toSet());
+        final boolean isPublic = isPublicClient(clientFields);
+        final boolean hasAuthCode = normalizedAuthGrants.contains(AuthorizationGrantType.AUTHORIZATION_CODE);
+        final boolean hasClientCreds = normalizedAuthGrants.contains(AuthorizationGrantType.CLIENT_CREDENTIALS);
+        final boolean requirePkce = ClientSettings.withSettings(clientFields.getClientSettings()).build().isRequireProofKey();
 
-        final boolean hasAuthCode = clientModel.getAuthorizationGrantTypes().contains(AuthorizationGrantType.AUTHORIZATION_CODE);
-        final boolean hasClientCreds = clientModel.getAuthorizationGrantTypes().contains(AuthorizationGrantType.CLIENT_CREDENTIALS);
-        final boolean requirePkce = clientModel.getClientSettings().isRequireProofKey();
-
+        if (!AUTH_METHODS.containsAll(normalizedAuthGrants)) {
+            add(validations, "authorizationGrantTypes", "at least one invalid authorization_grant_type found.");
+        }
         if (isPublic) {
             // Public cannot use client_credentials
             if (hasClientCreds) {
-                add(ctx, "authorizationGrantTypes", "public clients cannot use client_credentials");
-                valid = false;
+                add(validations, "authorizationGrantTypes", "public clients cannot use client_credentials");
             }
             // If public uses authorization_code, PKCE must be required
             if (hasAuthCode && !requirePkce) {
-                add(ctx, "clientSettings.requireProofKey", "public clients using authorization_code must require PKCE");
-                valid = false;
+                add(validations, "clientSettings.requireProofKey", "public clients using authorization_code must require PKCE");
             }
             // PKCE only applies to authorization_code
-            if (requirePkce && !hasAuthCode) {
-                add(ctx, "clientSettings.requireProofKey", "PKCE is only applicable to authorization_code");
-                valid = false;
-            }
         } else {
             // Confidential/private: PKCE is not applicable to client_credentials
             if (hasClientCreds && requirePkce) {
-                add(ctx, "clientSettings.requireProofKey", "PKCE is not applicable to client_credentials");
-                valid = false;
-            }
-            // If PKCE required but not using authorization_code, reject
-            if (requirePkce && !hasAuthCode) {
-                add(ctx, "clientSettings.requireProofKey", "PKCE is only applicable to authorization_code");
-                valid = false;
+                add(validations, "clientSettings.requireProofKey", "PKCE is not applicable to client_credentials");
             }
         }
-        return valid;
+        if (requirePkce && !hasAuthCode) {
+            add(validations, "clientSettings.requireProofKey", "PKCE is only applicable to authorization_code");
+        }
+        return validations;
     }
 
-    private boolean validateScopes(final RegisteredClientModel c, final ConstraintValidatorContext ctx) {
-        if (CollectionUtils.isEmpty(c.getScopes())) {
+    private static boolean validateScopes(final ClientFields clientFields, final Map<String, List<String>> map) {
+        if (CollectionUtils.isEmpty(clientFields.getScopes())) {
             return true;
         }
         boolean valid = true;
-        for (final String scope : c.getScopes()) {
+        for (final String scope : clientFields.getScopes()) {
             if (!validateScope(scope)) {
-                add(ctx, "scopes", "scope \"" + scope + "\" contains invalid characters");
+                add(map, "scopes", "scope \"" + scope + "\" contains invalid characters");
                 if (valid) {
                     valid = false;
                 }
@@ -155,15 +166,15 @@ public final class ClientRegistrationValidator implements ConstraintValidator<Va
         return valid;
     }
 
-    private boolean validateRedirectUris(final RegisteredClientModel c, final ConstraintValidatorContext ctx) {
-        if (CollectionUtils.isEmpty(c.getRedirectUris())) {
+    private static boolean validateRedirectUris(final ClientFields clientFields, final Map<String, List<String>> map) {
+        if (CollectionUtils.isEmpty(clientFields.getRedirectUris())) {
             return true;
         }
 
         boolean valid = true;
-        for (final String redirectUri : c.getRedirectUris()) {
+        for (final String redirectUri : clientFields.getRedirectUris()) {
             if (!validateRedirectUri(redirectUri)) {
-                add(ctx, "redirectUris", redirectUri + " contains invalid characters");
+                add(map, "redirectUris", redirectUri + " contains invalid characters");
                 if (valid) {
                     valid = false;
                 }
@@ -172,14 +183,14 @@ public final class ClientRegistrationValidator implements ConstraintValidator<Va
         return valid;
     }
 
-    private boolean validatePostLogoutRedirectUris(final RegisteredClientModel c, final ConstraintValidatorContext ctx) {
-        if (CollectionUtils.isEmpty(c.getPostLogoutRedirectUris())) {
+    private static boolean validatePostLogoutRedirectUris(final ClientFields clientFields, final Map<String, List<String>> map) {
+        if (CollectionUtils.isEmpty(clientFields.getPostLogoutRedirectUris())) {
             return true;
         }
         boolean valid = true;
-        for (final String postLogoutRedirectUri : c.getPostLogoutRedirectUris()) {
+        for (final String postLogoutRedirectUri : clientFields.getPostLogoutRedirectUris()) {
             if (!validateRedirectUri(postLogoutRedirectUri)) {
-                add(ctx, "redirectUris", postLogoutRedirectUri + " contains invalid characters");
+                add(map, "postLogoutRedirectUris", postLogoutRedirectUri + " contains invalid characters");
                 if (valid) {
                     valid = false;
                 }

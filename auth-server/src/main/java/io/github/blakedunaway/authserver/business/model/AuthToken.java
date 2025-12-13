@@ -57,10 +57,9 @@ public final class AuthToken {
         return new Builder(id);
     }
 
-    public static Builder fromSpring(final OAuth2Authorization.Token<?> token) {
+    public static <T extends OAuth2Token> Builder fromSpring(final OAuth2Authorization.Token<T> token) {
         Assert.notNull(token, "OAuth2Token cannot be null");
-        return Builder.initTokenFromOAuth2Token(TokenType.getTokenTypeByOAuthTokenClass(token.getToken()
-                                                                                             .getClass()), token);
+        return Builder.initTokenFromOAuth2Token(TokenType.getTokenTypeByOAuthTokenClass(token.getToken().getClass()), token);
     }
 
     public boolean isHashedToken(final String hashedTokenValue) {
@@ -69,15 +68,7 @@ public final class AuthToken {
     }
 
     private OAuth2Token toOAuth2Token(final String tokenValue) {
-        return switch (this.getTokenType()) {
-            case ACCESS -> new OAuth2AccessToken(
-                    BEARER, tokenValue, this.getIssuedAt(), this.getExpiresAt(), (this.getScopes() == null) ? Set.of() : this.getScopes()
-            );
-            case REFRESH -> new OAuth2RefreshToken(tokenValue, this.getIssuedAt(), this.getExpiresAt());
-            case AUTHORIZATION_CODE -> new OAuth2AuthorizationCode(tokenValue, this.getIssuedAt(), this.getExpiresAt());
-            case ID_TOKEN ->
-                    new OidcIdToken(tokenValue, this.getIssuedAt(), this.getExpiresAt(), (this.getClaims() == null) ? new HashMap<>() : this.getClaims());
-        };
+        return tokenType.applyToken(this, tokenValue);
     }
 
     public OAuth2Authorization.Builder attachToAuthorization(final OAuth2Authorization.Builder builder, final String tokenValue) {
@@ -182,7 +173,7 @@ public final class AuthToken {
             this.id = id;
         }
 
-        private static Builder initTokenFromOAuth2Token(final TokenType tokenType, final OAuth2Authorization.Token<?> token) {
+        private static <T extends OAuth2Token> Builder initTokenFromOAuth2Token(final TokenType tokenType, final OAuth2Authorization.Token<T> token) {
             Assert.notNull(tokenType, "tokenType must not be null");
             final Builder builder = new Builder();
             final OAuth2Token oAuthToken = token.getToken();

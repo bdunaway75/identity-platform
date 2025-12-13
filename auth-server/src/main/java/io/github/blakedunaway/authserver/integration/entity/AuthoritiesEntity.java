@@ -14,7 +14,7 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "authorities",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"authority_name", "authority_id"})
+        uniqueConstraints = @UniqueConstraint(name = "uq_authorities_name", columnNames = "authority_name")
 )
 @Getter
 public class AuthoritiesEntity {
