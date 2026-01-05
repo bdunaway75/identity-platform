@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.springframework.security.oauth2.server.authorization.settings.ConfigurationSettingNames;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -36,18 +37,26 @@ public enum TokenSettingsTypes {
             String.class
     );
 
+    private static final Map<String, TokenSettingsTypes> BY_NAME = new HashMap<>();
+
     private final String settingName;
 
     private final Class<?> settingType;
+
+    static {
+        for (TokenSettingsTypes type : TokenSettingsTypes.values()) {
+            BY_NAME.put(type.getSettingName(), type);
+        }
+    }
 
     public Object coerce(final Object value) {
         if (value == null) {
             return null;
         }
-        if (settingType.isInstance(value)) {
+        if (this.getSettingType().isInstance(value)) {
             return value;
         }
-        if (settingType == Duration.class) {
+        if (this.getSettingType() == Duration.class) {
             if (value instanceof Number num) {
                 return Duration.ofSeconds(num.longValue());
             }
@@ -56,7 +65,7 @@ public enum TokenSettingsTypes {
             }
         }
 
-        if (settingType == Boolean.class) {
+        if (this.getSettingType() == Boolean.class) {
             if (value instanceof Boolean b) {
                 return b;
             }
@@ -65,35 +74,29 @@ public enum TokenSettingsTypes {
             }
         }
 
-        if (settingType == String.class) {
+        if (this.getSettingType() == String.class) {
             return value.toString();
         }
 
         throw new IllegalArgumentException(
-                "Cannot coerce value [" + value + "] into [" + settingType.getSimpleName() + "]"
-                        + " for setting [" + settingName + "]"
+                "Cannot coerce value [" + value + "] into [" + this.getSettingType().getSimpleName() + "]"
+                        + " for setting [" + this.getSettingName() + "]"
         );
     }
 
     public static TokenSettingsTypes fromSettingName(final String name) {
-        for (final TokenSettingsTypes type : values()) {
-            if (type.settingName.equals(name)) {
-                return type;
-            }
+        final TokenSettingsTypes result = BY_NAME.get(name);
+        if (result == null) {
+            throw new IllegalArgumentException("Unknown setting name [" + name + "]");
         }
-        return null;
+        return result;
     }
 
-    public static Map<String, Object> normalize(final Map<String, Object> raw) {
-        final Map<String, Object> normalized = new LinkedHashMap<>(raw);
-        raw.forEach((key, value) -> {
+    public static Map<String, Object> normalize(final Map<String, Object> rawSettings) {
+        final Map<String, Object> normalized = new HashMap<>();
+        rawSettings.forEach((key, value) -> {
             final TokenSettingsTypes tsType = fromSettingName(key);
-            if (tsType != null) {
                 normalized.put(key, tsType.coerce(value));
-            }
-            else {
-                normalized.put(key, value); // maybe custom non SAS
-            }
         });
 
         return normalized;

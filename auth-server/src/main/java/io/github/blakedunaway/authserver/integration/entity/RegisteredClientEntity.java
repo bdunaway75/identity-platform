@@ -274,7 +274,7 @@ public class RegisteredClientEntity implements Persistable<String> {
 
     @Override
     public int hashCode() {
-        return 31;
+        return registeredClientId != null ? registeredClientId.hashCode() : 0;
     }
 
     @Override

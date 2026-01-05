@@ -172,7 +172,7 @@ public class AuthorizationEntity implements Persistable<String> {
 
     @Override
     public int hashCode() {
-        return 31;
+        return authId != null ? authId.hashCode() : 0;
     }
 
 

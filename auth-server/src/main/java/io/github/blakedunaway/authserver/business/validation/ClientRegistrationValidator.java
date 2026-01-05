@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 public final class ClientRegistrationValidator {
 
-
     private static final Set<ClientAuthenticationMethod> CONF_METHODS = Set.of(
             ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
             ClientAuthenticationMethod.CLIENT_SECRET_POST,

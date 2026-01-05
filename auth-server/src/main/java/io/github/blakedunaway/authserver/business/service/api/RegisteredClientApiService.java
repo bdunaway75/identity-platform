@@ -4,6 +4,7 @@ import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.service.RegisteredClientService;
 import io.github.blakedunaway.authserver.business.validation.ClientRegistrationValidator;
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper;
+import io.github.blakedunaway.authserver.util.ApiService;
 import io.github.blakedunaway.authserviceclient.dto.RegisteredClientDto;
 import io.github.blakedunaway.authserviceclient.service.RegisterClientApi;
 import jakarta.persistence.EntityExistsException;
@@ -18,14 +19,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
 @Service
-public class RegisteredClientApiService implements RegisterClientApi {
+public class RegisteredClientApiService implements RegisterClientApi, ApiService {
 
     private static final Logger log = LoggerFactory.getLogger(RegisteredClientApiService.class);
 
