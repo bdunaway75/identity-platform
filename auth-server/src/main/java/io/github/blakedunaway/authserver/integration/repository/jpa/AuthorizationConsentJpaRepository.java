@@ -12,8 +12,8 @@ public interface AuthorizationConsentJpaRepository extends JpaRepository<Authori
 
     AuthorizationConsentEntity save(final AuthorizationConsentEntity authorizationConsentEntity);
 
-    Integer deleteByRegisteredClientIdAndPrincipalName (final String registeredClientId, final String principalName);
+    Integer deleteByRegisteredClientIdAndPrincipalName (final UUID registeredClientId, final String principalName);
 
-    Optional<AuthorizationConsentEntity> findByRegisteredClientIdAndPrincipalName(final String registeredClientId, final String principalName);
+    Optional<AuthorizationConsentEntity> findByRegisteredClientIdAndPrincipalName(final UUID registeredClientId, final String principalName);
 
 }

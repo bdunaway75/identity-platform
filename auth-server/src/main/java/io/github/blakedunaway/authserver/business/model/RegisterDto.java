@@ -1,5 +1,8 @@
+// FILE: io/github/blakedunaway/authserver/business/model/RegisterDto.java
 package io.github.blakedunaway.authserver.business.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.github.blakedunaway.authserver.business.validation.ValidEmail;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,64 +20,100 @@ import java.util.HashSet;
 public class RegisterDto {
 
     @ValidEmail
-    String email;
+    private String email;
 
-    String password;
+    @JsonIgnore
+    private String password;
 
-    String registeredClientId;
+    private String clientId;
 
     public UsernamePasswordWithClientAuthenticationToken toAuthenticationToken() {
-        return new UsernamePasswordWithClientAuthenticationToken(this);
+        // ✅ FIXED: constructor arg order is (email, clientId, password)
+        return UsernamePasswordWithClientAuthenticationToken.unauthenticated(email, clientId, password);
     }
 
-
+    /**
+     * Redis/OAuth2-safe Authentication token:
+     * - Only email/clientId should ever be serialized.
+     * - Password is runtime-only and must never be serialized.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class UsernamePasswordWithClientAuthenticationToken extends AbstractAuthenticationToken {
 
         @Getter
-        private RegisterDto registerDto;
+        private String email;
 
-        public UsernamePasswordWithClientAuthenticationToken(final RegisterDto registerDto) {
+        @Getter
+        private String clientId;
+
+        @JsonIgnore
+        private String password; // runtime-only
+
+        /** Jackson / frameworks */
+        public UsernamePasswordWithClientAuthenticationToken() {
             super(new HashSet<>());
-            this.registerDto = registerDto;
+            super.setAuthenticated(false);
         }
 
-        public UsernamePasswordWithClientAuthenticationToken(RegisterDto registerDto,
-                                                             Collection<? extends GrantedAuthority> authorities, boolean authenticated) {
-            super(authorities);
-            this.registerDto = registerDto;
+        private UsernamePasswordWithClientAuthenticationToken(String email,
+                                                              String clientId,
+                                                              String password,
+                                                              Collection<? extends GrantedAuthority> authorities,
+                                                              boolean authenticated) {
+            super(authorities != null ? authorities : new HashSet<>());
+            this.email = email;
+            this.clientId = clientId;
+            this.password = password;
             super.setAuthenticated(authenticated);
         }
 
-        public static UsernamePasswordWithClientAuthenticationToken authenticated(RegisterDto registerDto,
-                                                                                  Collection<? extends GrantedAuthority> authorities) {
-            return new UsernamePasswordWithClientAuthenticationToken(registerDto, authorities, true);
+        /** For initial login attempt (contains password, unauthenticated) */
+        public static UsernamePasswordWithClientAuthenticationToken unauthenticated(String email,
+                                                                                    String clientId,
+                                                                                    String password) {
+            return new UsernamePasswordWithClientAuthenticationToken(email, clientId, password, new HashSet<>(), false);
         }
 
-        public static UsernamePasswordWithClientAuthenticationToken unauthenticated(RegisterDto registerDto,
+        /** For post-auth success (no password, authenticated, includes authorities) */
+        public static UsernamePasswordWithClientAuthenticationToken authenticated(String email,
+                                                                                  String clientId,
                                                                                   Collection<? extends GrantedAuthority> authorities) {
-            return new UsernamePasswordWithClientAuthenticationToken(registerDto, authorities,  false);
+            // ✅ password must be null on successful Authentication
+            return new UsernamePasswordWithClientAuthenticationToken(email, clientId, null, authorities, true);
         }
 
         @Override
+        @JsonIgnore
         public Object getCredentials() {
-            return registerDto.getPassword();
+            return password;
         }
 
         @Override
         public Object getPrincipal() {
-            return registerDto.getEmail();
+            return email;
         }
 
         @Override
         public String getName() {
-            return registerDto.getEmail();
+            return email;
         }
 
         @Override
         public void eraseCredentials() {
-            registerDto.setPassword(null);
+            this.password = null;
         }
 
+        /**
+         * AbstractAuthenticationToken#setAuthenticated(true) is allowed, but if you want to
+         * enforce “only via authenticated(...) factory”, you can override setAuthenticated
+         * to throw when true. (Optional)
+         */
+        // @Override
+        // public void setAuthenticated(boolean isAuthenticated) throws IllegalArgumentException {
+        //     if (isAuthenticated) {
+        //         throw new IllegalArgumentException("Use authenticated(...) factory method");
+        //     }
+        //     super.setAuthenticated(false);
+        // }
     }
-
 }

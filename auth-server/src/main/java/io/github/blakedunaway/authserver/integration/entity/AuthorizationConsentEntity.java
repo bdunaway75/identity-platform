@@ -24,11 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(name = "auth_authorization_consent", indexes = {
-        @Index(name = "ix_auth_rid", columnList = "registered_client_id"),
-        @Index(name = "ix_auth_pname", columnList = "principal_name")},
-        uniqueConstraints = @UniqueConstraint(columnNames = {"registered_client_id", "principal_name"})
-)
+@Table(name = "auth_authorization_consent")
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -42,7 +38,7 @@ public class AuthorizationConsentEntity implements Persistable<String> {
     private boolean isNew = true;
 
     @Column(name = "registered_client_id", nullable = false, updatable = false, length = 100)
-    private String registeredClientId;
+    private UUID registeredClientId;
 
     @Column(name = "principal_name", nullable = false, length = 256)
     private String principalName;
@@ -66,7 +62,7 @@ public class AuthorizationConsentEntity implements Persistable<String> {
     }
 
     public static AuthorizationConsentEntity create(final UUID consentId,
-                                                    final String registeredClientId,
+                                                    final UUID registeredClientId,
                                                     final String principalName,
                                                     boolean isNew,
                                                     final Set<AuthoritiesEntity> authorities) {

@@ -8,6 +8,8 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.UUID;
+
 @RequiredArgsConstructor
 @Service
 public class AuthorizationConsentService implements OAuth2AuthorizationConsentService {
@@ -37,7 +39,7 @@ public class AuthorizationConsentService implements OAuth2AuthorizationConsentSe
     public OAuth2AuthorizationConsent findById(final String registeredClientId, final String principalName) {
         Assert.hasText(registeredClientId, "registeredClientId must not be empty");
         Assert.hasText(principalName, "principalName must not be empty");
-        final AuthorizationConsent consent = authorizationConsentRepository.findById(registeredClientId, principalName);
+        final AuthorizationConsent consent = authorizationConsentRepository.findById(UUID.fromString(registeredClientId), principalName);
         if (consent == null) {
             return null;
         }

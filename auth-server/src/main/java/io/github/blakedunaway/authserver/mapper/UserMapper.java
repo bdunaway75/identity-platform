@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Mapper(uses = {AuthoritiesMapper.class})
@@ -22,7 +23,7 @@ public abstract class UserMapper {
 
     public User userEntityToUser(final UserEntity userEntity) {
         return User.fromId(userEntity.getUserId())
-                   .registeredClientId(userEntity.getRegisteredClient().getRegisteredClientId())
+                   .clientId(userEntity.getClientId())
                    .expired(userEntity.isExpired())
                    .credentialsExpired(userEntity.isCredentialsExpired())
                    .authorities(authorities -> authorities.addAll(userEntity.getAuthorities()
@@ -41,10 +42,9 @@ public abstract class UserMapper {
                    .build();
     }
 
-    @Mapping(target = "registeredClient", source = "registeredClientId")
     public abstract UserEntity userToUserEntity(final User user);
 
-    RegisteredClientEntity registeredClientIdToRegisteredClientEntity(final String registeredClientId) {
+    RegisteredClientEntity registeredClientIdToRegisteredClientEntity(final UUID registeredClientId) {
         if (registeredClientId == null) {
             return null;
         }
@@ -55,7 +55,7 @@ public abstract class UserMapper {
         return User.fromEmail(registerDto.getEmail())
                    .isNew(true)
                    .email(registerDto.getEmail())
-                   .registeredClientId(registerDto.getRegisteredClientId())
+                   .clientId(registerDto.getClientId())
                    .expired(false)
                    .credentialsExpired(false)
                    .verified(false)

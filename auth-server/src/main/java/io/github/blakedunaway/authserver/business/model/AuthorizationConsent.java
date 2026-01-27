@@ -22,7 +22,7 @@ public final class AuthorizationConsent {
 
     private final boolean isNew;
 
-    private final String registeredClientId;
+    private final UUID registeredClientId;
 
     private final String principalName;
 
@@ -33,7 +33,7 @@ public final class AuthorizationConsent {
     }
 
     public OAuth2AuthorizationConsent toSpring() {
-        return OAuth2AuthorizationConsent.withId(this.getRegisteredClientId(), this.getPrincipalName())
+        return OAuth2AuthorizationConsent.withId(String.valueOf(this.getRegisteredClientId()), this.getPrincipalName())
                                          .authorities(auth -> auth.addAll(this.getAuthorities()
                                                                               .stream()
                                                                               .map(Authorities::toSimpleGrantedAuthority)
@@ -49,7 +49,7 @@ public final class AuthorizationConsent {
 
         private boolean isNew;
 
-        private String registeredClientId;
+        private UUID registeredClientId;
 
         private String principalName;
 
@@ -63,7 +63,7 @@ public final class AuthorizationConsent {
             final Builder builder = new Builder();
             builder.consentId = UUID.randomUUID();
             builder.isNew = true;
-            builder.registeredClientId = authorizationConsent.getRegisteredClientId();
+            builder.registeredClientId = UUID.fromString(authorizationConsent.getRegisteredClientId());
             builder.principalName = authorizationConsent.getPrincipalName();
             builder.authorities = authorizationConsent.getAuthorities()
                                                       .stream()
@@ -83,7 +83,7 @@ public final class AuthorizationConsent {
             return this;
         }
 
-        public Builder registeredClientId(final String registeredClientId) {
+        public Builder registeredClientId(final UUID registeredClientId) {
             this.registeredClientId = registeredClientId;
             return this;
         }

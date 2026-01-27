@@ -13,14 +13,6 @@ import java.util.UUID;
 @Repository
 public interface AuthTokenJpaRepository extends JpaRepository<AuthTokenEntity, UUID> {
 
-    Set<AuthTokenEntity> findAllByAuthorizationEntity_AuthId(final UUID authorizationEntityAuthId);
 
-    Set<AuthTokenEntity> findByTokenValueHash(final String tokenValueHash);
-
-
-    @Query("select t.tokenValueHash, t.tokenId from AuthTokenEntity t where t.tokenValueHash in :hashes")
-    List<Object[]> findIdsByTokenValueHashes(@Param("hashes") final Set<String> hashes);
-
-    boolean existsByTokenValueHash(final String tokenValueHash);
     
 }

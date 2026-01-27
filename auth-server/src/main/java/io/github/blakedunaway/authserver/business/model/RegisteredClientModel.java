@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Getter
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class RegisteredClientModel implements ClientFields {
 
-    private final String id;
+    private final UUID id;
 
     private final String clientId;
 
@@ -59,7 +60,7 @@ public final class RegisteredClientModel implements ClientFields {
     }
 
     public Set<String> getAuthorizationGrantTypes() {
-        return this.authorizationGrantTypes.stream().map(AuthorizationGrantType::toString).collect(Collectors.toSet());
+        return this.authorizationGrantTypes.stream().map(AuthorizationGrantType::getValue).collect(Collectors.toSet());
     }
 
     public Set<String> getClientAuthenticationMethods() {
@@ -67,11 +68,11 @@ public final class RegisteredClientModel implements ClientFields {
     }
 
     public LocalDateTime getClientIdIssuedAt() {
-        return LocalDateTime.ofInstant(this.clientIdIssuedAt, ZoneId.systemDefault());
+        return this.clientIdIssuedAt == null ? null: LocalDateTime.ofInstant(this.clientIdIssuedAt, ZoneId.systemDefault());
     }
 
     public LocalDateTime getClientSecretExpiresAt() {
-        return LocalDateTime.ofInstant(this.clientSecretExpiresAt, ZoneId.systemDefault());
+        return this.clientSecretExpiresAt == null ? null :LocalDateTime.ofInstant(this.clientSecretExpiresAt, ZoneId.systemDefault()); //solve this instant
     }
 
     public static class RegisteredClientModelBuilder {
@@ -80,7 +81,7 @@ public final class RegisteredClientModel implements ClientFields {
             Assert.notNull(clientIdIssuedAt, "Client ID issuedAt must not be null");
             Assert.notNull(clientName, "Client name must not be null");
 
-            return RegisteredClient.withId(id)
+            return RegisteredClient.withId(String.valueOf(id))
                                    .clientId(clientId)
                                    .clientIdIssuedAt(clientIdIssuedAt)
                                    .clientSecret(clientSecret)

@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Repository
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -46,7 +48,7 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientInternalR
     }
 
     public RegisteredClientModel findById(final String id) {
-        return registeredClientMapper.registeredClientEntityToRegisteredClientModel(registerClientJpaRepository.findById(id)
+        return registeredClientMapper.registeredClientEntityToRegisteredClientModel(registerClientJpaRepository.findById(UUID.fromString(id))
                                                                                                                .orElse(null));
     }
 

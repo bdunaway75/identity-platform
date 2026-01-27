@@ -3,14 +3,15 @@ package io.github.blakedunaway.authserver.mapper;
 import io.github.blakedunaway.authserver.business.model.AuthToken;
 import io.github.blakedunaway.authserver.business.model.Authorization;
 import io.github.blakedunaway.authserver.business.model.enums.AuthorizationGrantTypeInternal;
+import io.github.blakedunaway.authserver.business.model.enums.TokenType;
+import io.github.blakedunaway.authserver.config.redis.RedisStore;
 import io.github.blakedunaway.authserver.integration.entity.AuthTokenEntity;
 import io.github.blakedunaway.authserver.integration.entity.AuthorizationEntity;
+import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -20,17 +21,15 @@ import java.util.stream.Collectors;
 @Component
 public class AuthorizationMapper {
 
+    private static final String REDIS_HANDLE = "auth:attrs:";
+
     private final AuthTokenMapper authTokenMapper;
 
+    private final RegisteredClientMapper registeredClientMapper;
+
+    private final RedisStore redisStore;
+
     public AuthorizationEntity authorizationToAuthorizationEntity(final Authorization authorization) {
-        UUID id = null;
-        if (authorization.getId() != null) {
-            try {
-                id = UUID.fromString(authorization.getId());
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Authorization.id must be a valid UUID: " + authorization.getId(), e);
-            }
-        }
 
         final Set<AuthTokenEntity> tokenEntities = Optional.ofNullable(authorization.getTokens())
                                                            .orElseGet(Set::of)
@@ -39,14 +38,12 @@ public class AuthorizationMapper {
                                                            .collect(Collectors.toSet());
 
         return AuthorizationEntity.create(
-                id,
+                authorization.getId(),
+                RegisteredClientEntity.createFromId(authorization.getRegisteredClientModel().getId()),
                 authorization.isNew(),
-                authorization.getRegisteredClientId(),
                 authorization.getPrincipalName(),
-                authorization.getAuthorizationGrantTypeInternal()
-                             .getWireName(),
+                authorization.getAuthorizationGrantTypeInternal().getWireName(),
                 authorization.getAuthorizedScopes(),
-                authorization.getAttributes(),
                 tokenEntities
         );
     }
@@ -58,26 +55,53 @@ public class AuthorizationMapper {
                                               .map(authTokenMapper::authTokenEntityToAuthToken)
                                               .collect(Collectors.toSet());
 
-        final Set<String> scopes = Optional.ofNullable(entity.getAuthorizedScopes())
-                                           .orElseGet(Set::of);
-
-        final Map<String, Object> attributes = Optional.ofNullable(entity.getAttributes())
-                                                       .orElseGet(Map::of);
-
-        return Authorization.fromId(entity.getAuthId().toString())
-                            .registeredClientId(entity.getRegisteredClientId())
+        return Authorization.builder()
+                            .id(entity.getAuthId())
+                            .registeredClient(registeredClientMapper.registeredClientEntityToRegisteredClientModel(
+                                    entity.getRegisteredClient()))
                             .principalName(entity.getPrincipalName())
                             .authorizationGrantType(AuthorizationGrantTypeInternal.findByName(entity.getAuthorizationGrantType()))
-                            .scopes(scopesMutator -> scopesMutator.addAll(scopes))
-                            .attrs(attributes)
-                            .tokens(tokensMutator ->
-                                            tokensMutator.addAll(
-                                                    tokens.stream()
-                                                          .map(AuthToken::toBuilder)
-                                                          .collect(Collectors.toSet()))
-                            )
+                            .scopes(entity.getAuthorizedScopes())
+                            .tokens(tokens)
                             .isNew(entity.isNew())
                             .build();
+    }
+
+    public AuthorizationEntity oAuth2AuthorizationToAuthorizationEntity(final OAuth2Authorization authorization,
+                                                                        RegisteredClientEntity clientEntity,
+                                                                        final boolean isNew) {
+        final Set<AuthTokenEntity> tokenEntities = Optional.of(TokenType.retrieveFromSpring(authorization))
+                                                           .orElseGet(Set::of)
+                                                           .stream()
+                                                           .map(authTokenMapper::authTokenToAuthTokenEntity)
+                                                           .collect(Collectors.toSet());
+        return AuthorizationEntity.create(
+                authorization.getId() == null ? null : UUID.fromString(authorization.getId()),
+                clientEntity,
+                isNew,
+                authorization.getPrincipalName(),
+                authorization.getAuthorizationGrantType().getValue(),
+                authorization.getAuthorizedScopes(),
+                tokenEntities
+        );
+
+    }
+
+    public OAuth2Authorization authorizationToOAuth2Authorization(final Authorization authorization) {
+        OAuth2Authorization.Builder builder =
+                OAuth2Authorization
+                        .withRegisteredClient(registeredClientMapper.registeredClientModelToRegisteredClient(authorization.getRegisteredClientModel()))
+                        .id(String.valueOf(authorization.getId()))
+                        .principalName(authorization.getPrincipalName())
+                        .authorizationGrantType(authorization.getAuthorizationGrantTypeInternal()
+                                                             .getAuthorizationGrantType())
+                        .authorizedScopes(authorization.getAuthorizedScopes())
+                        .attributes(attrs -> attrs.putAll(redisStore.get(REDIS_HANDLE + authorization.getId())));
+
+        authorization.getTokens().forEach(token -> {
+            builder.token(token.toOAuth2Token());
+        });
+        return builder.build();
     }
 
 }

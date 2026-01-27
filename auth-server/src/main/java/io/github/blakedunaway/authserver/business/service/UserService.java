@@ -33,8 +33,8 @@ public class UserService implements UserDetailsService {
             Assert.notNull(user.getEmail(), "Email cannot be null");
             Assert.notNull(user.getPasswordHash(), "Password hash cannot be null");
             Assert.isTrue(user.getPasswordHash().startsWith("$argon2"), "Password has not been hashed");
-            if (userRepository.findByRegisteredClient_IdAndEmail(user.getRegisteredClientId(),
-                                                                 user.getEmail()) != null) {
+            if (userRepository.findByClient_IdAndEmail(user.getClientId(),
+                                                       user.getEmail()) != null) {
                 return userRepository.save(User.fromUser(user).isNew(false).build());
             } else {
                 return userRepository.save(user);
@@ -46,10 +46,10 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public UserDetails loadUserByUsernameAndClientId(final String username, final String clientId) throws UsernameNotFoundException {
-        Assert.notNull(username, "Username cannot be null");
+    public UserDetails loadUserByEmailAndClientId(final String email, final String clientId) throws UsernameNotFoundException {
+        Assert.notNull(email, "Username cannot be null");
         Assert.notNull(clientId, "ClientId cannot be null");
-        final User user = userRepository.findByEmail(username);
+        final User user = userRepository.findByClient_IdAndEmail(email, clientId);
         if (user == null) {
             return null;
         }

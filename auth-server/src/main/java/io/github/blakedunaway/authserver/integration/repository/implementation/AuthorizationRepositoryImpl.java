@@ -1,20 +1,23 @@
 package io.github.blakedunaway.authserver.integration.repository.implementation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.blakedunaway.authserver.business.model.Authorization;
+import io.github.blakedunaway.authserver.business.model.enums.TokenType;
 import io.github.blakedunaway.authserver.integration.entity.AuthorizationEntity;
+import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
 import io.github.blakedunaway.authserver.integration.repository.gateway.AuthorizationRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.AuthorizationJpaRepository;
+import io.github.blakedunaway.authserver.integration.repository.jpa.RegisterClientJpaRepository;
 import io.github.blakedunaway.authserver.mapper.AuthorizationMapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.blakedunaway.authserver.security.token.TokenHasher;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,17 +26,47 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
-    private final ObjectMapper objectMapper;
-
     private final AuthorizationJpaRepository authorizationJpaRepository;
 
     private final AuthorizationMapper authorizationMapper;
 
+    private final RegisterClientJpaRepository registerClientJpaRepository;
+
     @Override
     @Transactional
-    public Authorization save(final Authorization authorization) {
-        final AuthorizationEntity authorizationEntity = authorizationMapper.authorizationToAuthorizationEntity(authorization);
-        return authorizationMapper.authorizationEntityToAuthorization(authorizationJpaRepository.save(authorizationEntity));
+    public Authorization save(final OAuth2Authorization authorization) {
+
+        final UUID authId = UUID.fromString(authorization.getId());
+        final UUID rClientId = UUID.fromString(authorization.getRegisteredClientId());
+
+        final AuthorizationEntity persisted =
+                authorizationJpaRepository.findById(authId).orElse(null);
+
+        final RegisteredClientEntity clientEntity =
+                registerClientJpaRepository.findById(rClientId).orElseThrow();
+
+        final AuthorizationEntity authorizationEntity =
+                authorizationMapper.oAuth2AuthorizationToAuthorizationEntity(
+                        authorization,
+                        clientEntity,
+                        persisted == null
+                );
+
+        if (persisted != null) {
+            markExistingTokens(authorizationEntity, persisted);
+        }
+
+        return authorizationMapper.authorizationEntityToAuthorization(
+                authorizationJpaRepository.save(authorizationEntity)
+        );
+    }
+
+    private static void markExistingTokens(final AuthorizationEntity current, final AuthorizationEntity persisted) {
+        current.getTokens().forEach(token -> {
+            if (persisted.getTokens().contains(token)) {
+                token.markNotNew();
+            }
+        });
     }
 
     @Override
@@ -46,53 +79,52 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
     }
 
     @Override
-    public Authorization findById(final String id) {
-        if (id == null) {
+    public Authorization findById(final UUID authId) {
+        if (authId == null) {
             return null;
         }
-        final AuthorizationEntity authorizationEntity = authorizationJpaRepository.findById(UUID.fromString(id)).orElse(null);
-        if (authorizationEntity == null) {
-            return null;
-        }
-        authorizationEntity.setNew(false);
-        return authorizationMapper.authorizationEntityToAuthorization(authorizationEntity);
+        return authorizationJpaRepository.findById(authId)
+                                         .map(found -> {
+                                             found.setNew(false);
+                                             return authorizationMapper.authorizationEntityToAuthorization(found);
+                                         })
+                                         .orElse(null);
     }
 
     @Override
     public Authorization findByToken(final String token, final String tokenType) {
-        final AuthorizationEntity authorizationEntity = authorizationJpaRepository.findByTokens_TokenValueHash(token).orElse(null);
-        if (authorizationEntity == null) {
-            return null;
-        }
-        authorizationEntity.setNew(false);
-        return authorizationMapper.authorizationEntityToAuthorization(authorizationEntity);
+        final TokenType serializedTokenType = TokenType.getTokenTypeByWireName(tokenType);
+        final String hashedValue = TokenHasher.hmacCurrent(token);
+        return authorizationJpaRepository.findByTokens_TokenValueHash(hashedValue)
+                                         .map(entity -> {
+                                             entity.setNew(false);
+                                             if (serializedTokenType != null) { // introspection
+                                                 entity.getTokens()
+                                                       .stream()
+                                                       .filter(foundToken -> foundToken.getTokenValueHash().equals(hashedValue))
+                                                       .findFirst()
+                                                       .ifPresent(foundToken -> {
+                                                           if (foundToken.getTokenType() != serializedTokenType) {
+                                                               throw new IllegalArgumentException("Token type " + serializedTokenType + " does not match token type " + foundToken.getTokenType());
+                                                           }
+                                                       });
+                                             }
+                                             return authorizationMapper.authorizationEntityToAuthorization(entity);
+                                         })
+                                         .orElse(null);
+
     }
 
-    @Override
-    public Authorization findByTokenAttribute(final String attributeKey, final String attributeValue) {
-        Assert.notNull(attributeKey, "attributeKey must not be null");
-        Assert.notNull(attributeValue, "attributeValue must not be null");
-        try {
-            final AuthorizationEntity authorizationEntity =
-                    authorizationJpaRepository.findByAttribute(objectMapper.writeValueAsString(Map.of(attributeKey, attributeValue)));
-            if (authorizationEntity == null) {
-                return null;
-            } else {
-                authorizationEntity.setNew(false);
-                return authorizationMapper.authorizationEntityToAuthorization(authorizationEntity);
-            }
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
+    // TODO [bdunaway][2026-Jan-23]: This is only used for testing, remove and refactor
     @Override
     public List<Authorization> findAll() {
         final List<AuthorizationEntity> authorizationEntities = authorizationJpaRepository.findAll();
         if (authorizationEntities.isEmpty()) {
             return new ArrayList<>();
         }
-        return authorizationEntities.stream().map(authorizationMapper::authorizationEntityToAuthorization).collect(Collectors.toList());
+        return authorizationEntities.stream()
+                                    .map(authorizationMapper::authorizationEntityToAuthorization)
+                                    .collect(Collectors.toList());
     }
 
 }

@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.mapper;
 
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
+import io.github.blakedunaway.authserver.business.model.enums.AuthorizationGrantTypeInternal;
 import io.github.blakedunaway.authserver.business.model.enums.ClientAuthenticationMethodResolver;
 import io.github.blakedunaway.authserver.business.model.enums.TokenSettingsTypes;
 import io.github.blakedunaway.authserver.integration.entity.RegisteredClientAuthMethodEntity;
@@ -19,8 +20,9 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.util.Assert;
 
-import java.time.ZoneId;
+import java.time.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -51,14 +53,19 @@ public abstract class RegisteredClientMapper {
             return null;
         }
 
-        final Set<String> authMethods = dto.getClientAuthenticationMethods() != null ? dto.getClientAuthenticationMethods() : Set.of();
-        final Set<String> grantTypes = dto.getAuthorizationGrantTypes() != null ? dto.getAuthorizationGrantTypes() : Set.of();
+        final Set<String> authMethods = dto.getClientAuthenticationMethods() != null ?
+                dto.getClientAuthenticationMethods() : Set.of();
+        final Set<String> grantTypes = dto.getAuthorizationGrantTypes() != null ? dto.getAuthorizationGrantTypes() :
+                Set.of();
         final Set<String> scopes = dto.getScopes() != null ? dto.getScopes() : Set.of();
-        final Set<String> redirectUris = dto.getRedirectUris() != null ? new LinkedHashSet<>(dto.getRedirectUris()) : new LinkedHashSet<>();
+        final Set<String> redirectUris = dto.getRedirectUris() != null ? new LinkedHashSet<>(dto.getRedirectUris()) :
+                new LinkedHashSet<>();
         final Set<String> postLogoutRedirectUris = new HashSet<>();
 
         final ClientSettings clientSettings = ClientSettings.withSettings(dto.getClientSettings()).build();
-        final TokenSettings tokenSettings = TokenSettings.withSettings(TokenSettingsTypes.normalize(dto.getTokenSettings())).build();
+        final TokenSettings tokenSettings =
+                TokenSettings.withSettings(TokenSettingsTypes.normalize(dto.getTokenSettings()))
+                             .build();
 
         final Set<ClientAuthenticationMethod> camSet = authMethods.stream()
                                                                   .map(ClientAuthenticationMethodResolver::resolve)
@@ -69,12 +76,14 @@ public abstract class RegisteredClientMapper {
                                                              .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return RegisteredClientModel.builder()
-                                    .id(UUID.randomUUID().toString())
+                                    .id(UUID.randomUUID())
                                     .clientId(dto.getClientId())
-                                    .clientIdIssuedAt(dto.getClientIdIssuedAt().atZone(ZoneId.systemDefault()).toInstant())
+                                    .clientIdIssuedAt(dto.getClientIdIssuedAt()
+                                                         .atZone(ZoneId.systemDefault())
+                                                         .toInstant())
                                     .clientSecret(AuthenticationUtility.isArgon2Hash(dto.getClientSecret())
-                                                  ? dto.getClientSecret()
-                                                  : passwordEncoder.encode(dto.getClientSecret()))
+                                                          ? dto.getClientSecret()
+                                                          : passwordEncoder.encode(dto.getClientSecret()))
                                     .clientSecretExpiresAt(dto.getClientSecretExpiresAt()
                                                               .atZone(ZoneId.systemDefault())
                                                               .toInstant())
@@ -96,19 +105,19 @@ public abstract class RegisteredClientMapper {
         }
 
         final Set<ClientAuthenticationMethod> authMethods = entity.getClientAuthenticationMethods() != null
-                                                            ? entity.getClientAuthenticationMethods()
-                                                                    .stream()
-                                                                    .map(RegisteredClientAuthMethodEntity::getClientAuthMethod)
-                                                                    .map(ClientAuthenticationMethodResolver::resolve)
-                                                                    .collect(Collectors.toSet())
-                                                            : Set.of();
+                ? entity.getClientAuthenticationMethods()
+                        .stream()
+                        .map(RegisteredClientAuthMethodEntity::getClientAuthMethod)
+                        .map(ClientAuthenticationMethodResolver::resolve)
+                        .collect(Collectors.toSet())
+                : Set.of();
 
         final Set<AuthorizationGrantType> grantTypes = entity.getAuthorizationGrantTypes() != null
-                                                       ? entity.getAuthorizationGrantTypes()
-                                                               .stream()
-                                                               .map(RegisteredClientGrantTypeEntity::getAuthorizationGrantType)
-                                                               .map(AuthorizationGrantType::new)
-                                                               .collect(Collectors.toSet()) : Set.of();
+                ? entity.getAuthorizationGrantTypes()
+                        .stream()
+                        .map(RegisteredClientGrantTypeEntity::getAuthorizationGrantType)
+                        .map(AuthorizationGrantType::new)
+                        .collect(Collectors.toSet()) : Set.of();
 
         final Set<String> scopes = entity.getScopes() != null ? entity.getScopes()
                                                                       .stream()
@@ -118,7 +127,8 @@ public abstract class RegisteredClientMapper {
         final Set<String> redirectUris = entity.getRedirectUris() != null ? entity.getRedirectUris()
                                                                                   .stream()
                                                                                   .map(RegisteredClientRedirectUriEntity::getRedirectUri)
-                                                                                  .collect(Collectors.toSet()) : new LinkedHashSet<>();
+                                                                                  .collect(Collectors.toSet()) :
+                new LinkedHashSet<>();
 
         final Set<String> postLogoutRedirectUris = entity.getPostLogoutRedirectUris()
                                                          .stream()
@@ -127,22 +137,27 @@ public abstract class RegisteredClientMapper {
 
         final ClientSettings clientSettings = ClientSettings.withSettings(entity.getClientSettings()).build();
 
-        final TokenSettings tokenSettings = TokenSettings.withSettings(TokenSettingsTypes.normalize(entity.getTokenSettings())).build();
+        final TokenSettings tokenSettings =
+                TokenSettings.withSettings(TokenSettingsTypes.normalize(entity.getTokenSettings()))
+                             .build();
+
+        final Instant clientSecretExpiresAt = entity.getClientSecretExpiresAt() == null ? null :
+                entity.getClientSecretExpiresAt()
+                      .atZone(ZoneId.systemDefault())
+                      .toInstant();
 
 
         return RegisteredClientModel.builder()
-                                    .id(entity.getId())
+                                    .id(entity.getRegisteredClientId())
                                     .clientId(entity.getClientId())
                                     .clientIdIssuedAt(entity.getClientIdIssuedAt()
                                                             .atZone(ZoneId.systemDefault())
                                                             .toInstant())
                                     .clientSecret(entity.getClientSecret() == null ? null :
-                                                  AuthenticationUtility.isArgon2Hash(entity.getClientSecret())
-                                                  ? entity.getClientSecret()
-                                                  : passwordEncoder.encode(entity.getClientSecret()))
-                                    .clientSecretExpiresAt(entity.getClientSecretExpiresAt()
-                                                                 .atZone(ZoneId.systemDefault())
-                                                                 .toInstant())
+                                                          AuthenticationUtility.isArgon2Hash(entity.getClientSecret())
+                                                                  ? entity.getClientSecret()
+                                                                  : passwordEncoder.encode(entity.getClientSecret()))
+                                    .clientSecretExpiresAt(clientSecretExpiresAt)
                                     .clientName(entity.getClientName())
                                     .clientSettings(clientSettings)
                                     .tokenSettings(tokenSettings)
@@ -164,8 +179,10 @@ public abstract class RegisteredClientMapper {
                 src.getClientId(),
                 src.getClientIdIssuedAt(),
                 src.getClientSecret() == null
-                ? null
-                : AuthenticationUtility.isArgon2Hash(src.getClientSecret()) ? src.getClientSecret() : passwordEncoder.encode(src.getClientSecret()),
+                        ? null
+                        : AuthenticationUtility.isArgon2Hash(src.getClientSecret()) ? src.getClientSecret() :
+                        passwordEncoder.encode(
+                                src.getClientSecret()),
                 src.getClientSecretExpiresAt(),
                 src.getClientName(),
                 src.getClientSettings(),
@@ -189,8 +206,10 @@ public abstract class RegisteredClientMapper {
             throw new IllegalArgumentException();
         }
 
-        final Map<String, Object> clientSettings = src.getClientSettings() != null ? src.getClientSettings() : new HashMap<>();
-        final Map<String, Object> tokenSettings = src.getTokenSettings() != null ? src.getTokenSettings() : new HashMap<>();
+        final Map<String, Object> clientSettings = src.getClientSettings() != null ? src.getClientSettings() :
+                new HashMap<>();
+        final Map<String, Object> tokenSettings = src.getTokenSettings() != null ? src.getTokenSettings() :
+                new HashMap<>();
 
         target.overwriteBasics(
                 src.getClientId(),
@@ -208,6 +227,38 @@ public abstract class RegisteredClientMapper {
         target.replacePostLogoutRedirectUris(nullResolver(src.getPostLogoutRedirectUris()));
         target.replaceScopes(nullResolver(src.getScopes()));
         return target;
+    }
+
+    public RegisteredClient registeredClientModelToRegisteredClient(final RegisteredClientModel src) {
+        Instant issuedAt = src.getClientIdIssuedAt() == null ? null
+                : src.getClientIdIssuedAt().atZone(ZoneId.systemDefault()).toInstant();
+
+        Instant secretExpiresAt = src.getClientSecretExpiresAt() == null ? null
+                : src.getClientSecretExpiresAt().atZone(ZoneId.systemDefault()).toInstant();
+
+        return RegisteredClient.withId(String.valueOf(src.getId()))
+                               .clientId(src.getClientId())
+                               .clientIdIssuedAt(issuedAt)
+                               .clientSecret(src.getClientSecret())
+                               .clientSecretExpiresAt(secretExpiresAt)
+                               .clientName(src.getClientName())
+                               .clientSettings(ClientSettings.withSettings(src.getClientSettings()).build())
+                               .tokenSettings(TokenSettings.withSettings(TokenSettingsTypes.normalize(src.getTokenSettings()))
+                                                           .build())
+                               .clientAuthenticationMethods(set -> set.addAll(src.getClientAuthenticationMethods()
+                                                                                 .stream()
+                                                                                 .map(ClientAuthenticationMethod::valueOf)
+                                                                                 .toList()))
+                               .authorizationGrantTypes(set ->
+                                                                set.addAll(src.getAuthorizationGrantTypes()
+                                                                              .stream()
+                                                                              .map(AuthorizationGrantTypeInternal::findByName)
+                                                                              .map(AuthorizationGrantTypeInternal::getAuthorizationGrantType)
+                                                                              .toList()))
+                               .redirectUris(set -> set.addAll(src.getRedirectUris()))
+                               .postLogoutRedirectUris(set -> set.addAll(src.getPostLogoutRedirectUris()))
+                               .scopes(set -> set.addAll(src.getScopes()))
+                               .build();
     }
 
 }

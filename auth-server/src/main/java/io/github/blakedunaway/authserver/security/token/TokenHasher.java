@@ -1,7 +1,6 @@
-package io.github.blakedunaway.authserver.business.service;
+package io.github.blakedunaway.authserver.security.token;
 
 import lombok.experimental.UtilityClass;
-import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
@@ -11,8 +10,7 @@ public class TokenHasher {
 
     private final SecretKeySpec key;
 
-    @Value(value = "${security.token.pepper-base64}")
-    private String b64;
+    private String b64 = "U6e3m3mW1qk_3vZl9a0Jpm3Eo2X7mK7JgC8bqvYFYKk";
 
     static {
         if (b64.isBlank()) {

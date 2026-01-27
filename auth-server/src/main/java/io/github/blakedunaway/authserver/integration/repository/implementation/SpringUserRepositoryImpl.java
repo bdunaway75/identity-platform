@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
@@ -57,8 +58,8 @@ public class SpringUserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public User findByRegisteredClient_IdAndEmail(final String registeredClientId, final String email) {
-        final UserEntity userEntity = userJpaRepository.findByRegisteredClient_IdAndEmail(registeredClientId, email);
+    public User findByClient_IdAndEmail(final String clientId, final String email) {
+        final UserEntity userEntity = userJpaRepository.findByEmailAndClientId(clientId, email);
         if (userEntity == null) {
             return null;
         }

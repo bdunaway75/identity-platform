@@ -7,6 +7,7 @@ import io.github.blakedunaway.authserver.integration.entity.AuthorizationConsent
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component

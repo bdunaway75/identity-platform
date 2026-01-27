@@ -1,6 +1,5 @@
-package io.github.blakedunaway.authserver.config;
+package io.github.blakedunaway.authserver.security.token;
 
-import io.github.blakedunaway.authserver.business.service.TokenHasher;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;

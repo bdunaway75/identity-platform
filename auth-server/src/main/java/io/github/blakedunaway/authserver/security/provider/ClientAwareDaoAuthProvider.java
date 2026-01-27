@@ -1,4 +1,5 @@
-package io.github.blakedunaway.authserver.config;
+// FILE: io/github/blakedunaway/authserver/security/provider/ClientAwareDaoAuthProvider.java
+package io.github.blakedunaway.authserver.security.provider;
 
 import io.github.blakedunaway.authserver.business.model.RegisterDto;
 import io.github.blakedunaway.authserver.business.model.RegisterDto.UsernamePasswordWithClientAuthenticationToken;
@@ -24,17 +25,13 @@ import org.springframework.util.Assert;
 public class ClientAwareDaoAuthProvider implements AuthenticationProvider {
 
     private final UserService userService;
-
     private final PasswordEncoder passwordEncoder;
 
     private UserDetails retrieveUser(final UsernamePasswordWithClientAuthenticationToken authentication) {
         Assert.notNull(authentication, "authentication cannot be null");
-        final RegisterDto registerDto = authentication.getRegisterDto();
-        Assert.notNull(registerDto, "registerDto cannot be null");
-        Assert.hasText(registerDto.getRegisteredClientId(), "registerDto.getRegisteredClientId() cannot be empty");
-        Assert.hasText(registerDto.getEmail(), "registerDto.getEmail() cannot be empty");
-        Assert.hasText(registerDto.getPassword(), "registerDto.getPassword() cannot be empty");
-        return userService.loadUserByUsernameAndClientId(registerDto.getEmail(), registerDto.getRegisteredClientId());
+        Assert.hasText(String.valueOf(authentication.getClientId()), "clientId cannot be empty");
+        Assert.hasText(authentication.getEmail(), "email cannot be empty");
+        return userService.loadUserByEmailAndClientId(authentication.getEmail(), authentication.getClientId());
     }
 
     private void defaultPreAuthenticationChecks(final UserDetails user) {
@@ -56,7 +53,8 @@ public class ClientAwareDaoAuthProvider implements AuthenticationProvider {
     }
 
     private void additionalAuthenticationChecks(final UserDetails userDetails,
-                                                final UsernamePasswordWithClientAuthenticationToken authentication) throws AuthenticationException {
+                                                final UsernamePasswordWithClientAuthenticationToken authentication)
+            throws AuthenticationException {
         if (authentication.getCredentials() == null) {
             throw new BadCredentialsException("Bad credentials");
         }
@@ -64,14 +62,23 @@ public class ClientAwareDaoAuthProvider implements AuthenticationProvider {
         if (!passwordEncoder.matches(presentedPassword, userDetails.getPassword())) {
             throw new BadCredentialsException("Bad credentials");
         }
+        // Important: never keep credentials past verification
         authentication.eraseCredentials();
     }
 
     private Authentication createSuccessAuthentication(final Authentication authentication,
                                                        final UserDetails user) {
-        final UsernamePasswordWithClientAuthenticationToken token = (UsernamePasswordWithClientAuthenticationToken) authentication;
-        final UsernamePasswordWithClientAuthenticationToken result = UsernamePasswordWithClientAuthenticationToken.authenticated(token.getRegisterDto(),
-                                                                                                                           user.getAuthorities());
+        final UsernamePasswordWithClientAuthenticationToken token =
+                (UsernamePasswordWithClientAuthenticationToken) authentication;
+
+        // ✅ On success: credentials should be null, authorities should come from UserDetails
+        final UsernamePasswordWithClientAuthenticationToken result =
+                UsernamePasswordWithClientAuthenticationToken.authenticated(
+                        token.getEmail(),
+                        token.getClientId(),
+                        user.getAuthorities()
+                );
+
         result.setDetails(authentication.getDetails());
         return result;
     }
@@ -80,23 +87,27 @@ public class ClientAwareDaoAuthProvider implements AuthenticationProvider {
     public Authentication authenticate(final Authentication authentication) throws AuthenticationException {
         Assert.isInstanceOf(UsernamePasswordWithClientAuthenticationToken.class, authentication,
                             "Only UsernamePasswordWithClientAuthenticationToken is supported");
-        final UsernamePasswordWithClientAuthenticationToken token = (UsernamePasswordWithClientAuthenticationToken) authentication;
+
+        final UsernamePasswordWithClientAuthenticationToken token =
+                (UsernamePasswordWithClientAuthenticationToken) authentication;
+
         final UserDetails user;
         try {
             user = retrieveUser(token);
         } catch (UsernameNotFoundException exception) {
             throw new InternalAuthenticationServiceException(exception.getMessage(), exception);
         }
-        Assert.notNull(user, "retrieveUser returned null - a violation of the interface contract");
+
+        Assert.notNull(user, "retrieveUser returned null");
         defaultPreAuthenticationChecks(user);
         additionalAuthenticationChecks(user, token);
         defaultPostAuthenticationChecks(user);
+
         return createSuccessAuthentication(authentication, user);
     }
 
     @Override
     public boolean supports(final Class<?> authentication) {
-        return (RegisterDto.UsernamePasswordWithClientAuthenticationToken.class.isAssignableFrom(authentication));
+        return UsernamePasswordWithClientAuthenticationToken.class.isAssignableFrom(authentication);
     }
-
 }

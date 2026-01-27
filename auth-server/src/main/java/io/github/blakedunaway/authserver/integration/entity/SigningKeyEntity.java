@@ -1,7 +1,6 @@
 package io.github.blakedunaway.authserver.integration.entity;
 
 import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus;
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,22 +11,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "signing_keys",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"id", "kid", "encoded_public_key", "encoded_private_key"})
-)
+@Table(name = "signing_keys")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor

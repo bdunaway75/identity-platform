@@ -1,11 +1,11 @@
 package io.github.blakedunaway.authserver.mapper;
 
 import io.github.blakedunaway.authserver.business.model.AuthToken;
+import io.github.blakedunaway.authserver.security.token.TokenHasher;
 import io.github.blakedunaway.authserver.integration.entity.AuthTokenEntity;
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Named;
-import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,12 +32,16 @@ public abstract class AuthTokenMapper {
         return authTokenEntities == null ? null : authTokenEntities.stream().map(this::authTokenEntityToAuthToken).collect(Collectors.toSet());
     }
 
+    // This function ensures token are hashed before turning to entities
     @Named("authTokenToAuthTokenEntity")
     public AuthTokenEntity authTokenToAuthTokenEntity(final AuthToken authToken) {
+        final String hashedTokenValue = TokenHasher.isHmacSha256Base64Url(authToken.getHashedTokenValue())
+                                        ? authToken.getHashedTokenValue()
+                                        : TokenHasher.hmacCurrent(authToken.getHashedTokenValue());
         return AuthTokenEntity.create(authToken.getId(),
                                       authToken.getKid(),
                                       authToken.isNew(),
-                                      authToken.getHashedTokenValue(),
+                                      hashedTokenValue,
                                       authToken.getIssuedAt(),
                                       authToken.getExpiresAt(),
                                       authToken.getRevokedAt(),

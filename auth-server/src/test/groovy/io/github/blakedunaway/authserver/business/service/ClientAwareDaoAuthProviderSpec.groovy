@@ -4,7 +4,7 @@ import io.github.blakedunaway.authserver.TestSpec
 import io.github.blakedunaway.authserver.business.model.RegisterDto
 import io.github.blakedunaway.authserver.business.model.RegisterDto.UsernamePasswordWithClientAuthenticationToken
 import io.github.blakedunaway.authserver.business.model.User
-import io.github.blakedunaway.authserver.config.ClientAwareDaoAuthProvider
+import io.github.blakedunaway.authserver.security.provider.ClientAwareDaoAuthProvider
 import io.github.blakedunaway.authserver.config.TestConfig
 import io.github.blakedunaway.authserver.integration.repository.jpa.UserJpaRepository
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper
@@ -99,7 +99,7 @@ class ClientAwareDaoAuthProviderSpec extends TestSpec {
         def register = new RegisterDto()
         register.setEmail(email)
         register.setPassword(password)
-        register.setRegisteredClientId(rcId)
+        register.setClientId(rcId)
         return register
     }
 

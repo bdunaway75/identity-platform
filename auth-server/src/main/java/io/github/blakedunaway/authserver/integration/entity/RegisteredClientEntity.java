@@ -28,7 +28,7 @@ public class RegisteredClientEntity implements Persistable<String> {
 
     @Id
     @Column(name = "registered_client_id", updatable = false, nullable = false)
-    private String registeredClientId;
+    private UUID registeredClientId;
 
     @Column(name = "client_id", updatable = false, nullable = false, unique = true)
     private String clientId;
@@ -56,27 +56,31 @@ public class RegisteredClientEntity implements Persistable<String> {
     // ---------- children ----------
     @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
             orphanRemoval = true)
-    private Set<RegisteredClientAuthMethodEntity> clientAuthenticationMethods = new LinkedHashSet<>();
+    private Set<RegisteredClientAuthMethodEntity> clientAuthenticationMethods;
 
     @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
             orphanRemoval = true)
-    private Set<RegisteredClientGrantTypeEntity> authorizationGrantTypes = new LinkedHashSet<>();
+    private Set<RegisteredClientGrantTypeEntity> authorizationGrantTypes;
 
     @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
             orphanRemoval = true)
-    private Set<RegisteredClientRedirectUriEntity> redirectUris = new LinkedHashSet<>();
+    private Set<RegisteredClientRedirectUriEntity> redirectUris;
 
     @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
             orphanRemoval = true)
-    private Set<RegisteredClientPostLogoutRedirectUriEntity> postLogoutRedirectUris = new LinkedHashSet<>();
+    private Set<RegisteredClientPostLogoutRedirectUriEntity> postLogoutRedirectUris;
 
     @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
             orphanRemoval = true)
-    private Set<RegisteredClientScopeEntity> scopes = new LinkedHashSet<>();
+    private Set<RegisteredClientScopeEntity> scopes;
 
-    public static RegisteredClientEntity createFromId(final String registeredClientId) {
+    @OneToMany(mappedBy = "registeredClient", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<AuthorizationEntity> authorizations;
+
+    public static RegisteredClientEntity createFromId(final UUID registeredClientId) {
         final RegisteredClientEntity rc = new RegisteredClientEntity();
         rc.registeredClientId = registeredClientId;
+        rc.markNotNew();
         return rc;
     }
 
@@ -84,7 +88,7 @@ public class RegisteredClientEntity implements Persistable<String> {
      * Factory for mappers/services
      */
     public static RegisteredClientEntity create(
-            final String registeredClientId,
+            final UUID registeredClientId,
             final String clientId,
             final LocalDateTime clientIdIssuedAt,
             final String clientSecret,
@@ -279,7 +283,7 @@ public class RegisteredClientEntity implements Persistable<String> {
 
     @Override
     public String getId() {
-        return registeredClientId != null ? registeredClientId : null;
+        return registeredClientId != null ? registeredClientId.toString() : null;
     }
 
     @Transient

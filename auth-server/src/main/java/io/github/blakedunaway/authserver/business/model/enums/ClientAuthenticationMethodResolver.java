@@ -15,6 +15,7 @@ public enum ClientAuthenticationMethodResolver {
     CLIENT_SECRET_JWT("client_secret_jwt", ClientAuthenticationMethod.CLIENT_SECRET_JWT),
     PRIVATE_KEY_JWT("private_key_jwt", ClientAuthenticationMethod.PRIVATE_KEY_JWT),
     TLS_CLIENT_AUTH("tls_client_auth", ClientAuthenticationMethod.TLS_CLIENT_AUTH),
+    NONE("none", ClientAuthenticationMethod.NONE),
     SELF_SIGNED_TLS_CLIENT_AUTH("self_signed_tls_client_auth",  ClientAuthenticationMethod.SELF_SIGNED_TLS_CLIENT_AUTH);
 
     private static final Map<String, ClientAuthenticationMethod> BY_NAME = new HashMap<>();

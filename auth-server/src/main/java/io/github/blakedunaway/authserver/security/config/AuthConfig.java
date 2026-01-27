@@ -1,37 +1,42 @@
-package io.github.blakedunaway.authserver.config;
+package io.github.blakedunaway.authserver.security.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import io.github.blakedunaway.authserver.security.provider.ClientAwareDaoAuthProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
-import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 
 @Configuration
 public class AuthConfig {
 
     @Bean
-    public SecurityContextRepository securityContextRepository() {
-        return new RequestAttributeSecurityContextRepository();
+    SecurityContextRepository securityContextRepository() {
+        return new HttpSessionSecurityContextRepository();
     }
 
     @Bean
-    public AuthenticationSuccessHandler successHandler() {
-        return new SavedRequestAwareAuthenticationSuccessHandler();
+    RequestCache requestCache() {
+        return new HttpSessionRequestCache();
+    }
+
+    @Bean
+    public AuthenticationSuccessHandler authenticationSuccessHandler(RequestCache requestCache) {
+        SavedRequestAwareAuthenticationSuccessHandler handler = new SavedRequestAwareAuthenticationSuccessHandler();
+        handler.setRequestCache(requestCache);
+        handler.setDefaultTargetUrl("/login");
+        return handler;
     }
 
     @Bean
@@ -58,32 +63,6 @@ public class AuthConfig {
     @Bean
     AuthenticationManager authenticationManager(final ClientAwareDaoAuthProvider clientDaoAuthProvider) {
         return new ProviderManager(clientDaoAuthProvider);
-    }
-
-    @Bean
-    UserDetailsService cxfUserDetailsService(
-            @Value("${cxf.user}") String user,
-            @Value("${cxf.password}") String password) {
-
-        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-        manager.createUser(
-                User.withUsername(user)
-                    .password("{noop}" + password)
-                    .roles("CXF")
-                    .build()
-        );
-        return manager;
-    }
-
-    @Bean
-    AuthenticationManager cxfAuthenticationManager(
-            UserDetailsService cxfUserDetailsService) {
-
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(cxfUserDetailsService);
-        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
-
-        return new ProviderManager(provider);
     }
 
 }

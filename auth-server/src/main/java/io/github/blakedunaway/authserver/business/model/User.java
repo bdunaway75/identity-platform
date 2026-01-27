@@ -25,7 +25,7 @@ public final class User {
 
     private final String passwordHash;
 
-    private final String registeredClientId;
+    private final String clientId;
 
     private final boolean verified;
 
@@ -43,7 +43,6 @@ public final class User {
 
     private final boolean credentialsExpired;
 
-    private final UUID id;
 
     public static Builder fromId(final UUID id) {
         Assert.notNull(id, "id must not be null");
@@ -79,11 +78,11 @@ public final class User {
 
         private UUID id;
 
+        private String clientId;
+
         private String email;
 
         private boolean isNew;
-
-        private String registeredClientId;
 
         private String passwordHash;
 
@@ -112,10 +111,8 @@ public final class User {
         }
 
         protected Builder(final User user) {
-            this.id = user.getId();
             this.email = user.getEmail();
             this.isNew = user.isNew();
-            this.registeredClientId = user.getRegisteredClientId();
             this.passwordHash = user.getPasswordHash();
             this.verified = user.isVerified();
             this.createdAt = user.getCreatedAt();
@@ -129,6 +126,11 @@ public final class User {
 
         public Builder email(final String email) {
             this.email = email;
+            return this;
+        }
+
+        public Builder clientId(final String clientId) {
+            this.clientId = clientId;
             return this;
         }
 
@@ -182,23 +184,17 @@ public final class User {
             return this;
         }
 
-        public Builder registeredClientId(final String registeredClientId) {
-            this.registeredClientId = registeredClientId;
-            return this;
-        }
-
         public User build() {
             Assert.hasText(this.getEmail(), "Email address must not be empty");
             Assert.hasText(this.getPasswordHash(), "Password hash must not be empty");
             Assert.isTrue(this.getPasswordHash().startsWith("$argon2"), "Password has not been hashed");
             Assert.notNull(this.getPlan(), "Plan must not be null");
             Assert.notNull(this.getAuthorities(), "Authorities must not be null");
-            Assert.notNull(this.getRegisteredClientId(), "Registered client id must not be null");
             Assert.notNull(this.isNew(), "New user must not be null");
             return new User(this.getEmail(),
                             this.isNew(),
                             this.getPasswordHash(),
-                            this.getRegisteredClientId(),
+                            this.getClientId(),
                             this.isVerified(),
                             this.getCreatedAt(),
                             this.getUpdatedAt(),
@@ -206,8 +202,7 @@ public final class User {
                             Set.copyOf(this.getAuthorities()),
                             this.isLocked(),
                             this.isExpired(),
-                            this.isCredentialsExpired(),
-                            this.getId());
+                            this.isCredentialsExpired());
         }
     }
 }

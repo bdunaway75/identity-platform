@@ -35,11 +35,10 @@ public class UserEntity implements Persistable<String> {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID userId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "registered_client_id", nullable = false, updatable = false)
-    private RegisteredClientEntity registeredClient;
+    @Column(name = "client_id", nullable = false, updatable = false)
+    private String clientId;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
     @Column(name = "password_hash", nullable = false)

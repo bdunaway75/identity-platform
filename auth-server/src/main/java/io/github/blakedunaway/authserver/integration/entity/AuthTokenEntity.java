@@ -127,12 +127,12 @@ public class AuthTokenEntity implements Persistable<String> {
         if (!(o instanceof AuthTokenEntity other)) {
             return false;
         }
-        return tokenId != null && tokenId.equals(other.tokenId);
+        return tokenValueHash != null && tokenValueHash.equals(other.tokenValueHash);
     }
 
     @Override
     public int hashCode() {
-        return tokenId != null ? tokenId.hashCode() : 0;
+        return tokenValueHash != null ? tokenValueHash.hashCode() : 0;
     }
 
     @Override
@@ -148,7 +148,7 @@ public class AuthTokenEntity implements Persistable<String> {
 
     @PostLoad
     @PostPersist
-    void markNotNew() {
+    public void markNotNew() {
         this.isNew = false;
     }
 

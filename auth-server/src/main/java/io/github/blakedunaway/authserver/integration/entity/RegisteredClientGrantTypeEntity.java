@@ -16,6 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RegisteredClientGrantTypeEntity {
 
+    //TODO REMOVE, DONT NEED
     @Id @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;

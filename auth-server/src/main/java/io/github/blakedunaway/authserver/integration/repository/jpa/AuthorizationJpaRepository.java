@@ -23,9 +23,6 @@ public interface AuthorizationJpaRepository extends JpaRepository<AuthorizationE
 
     List<AuthorizationEntity> findAll();
 
-    @Query(value = " select * from auth_authorization where attributes_json @> cast(:json as jsonb)", nativeQuery = true)
-    AuthorizationEntity findByAttribute(@Param("json") final String json);
-
 
 
 }

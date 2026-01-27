@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
@@ -66,14 +67,12 @@ public class AuthorizationConsentRepositoryImpl implements AuthorizationConsentR
     }
 
     @Override
-    public AuthorizationConsent findById(final String registeredClientId, final String principalName) {
+    public AuthorizationConsent findById(final UUID registeredClientId, final String principalName) {
         if (registeredClientId == null || principalName == null) {
             return null;
         }
         final AuthorizationConsentEntity entity =
-                authorizationConsentJpaRepository.findByRegisteredClientIdAndPrincipalName(registeredClientId,
-                                                                                           principalName)
-                                                 .orElse(null);
+                authorizationConsentJpaRepository.findByRegisteredClientIdAndPrincipalName(registeredClientId, principalName).orElse(null);
         if (entity == null) {
             return null;
         }
