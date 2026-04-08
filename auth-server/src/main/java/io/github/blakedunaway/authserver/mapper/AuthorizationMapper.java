@@ -40,7 +40,6 @@ public class AuthorizationMapper {
         return AuthorizationEntity.create(
                 authorization.getId(),
                 RegisteredClientEntity.createFromId(authorization.getRegisteredClientModel().getId()),
-                authorization.isNew(),
                 authorization.getPrincipalName(),
                 authorization.getAuthorizationGrantTypeInternal().getWireName(),
                 authorization.getAuthorizedScopes(),
@@ -63,12 +62,11 @@ public class AuthorizationMapper {
                             .authorizationGrantType(AuthorizationGrantTypeInternal.findByName(entity.getAuthorizationGrantType()))
                             .scopes(entity.getAuthorizedScopes())
                             .tokens(tokens)
-                            .isNew(entity.isNew())
                             .build();
     }
 
     public AuthorizationEntity oAuth2AuthorizationToAuthorizationEntity(final OAuth2Authorization authorization,
-                                                                        RegisteredClientEntity clientEntity,
+                                                                        final RegisteredClientEntity clientEntity,
                                                                         final boolean isNew) {
         final Set<AuthTokenEntity> tokenEntities = Optional.of(TokenType.retrieveFromSpring(authorization))
                                                            .orElseGet(Set::of)
@@ -76,9 +74,8 @@ public class AuthorizationMapper {
                                                            .map(authTokenMapper::authTokenToAuthTokenEntity)
                                                            .collect(Collectors.toSet());
         return AuthorizationEntity.create(
-                authorization.getId() == null ? null : UUID.fromString(authorization.getId()),
+                isNew ? null : UUID.fromString(authorization.getId()),
                 clientEntity,
-                isNew,
                 authorization.getPrincipalName(),
                 authorization.getAuthorizationGrantType().getValue(),
                 authorization.getAuthorizedScopes(),
@@ -98,9 +95,7 @@ public class AuthorizationMapper {
                         .authorizedScopes(authorization.getAuthorizedScopes())
                         .attributes(attrs -> attrs.putAll(redisStore.get(REDIS_HANDLE + authorization.getId())));
 
-        authorization.getTokens().forEach(token -> {
-            builder.token(token.toOAuth2Token());
-        });
+        authorization.getTokens().forEach(token -> builder.token(token.toOAuth2Token()));
         return builder.build();
     }
 

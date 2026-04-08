@@ -1,7 +1,7 @@
 
 export default function ErrorContainer({errors}) {
     return(
-        <div class = "error-container">
+        <div className="error-container">
             {errors}
         </div>
     )

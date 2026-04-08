@@ -20,8 +20,6 @@ public final class AuthorizationConsent {
 
     private final UUID consentId;
 
-    private final boolean isNew;
-
     private final UUID registeredClientId;
 
     private final String principalName;
@@ -34,7 +32,8 @@ public final class AuthorizationConsent {
 
     public OAuth2AuthorizationConsent toSpring() {
         return OAuth2AuthorizationConsent.withId(String.valueOf(this.getRegisteredClientId()), this.getPrincipalName())
-                                         .authorities(auth -> auth.addAll(this.getAuthorities()
+                                         .authorities(auth ->
+                                                              auth.addAll(this.getAuthorities()
                                                                               .stream()
                                                                               .map(Authorities::toSimpleGrantedAuthority)
                                                                               .collect(Collectors.toSet())))
@@ -47,8 +46,6 @@ public final class AuthorizationConsent {
 
         private UUID consentId;
 
-        private boolean isNew;
-
         private UUID registeredClientId;
 
         private String principalName;
@@ -59,28 +56,17 @@ public final class AuthorizationConsent {
             this.consentId = consentId;
         }
 
-        public static Builder fromSpring(final OAuth2AuthorizationConsent authorizationConsent) {
+        public static AuthorizationConsent fromSpring(final OAuth2AuthorizationConsent authorizationConsent) {
             final Builder builder = new Builder();
-            builder.consentId = UUID.randomUUID();
-            builder.isNew = true;
             builder.registeredClientId = UUID.fromString(authorizationConsent.getRegisteredClientId());
             builder.principalName = authorizationConsent.getPrincipalName();
             builder.authorities = authorizationConsent.getAuthorities()
                                                       .stream()
                                                       .filter(Objects::nonNull)
                                                       .map(Authorities::from)
+                                                      .map(authority -> authority.toBuilder().isNew(true).build())
                                                       .collect(Collectors.toSet());
-            return builder;
-        }
-
-        public Builder consentId(final UUID consentId) {
-            this.consentId = consentId;
-            return this;
-        }
-
-        public Builder isNew(final boolean isNew) {
-            this.isNew = isNew;
-            return this;
+            return builder.build();
         }
 
         public Builder registeredClientId(final UUID registeredClientId) {
@@ -99,16 +85,15 @@ public final class AuthorizationConsent {
         }
 
         public AuthorizationConsent build() {
-            Assert.notNull(this.getConsentId(), "consentId must not be null");
-            Assert.notNull(this.isNew(), "isNew must not be null");
             Assert.notNull(this.getRegisteredClientId(), "registeredClientId must not be null");
             Assert.notNull(this.getPrincipalName(), "principalName must not be null");
             Assert.notNull(this.getAuthorities(), "authorities must not be null");
             return new AuthorizationConsent(this.getConsentId(),
-                                            this.isNew(),
                                             this.getRegisteredClientId(),
                                             this.getPrincipalName(),
                                             Set.copyOf(this.getAuthorities()));
         }
+
     }
+
 }

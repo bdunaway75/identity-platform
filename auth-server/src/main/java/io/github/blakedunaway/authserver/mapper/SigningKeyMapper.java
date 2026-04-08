@@ -5,7 +5,6 @@ import io.github.blakedunaway.authserver.integration.entity.AuthTokenEntity;
 import io.github.blakedunaway.authserver.integration.entity.SigningKeyEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;

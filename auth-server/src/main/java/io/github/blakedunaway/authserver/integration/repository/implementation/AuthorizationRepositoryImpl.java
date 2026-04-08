@@ -1,8 +1,8 @@
 package io.github.blakedunaway.authserver.integration.repository.implementation;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.blakedunaway.authserver.business.model.Authorization;
 import io.github.blakedunaway.authserver.business.model.enums.TokenType;
+import io.github.blakedunaway.authserver.integration.entity.AuthTokenEntity;
 import io.github.blakedunaway.authserver.integration.entity.AuthorizationEntity;
 import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
 import io.github.blakedunaway.authserver.integration.repository.gateway.AuthorizationRepository;
@@ -18,7 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Repository
@@ -32,6 +34,29 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
 
     private final RegisterClientJpaRepository registerClientJpaRepository;
 
+    private void attachTokens(final AuthorizationEntity current, final AuthorizationEntity persisted) {
+        final Map<String, AuthTokenEntity> existingByHash =
+                persisted == null
+                ? Map.of()
+                : persisted.getTokens().stream()
+                           .collect(Collectors.toMap(
+                                   AuthTokenEntity::getTokenValueHash,
+                                   Function.identity(),
+                                   (a, b) -> a
+                           ));
+        if (current.getTokens() != null) {
+            current.getTokens()
+                   .forEach(token -> {
+                       AuthTokenEntity existing =
+                               existingByHash.get(token.getTokenValueHash());
+
+                       token.setTokenId(existing != null ? existing.getTokenId() : null);
+                       token.setAuthorizationEntity(current);
+                   });
+        }
+    }
+
+
     @Override
     @Transactional
     public Authorization save(final OAuth2Authorization authorization) {
@@ -39,34 +64,18 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
         final UUID authId = UUID.fromString(authorization.getId());
         final UUID rClientId = UUID.fromString(authorization.getRegisteredClientId());
 
-        final AuthorizationEntity persisted =
-                authorizationJpaRepository.findById(authId).orElse(null);
-
-        final RegisteredClientEntity clientEntity =
-                registerClientJpaRepository.findById(rClientId).orElseThrow();
+        final AuthorizationEntity persisted = authorizationJpaRepository.findById(authId).orElse(null);
+        final RegisteredClientEntity clientEntity = registerClientJpaRepository.findById(rClientId).orElseThrow();
 
         final AuthorizationEntity authorizationEntity =
-                authorizationMapper.oAuth2AuthorizationToAuthorizationEntity(
-                        authorization,
-                        clientEntity,
-                        persisted == null
-                );
+                authorizationMapper.oAuth2AuthorizationToAuthorizationEntity(authorization, clientEntity, persisted == null);
 
-        if (persisted != null) {
-            markExistingTokens(authorizationEntity, persisted);
-        }
+        attachTokens(authorizationEntity, persisted);
+
 
         return authorizationMapper.authorizationEntityToAuthorization(
                 authorizationJpaRepository.save(authorizationEntity)
         );
-    }
-
-    private static void markExistingTokens(final AuthorizationEntity current, final AuthorizationEntity persisted) {
-        current.getTokens().forEach(token -> {
-            if (persisted.getTokens().contains(token)) {
-                token.markNotNew();
-            }
-        });
     }
 
     @Override
@@ -84,10 +93,7 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
             return null;
         }
         return authorizationJpaRepository.findById(authId)
-                                         .map(found -> {
-                                             found.setNew(false);
-                                             return authorizationMapper.authorizationEntityToAuthorization(found);
-                                         })
+                                         .map(authorizationMapper::authorizationEntityToAuthorization)
                                          .orElse(null);
     }
 
@@ -97,7 +103,6 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
         final String hashedValue = TokenHasher.hmacCurrent(token);
         return authorizationJpaRepository.findByTokens_TokenValueHash(hashedValue)
                                          .map(entity -> {
-                                             entity.setNew(false);
                                              if (serializedTokenType != null) { // introspection
                                                  entity.getTokens()
                                                        .stream()
@@ -111,7 +116,7 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
                                              }
                                              return authorizationMapper.authorizationEntityToAuthorization(entity);
                                          })
-                                         .orElse(null);
+                                         .orElseThrow();
 
     }
 

@@ -1,16 +1,23 @@
-# React + Vite
+```mermaid
+flowchart LR
+    RC[RegisteredClientEntity\nregistered_client_id + client_id] -->|owns tenant namespace via client_id| U[UserEntity\nclient_id + email + user_attributes]
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+    RC --> AM[Client Auth Methods]
+    RC --> GT[Grant Types]
+    RC --> RU[Redirect URIs]
+    RC --> PLRU[Post Logout Redirect URIs]
+    RC --> SC[Scopes]
+    RC --> CS[Client Settings]
+    RC --> TS[Token Settings]
 
-Currently, two official plugins are available:
+    RC --> AZ[AuthorizationEntity\nregistered_client_id FK\nprincipal_name]
+    AZ --> TOK[AuthTokenEntity\nauthorization_id FK\nsubject + token_type + kid]
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+    RC --> CONSENT[AuthorizationConsentEntity\nregistered_client_id\nprincipal_name]
 
-## React Compiler
+    U -->|identified by email/subject within client scope| AZ
+    U -->|identified by principal_name within client scope| CONSENT
+    U --> UA[user_attributes]
+    UA --> T[tier]
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```

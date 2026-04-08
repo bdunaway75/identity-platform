@@ -15,7 +15,6 @@ import org.springframework.util.Assert;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.springframework.security.oauth2.server.authorization.OAuth2Authorization.Token.CLAIMS_METADATA_NAME;
@@ -70,7 +69,7 @@ public enum TokenType {
         }
 
         @Override
-        public  AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
+        public AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
             OidcIdToken idToken = cast(oAuth2Token.getToken());
             AuthToken.Builder basicAuthTokenBuilder = this.buildBasicModel(oAuth2Token);
             if (idToken.getClaims() != null) {

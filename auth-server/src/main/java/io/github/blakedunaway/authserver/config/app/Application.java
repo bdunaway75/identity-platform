@@ -26,6 +26,15 @@ public class Application extends SpringBootServletInitializer {
 
     @Bean
     @Primary
+    public ObjectMapper objectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS);
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return objectMapper;
+    }
+
+    @Bean("securityObjectMapper")
     public ObjectMapper securityObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());

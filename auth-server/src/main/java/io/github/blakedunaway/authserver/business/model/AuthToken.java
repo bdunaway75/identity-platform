@@ -1,6 +1,5 @@
 package io.github.blakedunaway.authserver.business.model;
 
-import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
 import io.github.blakedunaway.authserver.business.model.enums.TokenType;
 import io.github.blakedunaway.authserver.util.AuthenticationUtility;
 import lombok.AccessLevel;
@@ -8,14 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
-import org.springframework.security.oauth2.core.oidc.OidcIdToken;
-import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -24,7 +19,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import static org.springframework.security.oauth2.server.authorization.OAuth2Authorization.Token.CLAIMS_METADATA_NAME;
-import static org.springframework.security.oauth2.server.authorization.OAuth2Authorization.Token.INVALIDATED_METADATA_NAME;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -69,7 +63,7 @@ public final class AuthToken {
     }
 
     public OAuth2Token toOAuth2Token() {
-        return this.getTokenType().applyToken(this, this.hashedTokenValue); //hashed?
+        return this.getTokenType().applyToken(this, this.hashedTokenValue);
     }
 
     @Override
@@ -131,11 +125,11 @@ public final class AuthToken {
 
         private String hashedTokenValue;
 
-        private Set<String> scopes = new LinkedHashSet<>();
+        private final Set<String> scopes = new LinkedHashSet<>();
 
-        private Map<String, Object> metadata = new LinkedHashMap<>();
+        private final Map<String, Object> metadata = new LinkedHashMap<>();
 
-        private Map<String, Object> claims = new LinkedHashMap<>();
+        private final Map<String, Object> claims = new LinkedHashMap<>();
 
         protected Builder(final UUID id) {
             this.id = id;

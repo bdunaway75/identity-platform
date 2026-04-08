@@ -19,27 +19,20 @@ public class AuthorizationConsentService implements OAuth2AuthorizationConsentSe
     @Override
     public void save(final OAuth2AuthorizationConsent authorizationConsent) {
         Assert.notNull(authorizationConsent, "AuthorizationConsent must not be null");
-        Assert.hasText(authorizationConsent.getRegisteredClientId(), "RegisteredClientId must not be empty");
-        Assert.hasText(authorizationConsent.getPrincipalName(), "PrincipalName must not be empty");
-        AuthorizationConsent.Builder model = AuthorizationConsent.Builder.fromSpring(authorizationConsent);
-        final AuthorizationConsent persistedConsent = authorizationConsentRepository.findById(model.getRegisteredClientId(),
-                                                                                              model.getPrincipalName());
-        if (persistedConsent != null) {
-            model = model.isNew(false).consentId(persistedConsent.getConsentId());
-        }
-        authorizationConsentRepository.save(model.build());
+        AuthorizationConsent model = AuthorizationConsent.Builder.fromSpring(authorizationConsent);
+        authorizationConsentRepository.save(model);
     }
 
     @Override
     public void remove(final OAuth2AuthorizationConsent authorizationConsent) {
-        authorizationConsentRepository.remove(AuthorizationConsent.Builder.fromSpring(authorizationConsent).build());
+        authorizationConsentRepository.remove(AuthorizationConsent.Builder.fromSpring(authorizationConsent));
     }
 
     @Override
     public OAuth2AuthorizationConsent findById(final String registeredClientId, final String principalName) {
         Assert.hasText(registeredClientId, "registeredClientId must not be empty");
         Assert.hasText(principalName, "principalName must not be empty");
-        final AuthorizationConsent consent = authorizationConsentRepository.findById(UUID.fromString(registeredClientId), principalName);
+        final AuthorizationConsent consent = authorizationConsentRepository.findByRegisteredClientIdAndPrincipalName(UUID.fromString(registeredClientId), principalName);
         if (consent == null) {
             return null;
         }

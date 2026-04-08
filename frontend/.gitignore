@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+/.chrome-headless/
+
+# Local Codex/browser helper artifacts
+/scripts/codex-*
+/clients-page.png
+/.codex-browser-profile/
+/.codex-*/

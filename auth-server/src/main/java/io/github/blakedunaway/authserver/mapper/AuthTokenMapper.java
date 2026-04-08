@@ -1,8 +1,8 @@
 package io.github.blakedunaway.authserver.mapper;
 
 import io.github.blakedunaway.authserver.business.model.AuthToken;
-import io.github.blakedunaway.authserver.security.token.TokenHasher;
 import io.github.blakedunaway.authserver.integration.entity.AuthTokenEntity;
+import io.github.blakedunaway.authserver.security.token.TokenHasher;
 import org.mapstruct.IterableMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Named;
@@ -40,7 +40,6 @@ public abstract class AuthTokenMapper {
                                         : TokenHasher.hmacCurrent(authToken.getHashedTokenValue());
         return AuthTokenEntity.create(authToken.getId(),
                                       authToken.getKid(),
-                                      authToken.isNew(),
                                       hashedTokenValue,
                                       authToken.getIssuedAt(),
                                       authToken.getExpiresAt(),

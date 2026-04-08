@@ -23,7 +23,8 @@ public class AuthorizationServerSecurityConfig {
 
         http.securityMatcher(as.getEndpointsMatcher())
             .cors(cors -> cors.configurationSource(request -> corsConfiguration))
-            .formLogin(form -> form.loginPage("/login")
+            .formLogin(form ->
+                               form.loginPage("/login")
                                    .loginProcessingUrl("/login")
                                    .failureUrl("/login?error=true")
                                    .permitAll())

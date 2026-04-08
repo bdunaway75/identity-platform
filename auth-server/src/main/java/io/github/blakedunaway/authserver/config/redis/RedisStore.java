@@ -27,7 +27,7 @@ public class RedisStore {
     }
 
     public boolean exists(String key) {
-        return Boolean.TRUE.equals(redis.hasKey(key));
+        return redis.hasKey(key);
     }
 
 }

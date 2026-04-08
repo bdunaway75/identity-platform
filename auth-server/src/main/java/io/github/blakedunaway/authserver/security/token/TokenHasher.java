@@ -10,7 +10,7 @@ public class TokenHasher {
 
     private final SecretKeySpec key;
 
-    private String b64 = "U6e3m3mW1qk_3vZl9a0Jpm3Eo2X7mK7JgC8bqvYFYKk";
+    private final String b64 = "U6e3m3mW1qk_3vZl9a0Jpm3Eo2X7mK7JgC8bqvYFYKk";
 
     static {
         if (b64.isBlank()) {

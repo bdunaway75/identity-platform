@@ -1,6 +1,21 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useSubscription } from "./context/SubscriptionContext";
 
 export default function Layout() {
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { tier, status } = useSubscription();
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+    navigate("/logout", { replace: true });
+  };
+
   return (
     <div className="app-root">
       <aside className="sidebar">
@@ -12,7 +27,17 @@ export default function Layout() {
           <NavLink to="/subscriptions" className="nav-item">Subscription</NavLink>
         </nav>
 
-        <div className="tier">Tier: Free</div>
+        <div className="sidebar-footer">
+          <div className="tier">Tier: {status === "loading" ? "Loading..." : tier}</div>
+          <button
+            type="button"
+            className="sidebar-logout"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? "Signing out..." : "Log out"}
+          </button>
+        </div>
       </aside>
 
       <main className="content">

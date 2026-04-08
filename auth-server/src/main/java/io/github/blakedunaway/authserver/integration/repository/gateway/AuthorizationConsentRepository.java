@@ -10,6 +10,6 @@ public interface AuthorizationConsentRepository {
 
     void remove(final AuthorizationConsent authorizationConsent);
 
-    AuthorizationConsent findById(final UUID registeredClientId, String principalName);
+    AuthorizationConsent findByRegisteredClientIdAndPrincipalName(final UUID registeredClientId, String principalName);
 
 }

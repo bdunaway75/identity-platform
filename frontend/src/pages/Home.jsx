@@ -1,6 +1,53 @@
+import { useEffect, useState } from "react";
 import Card from "../components/Card";
+import { useSubscription } from "../context/SubscriptionContext";
+import { fetchTotalClientCount, fetchTotalUserCount } from "../services/subscription";
 
 export default function Home() {
+  const { tier, status } = useSubscription();
+  const [totalUsers, setTotalUsers] = useState(null);
+  const [totalClients, setTotalClients] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchTotalUserCount()
+      .then((count) => {
+        if (isMounted) {
+          setTotalUsers(count);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setTotalUsers(0);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchTotalClientCount()
+      .then((count) => {
+        if (isMounted) {
+          setTotalClients(count);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setTotalClients(0);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <>
       <h2>Dashboard</h2>
@@ -14,8 +61,9 @@ export default function Home() {
         }}
       >
         <Card title="Account">
-          <div>Tier: Free</div>
-          <div>Clients: 0</div>
+          <div>Tier: {status === "loading" ? "Loading..." : tier}</div>
+          <div>Clients: {totalClients ?? "Loading..."}</div>
+          <div>Total Users: {totalUsers ?? "Loading..."}</div>
         </Card>
 
         <Card title="Usage">

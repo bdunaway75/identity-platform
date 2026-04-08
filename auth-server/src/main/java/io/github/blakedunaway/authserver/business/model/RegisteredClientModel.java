@@ -1,10 +1,12 @@
 package io.github.blakedunaway.authserver.business.model;
 
-import io.github.blakedunaway.authserviceclient.dto.ClientFields;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.With;
+import lombok.extern.jackson.Jacksonized;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
@@ -20,20 +22,26 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Jacksonized
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class RegisteredClientModel implements ClientFields {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public final class RegisteredClientModel {
 
     private final UUID id;
 
+    @With
     private final String clientId;
 
-    private final Instant clientIdIssuedAt;
+    @With
+    private final LocalDateTime clientIdIssuedAt;
 
+    @With
     private final String clientSecret;
 
-    private final Instant clientSecretExpiresAt;
+    @With
+    private final LocalDateTime clientSecretExpiresAt;
 
     private final String clientName;
 
@@ -67,35 +75,25 @@ public final class RegisteredClientModel implements ClientFields {
         return this.clientAuthenticationMethods.stream().map(ClientAuthenticationMethod::toString).collect(Collectors.toSet());
     }
 
-    public LocalDateTime getClientIdIssuedAt() {
-        return this.clientIdIssuedAt == null ? null: LocalDateTime.ofInstant(this.clientIdIssuedAt, ZoneId.systemDefault());
+    public RegisteredClient toOAuth2RegisteredClient() {
+        Assert.notNull(clientId, "Client ID must not be null");
+        Assert.notNull(clientIdIssuedAt, "Client ID issuedAt must not be null");
+        Assert.notNull(clientName, "Client name must not be null");
+        final Instant clientSecretExpireAt = clientSecretExpiresAt == null ? null : clientSecretExpiresAt.atZone(ZoneId.systemDefault()).toInstant();
+
+        return RegisteredClient.withId(String.valueOf(id))
+                               .clientId(clientId)
+                               .clientIdIssuedAt(clientIdIssuedAt.atZone(ZoneId.systemDefault()).toInstant())
+                               .clientSecret(clientSecret)
+                               .clientSecretExpiresAt(clientSecretExpireAt)
+                               .clientName(clientName)
+                               .clientSettings(clientSettings)
+                               .tokenSettings(tokenSettings)
+                               .clientAuthenticationMethods(set -> set.addAll(clientAuthenticationMethods))
+                               .authorizationGrantTypes(set -> set.addAll(authorizationGrantTypes))
+                               .redirectUris(set -> set.addAll(redirectUris))
+                               .postLogoutRedirectUris(set -> set.addAll(postLogoutRedirectUris))
+                               .scopes(set -> set.addAll(scopes))
+                               .build();
     }
-
-    public LocalDateTime getClientSecretExpiresAt() {
-        return this.clientSecretExpiresAt == null ? null :LocalDateTime.ofInstant(this.clientSecretExpiresAt, ZoneId.systemDefault()); //solve this instant
-    }
-
-    public static class RegisteredClientModelBuilder {
-        public RegisteredClient toOAuth2RegisteredClient() {
-            Assert.notNull(clientId, "Client ID must not be null");
-            Assert.notNull(clientIdIssuedAt, "Client ID issuedAt must not be null");
-            Assert.notNull(clientName, "Client name must not be null");
-
-            return RegisteredClient.withId(String.valueOf(id))
-                                   .clientId(clientId)
-                                   .clientIdIssuedAt(clientIdIssuedAt)
-                                   .clientSecret(clientSecret)
-                                   .clientSecretExpiresAt(clientSecretExpiresAt)
-                                   .clientName(clientName)
-                                   .clientSettings(clientSettings)
-                                   .tokenSettings(tokenSettings)
-                                   .clientAuthenticationMethods(set -> set.addAll(clientAuthenticationMethods))
-                                   .authorizationGrantTypes(set -> set.addAll(authorizationGrantTypes))
-                                   .redirectUris(set -> set.addAll(redirectUris))
-                                   .postLogoutRedirectUris(set -> set.addAll(postLogoutRedirectUris))
-                                   .scopes(set -> set.addAll(scopes))
-                                   .build();
-        }
-    }
-
 }

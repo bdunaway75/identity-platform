@@ -17,28 +17,21 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 @Entity
-@Table(
-        name = "registered_client_scope",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"registered_client_id", "scope"})
-)
+@Table(name = "scopes")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RegisteredClientScopeEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "registered_client_id", nullable = false)
-    private RegisteredClientEntity registeredClient;
 
     @Column(name = "scope", nullable = false)
     private String scope;
 
-    public RegisteredClientScopeEntity(final RegisteredClientEntity parent, final String scope) {
-        this.registeredClient = parent;
+    public RegisteredClientScopeEntity(final UUID id, final String scope) {
+        this.id = id;
         this.scope = scope;
     }
 

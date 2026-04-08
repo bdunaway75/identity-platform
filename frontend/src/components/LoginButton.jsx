@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { userManager } from "../auth/oidc";
 import Spinner from 'react-bootstrap/Spinner';
+import { disableDevAuthBypass } from "../auth/devAuth";
 
 export default function LoginButton({onError, ...props }) {
   const [redirecting, setRedirecting] = useState(false);
@@ -9,6 +10,7 @@ export default function LoginButton({onError, ...props }) {
     if (redirecting) return;
 
     setRedirecting(true);
+    disableDevAuthBypass();
 
     try {
       await userManager.signinRedirect();

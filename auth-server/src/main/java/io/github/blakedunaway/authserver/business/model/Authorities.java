@@ -18,6 +18,8 @@ public final class Authorities {
 
     private final String name;
 
+    private boolean isNew;
+
     public static Authorities from(final GrantedAuthority simpleGrantedAuthority) {
         return Authorities.builder().name(simpleGrantedAuthority.getAuthority().toUpperCase()).build();
     }

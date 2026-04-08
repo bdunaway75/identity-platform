@@ -1,0 +1,726 @@
+
+.clients-page {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.clients-page::before {
+    content: "";
+    position: absolute;
+    inset: -2rem -2rem auto;
+    height: 18rem;
+    background:
+        radial-gradient(circle at 12% 18%, rgba(34, 211, 238, 0.14), transparent 28%),
+        radial-gradient(circle at 86% 8%, rgba(99, 102, 241, 0.18), transparent 30%);
+    filter: blur(10px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.clients-page > * {
+    position: relative;
+    z-index: 1;
+}
+
+.client-shell {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.client-header {
+    width: 100%;
+    padding: 0.95rem 1.15rem 0.9rem;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background:
+        linear-gradient(180deg, rgba(16, 19, 30, 0.9), rgba(12, 14, 23, 0.76)),
+        radial-gradient(circle at top left, rgba(34, 211, 238, 0.11), transparent 35%),
+        radial-gradient(circle at top right, rgba(99, 102, 241, 0.13), transparent 36%);
+    box-shadow:
+        0 16px 42px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.client-header-copy {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    text-align: center;
+}
+
+.client-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 0.28rem 0.62rem;
+    margin-bottom: 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(229, 231, 235, 0.84);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.client-title {
+    margin: 0;
+    font-size: clamp(1.2rem, 1.6vw, 1.75rem) !important;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.05em;
+}
+
+.client-subtitle {
+    margin: 0.32rem 0 0;
+    max-width: 43rem;
+    color: rgba(255, 255, 255, 0.66);
+    font-size: 0.83rem;
+    line-height: 1.4;
+}
+
+.clients-layout {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.clients-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(19rem, 0.8fr);
+    gap: 0.75rem;
+    align-items: start;
+}
+
+.clients-sidebar {
+    display: grid;
+    align-content: start;
+    gap: 0.75rem;
+}
+
+.client-card {
+    min-width: 0;
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background:
+        linear-gradient(165deg, rgba(22, 27, 40, 0.96), rgba(10, 12, 21, 0.98)),
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 42%);
+    box-shadow:
+        0 16px 42px rgba(0, 0, 0, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.client-card-header {
+    padding: 0.9rem 1rem 0.78rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    display: grid;
+    gap: 0.45rem;
+}
+
+.client-card-kicker {
+    margin-bottom: 0.2rem;
+    color: rgba(34, 211, 238, 0.72);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.client-card-title {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.98rem !important;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+}
+
+.client-card-caption {
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.client-card-contents {
+    padding: 0.9rem 1rem 1rem;
+    display: grid;
+    gap: 0.72rem 0.8rem;
+    min-width: 0;
+}
+
+.client-card-primary .client-card-contents {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.client-card-secondary .client-card-contents,
+.client-card-output .client-card-contents {
+    grid-template-columns: 1fr;
+}
+
+.client-field-full {
+    grid-column: 1 / -1;
+}
+
+.client-card-contents > div,
+.client-card-contents > label,
+.client-field-full,
+.text-input {
+    min-width: 0;
+}
+
+.client-field-help {
+    margin-top: 0.28rem;
+    padding-left: 0.35rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.66rem;
+    line-height: 1.35;
+}
+
+.mantine-InputWrapper-root,
+.mantine-MultiSelect-root,
+.mantine-TagsInput-root,
+.mantine-PillsInput-root,
+.mantine-PillsInput-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+}
+
+.mantine-InputWrapper-root {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.25rem !important;
+}
+
+.mantine-MultiSelect-label,
+.mantine-TagsInput-label {
+    padding-left: 0.3rem !important;
+    color: rgba(255, 255, 255, 0.86) !important;
+    font-size: 0.72rem !important;
+    font-weight: 500 !important;
+}
+
+.mantine-MultiSelect-input,
+.mantine-TagsInput-input,
+.mantine-Input-input {
+    min-height: 2.55rem !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.03)) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+    font-size: 0.78rem !important;
+}
+
+.client-select-input {
+    min-height: 2.55rem !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.03)) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+}
+
+.client-select-section {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.client-select-section {
+    top: 1px !important;
+    bottom: 1px !important;
+    right: 1px !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 0 11px 11px 0 !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.22), rgba(255, 255, 255, 0.04)) !important;
+}
+
+.client-select-clear {
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: rgba(241, 245, 249, 0.86) !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin-left: 0.18rem !important;
+}
+
+.client-select-clear:hover {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.client-select-section .mantine-Combobox-chevron {
+    color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.mantine-PillsInput-root {
+    min-height: 2.55rem !important;
+}
+
+.mantine-PillsInput-input {
+    min-height: 2.55rem !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin;
+}
+
+.mantine-PillsInput-field {
+    min-width: 6rem !important;
+    flex: 0 0 6rem !important;
+}
+
+.mantine-Pill-root {
+    flex: 0 0 auto !important;
+    max-width: 10rem !important;
+}
+
+.mantine-Pill-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.client-select-dropdown {
+    border-radius: 14px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background:
+        linear-gradient(180deg, rgba(16, 19, 30, 0.98), rgba(10, 12, 21, 0.98)),
+        radial-gradient(circle at top, rgba(34, 211, 238, 0.06), transparent 44%) !important;
+    box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+}
+
+.client-select-option {
+    color: rgba(255, 255, 255, 0.84) !important;
+    border-radius: 10px !important;
+}
+
+.client-select-option[data-combobox-selected],
+.client-select-option[data-combobox-active],
+.client-select-option:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.mantine-Input-input[aria-invalid="true"],
+.mantine-PillsInput-input[aria-invalid="true"],
+.mantine-MultiSelect-input[aria-invalid="true"],
+.mantine-TagsInput-input[aria-invalid="true"] {
+    border-color: rgba(248, 113, 113, 0.85) !important;
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.45) !important;
+}
+
+.mantine-InputWrapper-error {
+    padding-left: 0.3rem !important;
+    color: #fca5a5 !important;
+    font-size: 0.68rem !important;
+}
+
+.mantine-Checkbox-root {
+    margin-top: 0.1rem;
+}
+
+.mantine-Checkbox-input {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.mantine-Checkbox-input:checked {
+    background: linear-gradient(180deg, var(--accent-alt), var(--accent)) !important;
+    border-color: transparent !important;
+}
+
+.client-checkbox {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.65rem;
+    align-items: start;
+    padding: 0.72rem 0.78rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025));
+}
+
+.client-checkbox-label {
+    color: white;
+    font-size: 0.77rem;
+    font-weight: 600;
+}
+
+.client-checkbox-description {
+    margin-top: 0.12rem;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.69rem;
+    line-height: 1.35;
+}
+
+.client-checkbox-error {
+    margin-top: 0.25rem;
+    color: #fca5a5;
+    font-size: 0.66rem;
+}
+
+.client-note {
+    padding: 0.72rem 0.78rem;
+    border-radius: 14px;
+    border: 1px solid rgba(99, 102, 241, 0.28);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(34, 211, 238, 0.08));
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.7rem;
+    line-height: 1.4;
+}
+
+.client-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.client-summary-tile {
+    min-height: 4.6rem;
+    padding: 0.72rem 0.78rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025)),
+        radial-gradient(circle at top right, rgba(34, 211, 238, 0.08), transparent 38%);
+}
+
+.client-summary-label {
+    margin-bottom: 0.38rem;
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.client-summary-value {
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.82rem;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.client-summary-status.is-ready {
+    border-color: rgba(34, 197, 94, 0.35);
+    background:
+        linear-gradient(180deg, rgba(34, 197, 94, 0.12), rgba(255, 255, 255, 0.025)),
+        radial-gradient(circle at top right, rgba(74, 222, 128, 0.1), transparent 40%);
+}
+
+.client-summary-status.is-pending {
+    border-color: rgba(250, 204, 21, 0.22);
+    background:
+        linear-gradient(180deg, rgba(250, 204, 21, 0.08), rgba(255, 255, 255, 0.025)),
+        radial-gradient(circle at top right, rgba(250, 204, 21, 0.08), transparent 40%);
+}
+
+.client-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(9rem, 11rem));
+    gap: 0.65rem;
+    justify-content: center;
+    align-self: center;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.client-actions .btn {
+    min-width: 0;
+    width: 100%;
+    padding: 0.68rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.client-submit-message {
+    margin: 0.1rem auto 0;
+    width: fit-content;
+    max-width: min(100%, 44rem);
+    padding: 0.72rem 0.95rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(229, 231, 235, 0.84);
+    font-size: 0.74rem;
+    line-height: 1.45;
+    text-align: center;
+}
+
+.client-success-card {
+    margin: 0.1rem auto 0;
+    width: min(100%, 44rem);
+    padding: 0.9rem 1rem 1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(74, 222, 128, 0.32);
+    background:
+        linear-gradient(180deg, rgba(34, 197, 94, 0.14), rgba(22, 101, 52, 0.08)),
+        radial-gradient(circle at top right, rgba(74, 222, 128, 0.14), transparent 42%);
+    box-shadow:
+        0 16px 34px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    text-align: center;
+}
+
+.client-success-kicker {
+    color: rgba(187, 247, 208, 0.88);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.client-success-id {
+    margin-top: 0.55rem;
+    color: rgba(240, 253, 244, 0.98);
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.client-success-note {
+    margin-top: 0.65rem;
+    color: rgba(220, 252, 231, 0.86);
+    font-size: 0.72rem;
+    line-height: 1.45;
+}
+
+.client-devtools {
+    width: min(100%, 64rem);
+    margin: 0.15rem auto 0;
+    border-radius: 16px;
+    border: 1px solid rgba(34, 211, 238, 0.14);
+    background:
+        linear-gradient(180deg, rgba(13, 17, 29, 0.96), rgba(9, 12, 22, 0.98)),
+        radial-gradient(circle at top right, rgba(34, 211, 238, 0.07), transparent 40%);
+    box-shadow:
+        0 16px 34px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+}
+
+.client-devtools-summary {
+    list-style: none;
+    padding: 0.82rem 1rem;
+    cursor: pointer;
+    color: rgba(226, 232, 240, 0.9);
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.client-devtools-summary::-webkit-details-marker {
+    display: none;
+}
+
+.client-devtools-summary::before {
+    content: "+";
+    display: inline-flex;
+    width: 1rem;
+    margin-right: 0.45rem;
+    color: rgba(34, 211, 238, 0.78);
+    justify-content: center;
+}
+
+.client-devtools[open] .client-devtools-summary {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.client-devtools[open] .client-devtools-summary::before {
+    content: "-";
+}
+
+.client-devtools-code {
+    margin: 0;
+    padding: 1rem;
+    overflow: auto;
+    color: rgba(191, 219, 254, 0.92);
+    font-size: 0.72rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: rgba(2, 6, 23, 0.38);
+}
+
+.clients-locked-page {
+    width: calc(100% + 4rem);
+    margin: -2rem;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(circle at top, #1a1818, #0b0b0b);
+}
+
+.clients-locked-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: grid-drift 10s linear infinite;
+    pointer-events: none;
+}
+
+.clients-locked-card {
+    position: relative;
+    z-index: 1;
+    width: min(30rem, 100%);
+    padding: 2rem 1.85rem;
+    border-radius: 20px;
+    background:
+        linear-gradient(180deg, rgba(18, 21, 34, 0.92), rgba(10, 12, 22, 0.96)),
+        radial-gradient(circle at top, rgba(34, 211, 238, 0.08), transparent 42%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+        0 22px 50px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    text-align: center;
+    overflow: hidden;
+}
+
+.clients-locked-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top center, rgba(99, 102, 241, 0.14), transparent 45%);
+    pointer-events: none;
+}
+
+.clients-locked-kicker {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem 0.7rem;
+    margin-bottom: 1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(229, 231, 235, 0.82);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.clients-locked-card h1 {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 0.82rem;
+    color: #e5e7eb;
+    font-size: 1.14rem;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+}
+
+.clients-locked-copy {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 1.35rem;
+    color: #9ca3af;
+    font-size: 0.89rem;
+    line-height: 1.5;
+}
+
+.clients-lock-button {
+    position: relative;
+    z-index: 1;
+    appearance: none;
+    border: none;
+    width: 100%;
+    padding: 0.8rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #2563eb, #3b82f6 45%, #22d3ee);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    box-shadow: 0 14px 28px rgba(37, 99, 235, 0.25);
+}
+
+.clients-lock-button:hover {
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.2),
+        0 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.clients-lock-secondary-button {
+    position: relative;
+    z-index: 1;
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    width: 100%;
+    padding: 0.75rem;
+    margin-top: 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    color: #d1d5db;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.clients-lock-secondary-button:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+@keyframes grid-drift {
+    from {
+        background-position: 0 0, 0 0;
+    }
+
+    to {
+        background-position: 40px 40px, 40px 40px;
+    }
+}
+
+@media (max-width: 1180px) {
+    .clients-workspace {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .client-header {
+        padding: 0.9rem 0.95rem;
+        border-radius: 18px;
+    }
+
+    .client-header-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .client-card-primary .client-card-contents,
+    .client-summary-grid,
+    .client-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .clients-locked-card h1 {
+        white-space: normal;
+    }
+}

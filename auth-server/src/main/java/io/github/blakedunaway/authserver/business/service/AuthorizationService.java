@@ -26,6 +26,7 @@ public class AuthorizationService implements OAuth2AuthorizationService {
 
     private final RedisStore redisStore;
 
+    @Override
     public void save(final OAuth2Authorization src) {
         final Authorization authorization = authorizationRepository.save(src);
         redisStore.put(REDIS_HANDLE + authorization.getId().toString(), src.getAttributes(), Duration.ofSeconds(60));

@@ -1,8 +1,6 @@
-// FILE: io/github/blakedunaway/authserver/security/provider/ClientAwareDaoAuthProvider.java
 package io.github.blakedunaway.authserver.security.provider;
 
-import io.github.blakedunaway.authserver.business.model.RegisterDto;
-import io.github.blakedunaway.authserver.business.model.RegisterDto.UsernamePasswordWithClientAuthenticationToken;
+import io.github.blakedunaway.authserver.business.model.user.ClientRegisterDto.UsernamePasswordWithClientAuthenticationToken;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AccountExpiredException;
@@ -31,24 +29,24 @@ public class ClientAwareDaoAuthProvider implements AuthenticationProvider {
         Assert.notNull(authentication, "authentication cannot be null");
         Assert.hasText(String.valueOf(authentication.getClientId()), "clientId cannot be empty");
         Assert.hasText(authentication.getEmail(), "email cannot be empty");
-        return userService.loadUserByEmailAndClientId(authentication.getEmail(), authentication.getClientId());
+        return userService.loadUserDetailsByEmailAndClientId(authentication.getClientId(), authentication.getEmail());
     }
 
     private void defaultPreAuthenticationChecks(final UserDetails user) {
         if (!user.isAccountNonLocked()) {
-            throw new LockedException("User account is locked");
+            throw new LockedException("ClientUser account is locked");
         }
         if (!user.isEnabled()) {
-            throw new DisabledException("User is disabled");
+            throw new DisabledException("ClientUser is disabled");
         }
         if (!user.isAccountNonExpired()) {
-            throw new AccountExpiredException("User account has expired");
+            throw new AccountExpiredException("ClientUser account has expired");
         }
     }
 
     private void defaultPostAuthenticationChecks(final UserDetails user) {
         if (!user.isCredentialsNonExpired()) {
-            throw new CredentialsExpiredException("User credentials have expired");
+            throw new CredentialsExpiredException("ClientUser credentials have expired");
         }
     }
 
@@ -71,7 +69,6 @@ public class ClientAwareDaoAuthProvider implements AuthenticationProvider {
         final UsernamePasswordWithClientAuthenticationToken token =
                 (UsernamePasswordWithClientAuthenticationToken) authentication;
 
-        // ✅ On success: credentials should be null, authorities should come from UserDetails
         final UsernamePasswordWithClientAuthenticationToken result =
                 UsernamePasswordWithClientAuthenticationToken.authenticated(
                         token.getEmail(),

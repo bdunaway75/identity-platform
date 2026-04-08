@@ -1,0 +1,67 @@
+.text-input {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 12px;
+}
+
+.text-input-label {
+    color: white;
+    padding-left: 6px;
+}
+
+.text-input-field {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 12px !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    background: rgba(0,0,0,0.25);
+    color: rgba(255,255,255,0.92);
+    outline: none;
+}
+
+.text-input-field[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.text-input-field[type="number"]::-webkit-inner-spin-button,
+.text-input-field[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.leading-text-prefix {
+    display: inline-flex !important;
+    align-items: center;
+}
+
+.leading-text-prefix * {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+.leading-text-field {
+    padding: 11px 12px;
+    border-top-left-radius: 12px !important;
+    border-bottom-left-radius: 12px !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    background: rgba(124,124,124,0.3);
+    outline: none;
+    font-weight: bolder;
+}
+
+.text-input-field:focus {
+    box-shadow: 0 0 0 1px #6366f1;
+}
+
+.text-input-field[aria-invalid="true"] {
+    border-color: rgba(248, 113, 113, 0.85) !important;
+    box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.5);
+}
+
+.text-input-error {
+    color: #fca5a5;
+    font-size: 11px;
+    padding-left: 6px;
+}
+

@@ -5,23 +5,21 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PostLoad;
-import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import org.springframework.data.domain.Persistable;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -35,15 +33,16 @@ import static jakarta.persistence.FetchType.LAZY;
                 @Index(name = "ix_auth_token_authorization", columnList = "authorization_id"),
                 @Index(name = "ix_auth_token_authorization_subject", columnList = "authorization_id, subject"),
                 @Index(name = "ix_auth_token_expires_at", columnList = "expired_at"),
-                @Index(name = "ix_auth_token_kid", columnList = "kid")
         }
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AuthTokenEntity implements Persistable<String> {
+public class AuthTokenEntity {
 
     @Id
+    @Setter
     @Column(name = "id", updatable = false, nullable = false)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID tokenId;
 
     @Column(name = "issued_at", nullable = false)
@@ -56,32 +55,28 @@ public class AuthTokenEntity implements Persistable<String> {
     private Instant revokedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "token_type", nullable = false, length = 32)
+    @Column(name = "token_type", nullable = false)
     private TokenType tokenType;
 
-    @Column(name = "subject", length = 256)
+    @Column(name = "subject")
     private String subject;
 
     @ManyToOne(fetch = LAZY, optional = false)
     @JoinColumn(name = "authorization_id", nullable = false)
     private AuthorizationEntity authorizationEntity;
 
-    @Column(name = "token_value_hash", nullable = false, length = 64, unique = true)
+    @Column(name = "token_value_hash", nullable = false, unique = true)
     private String tokenValueHash;
 
-    @Column(name = "kid", nullable = false)
+    @Column(name = "kid")
     private String kid;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata", columnDefinition = "jsonb", nullable = false)
-    private Map<String, Object> metadataJson = new LinkedHashMap<>();
-
-    @Transient
-    private boolean isNew = true;
+    @Column(name = "metadata", nullable = false)
+    private Map<String, Object> metadataJson;
 
     public static AuthTokenEntity create(final UUID id,
                                          final String kid,
-                                         boolean isNew,
                                          final String tokenValueHash,
                                          final Instant issuedAt,
                                          final Instant expiresAt,
@@ -94,24 +89,17 @@ public class AuthTokenEntity implements Persistable<String> {
         Objects.requireNonNull(expiresAt, "expiresAt must not be null");
         Objects.requireNonNull(tokenType, "tokenType must not be null");
 
-        final AuthTokenEntity e = new AuthTokenEntity();
-        e.isNew = isNew;
-        e.tokenId = id;
-        e.kid = kid;
-        e.tokenValueHash = tokenValueHash;
-        e.issuedAt = issuedAt;
-        e.expiresAt = expiresAt;
-        e.revokedAt = revokedAt;
-        e.tokenType = tokenType;
-        e.subject = subject;
-        e.metadataJson = metadataJson;
-        return e;
-    }
-
-    public static AuthTokenEntity createFromId(final UUID id) {
-        final AuthTokenEntity authTokenEntity = new AuthTokenEntity();
-        authTokenEntity.tokenId = id;
-        return authTokenEntity;
+        final AuthTokenEntity tokenEntity = new AuthTokenEntity();
+        tokenEntity.tokenId = id;
+        tokenEntity.kid = kid;
+        tokenEntity.tokenValueHash = tokenValueHash;
+        tokenEntity.issuedAt = issuedAt;
+        tokenEntity.expiresAt = expiresAt;
+        tokenEntity.revokedAt = revokedAt;
+        tokenEntity.tokenType = tokenType;
+        tokenEntity.subject = subject;
+        tokenEntity.metadataJson = metadataJson;
+        return tokenEntity;
     }
 
     public AuthTokenEntity setAuthorizationEntity(final AuthorizationEntity parent) {
@@ -133,23 +121,6 @@ public class AuthTokenEntity implements Persistable<String> {
     @Override
     public int hashCode() {
         return tokenValueHash != null ? tokenValueHash.hashCode() : 0;
-    }
-
-    @Override
-    public String getId() {
-        return tokenId != null ? tokenId.toString() : null;
-    }
-
-    @Override
-    public boolean isNew() {
-        return isNew;
-    }
-
-
-    @PostLoad
-    @PostPersist
-    public void markNotNew() {
-        this.isNew = false;
     }
 
 }

@@ -4,7 +4,6 @@ import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.integration.repository.gateway.RegisteredClientInternalRepository;
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Repository;
@@ -28,13 +27,13 @@ public class RegisteredClientRepositoryAdapterImpl implements RegisteredClientRe
     @Override
     public RegisteredClient findById(final String id) {
         final RegisteredClientModel model = internal.findById(id);
-        return model == null ? null : model.toBuilder().toOAuth2RegisteredClient();
+        return model == null ? null : model.toOAuth2RegisteredClient();
     }
 
     @Override
     public RegisteredClient findByClientId(final String clientId) {
         final RegisteredClientModel model = internal.findByClientId(clientId);
-        return model == null ? null : model.toBuilder().toOAuth2RegisteredClient();
+        return model == null ? null : model.toOAuth2RegisteredClient();
     }
 
 }

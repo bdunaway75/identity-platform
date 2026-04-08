@@ -1,12 +1,17 @@
 .login-root {
+  position: relative;
   min-height: 100vh;
-  justify-content: center;
   display: flex;
+  justify-content: center;
   place-items: center;
-  background: radial-gradient(circle at top, #1a1818, #0b0b0b);
+  background:
+    radial-gradient(circle at top, rgba(42, 71, 78, 0.22), transparent 38%),
+    radial-gradient(circle at bottom, rgba(22, 40, 46, 0.42), transparent 42%),
+    linear-gradient(180deg, #101819 0%, #091112 52%, #050809 100%);
   color: #e5e7eb;
   font-family: system-ui, sans-serif;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .login-root::before {
@@ -14,22 +19,50 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-position: 0 0;
-  animation: grid-drift 10s linear infinite;
+    linear-gradient(rgba(176, 245, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(176, 245, 255, 0.09) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(132, 224, 255, 0.05), transparent 55%);
+  background-size:
+    42px 42px,
+    42px 42px,
+    10px 10px,
+    10px 10px,
+    100% 100%;
+  background-position:
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    0 0;
+  opacity: 0.75;
+  animation: grid-drift 16s linear infinite;
   pointer-events: none;
 }
 
-
 @keyframes grid-drift {
   from {
-    background-position: 0 0;
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0,
+      0 0;
   }
   to {
-    background-position: 40px 40px;
+    background-position:
+      42px 42px,
+      42px 42px,
+      10px 10px,
+      10px 10px,
+      0 0;
   }
+}
+
+.login-root > div {
+  position: relative;
+  z-index: 1;
 }
 
 .login-card {
@@ -37,9 +70,12 @@
   width: 360px;
   padding: 2rem;
   border-radius: 8px;
-  background: rgba(20, 20, 20, 0.9);
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 0 40px rgba(0,0,0,0.6);
+  background: rgba(7, 14, 16, 0.82);
+  border: 1px solid rgba(176, 245, 255, 0.14);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
   z-index: 1;
 }
 
@@ -83,4 +119,20 @@
   font-size: 0.75rem;
   color: #6b7280;
   text-align: center;
+}
+
+@media (max-width: 640px) {
+  .login-card {
+    width: min(360px, calc(100vw - 2rem));
+    padding: 1.5rem;
+  }
+
+  .login-root::before {
+    background-size:
+      34px 34px,
+      34px 34px,
+      8px 8px,
+      8px 8px,
+      100% 100%;
+  }
 }

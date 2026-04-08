@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.config.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -14,6 +15,7 @@ public class RedisConfig {
     @Bean
     public RedisTemplate<String, Object> redisTemplate(
             RedisConnectionFactory factory,
+            @Qualifier("securityObjectMapper")
             ObjectMapper securityObjectMapper
     ) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();

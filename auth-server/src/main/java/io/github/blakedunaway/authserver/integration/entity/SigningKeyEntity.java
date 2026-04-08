@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -28,17 +29,17 @@ import java.util.UUID;
 public class SigningKeyEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
     @Column(name = "kid", nullable = false, unique = true)
     private String kid;
 
-    @Column(name = "encoded_public_key", columnDefinition = "TEXT")
+    @Column(name = "encoded_public_key", columnDefinition = "CLOB")
     private String publicKey;
 
-    @Column(name = "encoded_private_key", columnDefinition = "TEXT")
+    @Column(name = "encoded_private_key", columnDefinition = "CLOB")
     private String privateKey;
 
     @Column(name = "algo")

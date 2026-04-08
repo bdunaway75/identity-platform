@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.security.config;
 
 import io.github.blakedunaway.authserver.security.provider.ClientAwareDaoAuthProvider;
+import io.github.blakedunaway.authserver.security.provider.PlatformUserDaoAuthProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -61,8 +62,9 @@ public class AuthConfig {
     }
 
     @Bean
-    AuthenticationManager authenticationManager(final ClientAwareDaoAuthProvider clientDaoAuthProvider) {
-        return new ProviderManager(clientDaoAuthProvider);
+    AuthenticationManager authenticationManager(final ClientAwareDaoAuthProvider clientDaoAuthProvider,
+                                                final PlatformUserDaoAuthProvider platformUserDaoAuthProvider) {
+        return new ProviderManager(platformUserDaoAuthProvider, clientDaoAuthProvider);
     }
 
 }

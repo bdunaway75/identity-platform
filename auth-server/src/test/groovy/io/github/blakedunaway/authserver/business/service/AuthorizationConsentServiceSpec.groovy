@@ -2,6 +2,8 @@ package io.github.blakedunaway.authserver.business.service
 
 import io.github.blakedunaway.authserver.TestSpec
 import io.github.blakedunaway.authserver.config.TestConfig
+import io.github.blakedunaway.authserver.config.redis.RedisStore
+import org.spockframework.spring.SpringBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.security.core.authority.SimpleGrantedAuthority
@@ -10,11 +12,14 @@ import org.springframework.test.annotation.DirtiesContext
 
 import static java.util.stream.Collectors.toSet
 
-@Import(TestConfig)
+@Import(AuthorizationConsentService)
 class AuthorizationConsentServiceSpec extends TestSpec {
 
     @Autowired
     private AuthorizationConsentService service
+
+    @SpringBean
+    RedisStore redisStore = Mock()
 
     private static OAuth2AuthorizationConsent consent(final String rcId,
                                                       final String principal,
@@ -31,13 +36,13 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "save -> findById persists authorities for user+client"() {
         given:
-        def rcId = "rc-${UUID.randomUUID()}"
+        def rcId = UUID.randomUUID().toString()
         def principal = "alice"
         def granted = ["SCOPE_READ", "SCOPE_WRITE"] as LinkedHashSet
-        def c = consent(rcId, principal, granted)
+        def authConsent = consent(rcId, principal, granted)
 
         when:
-        service.save(c)
+        service.save(authConsent)
         def fromService = service.findById(rcId, principal)
 
         then:
@@ -50,15 +55,15 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "save is idempotent for same user+client - no duplicate authorities"() {
         given:
-        def rcId = "rc-${UUID.randomUUID()}"
+        def rcId = UUID.randomUUID().toString()
         def principal = "idempotent"
         def granted = ["SCOPE_READ"] as Set
-        def c = consent(rcId, principal, granted)
+        def authConsent = consent(rcId, principal, granted)
 
         when:
-        service.save(c)
+        service.save(authConsent)
         def first = service.findById(rcId, principal)
-        service.save(c)
+        service.save(authConsent)
         def second = service.findById(rcId, principal)
 
         then:
@@ -70,7 +75,7 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "save merges newly approved authorities - progressive consent"() {
         given:
-        def rcId = "rc-${UUID.randomUUID()}"
+        def rcId = UUID.randomUUID().toString()
         def principal = "progress"
         def initial = consent(rcId, principal, ["SCOPE_READ"])
         def later = consent(rcId, principal, ["SCOPE_READ", "SCOPE_WRITE"])
@@ -89,7 +94,7 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "remove deletes consent for user+client"() {
         given:
-        def rcId = "rc-${UUID.randomUUID()}"
+        def rcId = UUID.randomUUID().toString()
         def principal = "carol"
         def c = consent(rcId, principal, ["SCOPE_READ"])
 
@@ -106,7 +111,7 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "round-trip mapping: Spring -> Entity -> Spring remains equal by fields"() {
         given:
-        def rcId = "rc-${UUID.randomUUID()}"
+        def rcId = UUID.randomUUID().toString()
         def principal = "roundtrip"
         def scopes = ["SCOPE_EMAIL", "SCOPE_PROFILE"] as Set
         def springObj = consent(rcId, principal, scopes)

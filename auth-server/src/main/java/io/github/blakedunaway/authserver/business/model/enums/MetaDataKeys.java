@@ -21,7 +21,9 @@ public enum MetaDataKeys {
     REVOKED_AT("revoked_at"),
     ISSUER("issuer"),
     SUBJECT("sub"),
-    JTI("jti");
+    JTI("jti"),
+    AZP("azp"),
+    IDENTITY_PLATFORM("identity-platform");
 
     private final String value;
 }
