@@ -8,20 +8,17 @@ import io.github.blakedunaway.authserver.config.redis.RedisStore;
 import io.github.blakedunaway.authserver.integration.entity.AuthTokenEntity;
 import io.github.blakedunaway.authserver.integration.entity.AuthorizationEntity;
 import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
+import io.github.blakedunaway.authserver.util.RedisUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.stereotype.Component;
 
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Component
 public class AuthorizationMapper {
-
-    private static final String REDIS_HANDLE = "auth:attrs:";
 
     private final AuthTokenMapper authTokenMapper;
 
@@ -87,16 +84,26 @@ public class AuthorizationMapper {
     public OAuth2Authorization authorizationToOAuth2Authorization(final Authorization authorization) {
         OAuth2Authorization.Builder builder =
                 OAuth2Authorization
-                        .withRegisteredClient(registeredClientMapper.registeredClientModelToRegisteredClient(authorization.getRegisteredClientModel()))
+                        .withRegisteredClient(registeredClientMapper.registeredClientModelToRegisteredClient(
+                                authorization.getRegisteredClientModel()))
                         .id(String.valueOf(authorization.getId()))
                         .principalName(authorization.getPrincipalName())
                         .authorizationGrantType(authorization.getAuthorizationGrantTypeInternal()
                                                              .getAuthorizationGrantType())
                         .authorizedScopes(authorization.getAuthorizedScopes())
-                        .attributes(attrs -> attrs.putAll(redisStore.get(REDIS_HANDLE + authorization.getId())));
+                        .attributes(attrs -> attrs.putAll(resolveStoredAttributes(authorization.getId())));
 
         authorization.getTokens().forEach(token -> builder.token(token.toOAuth2Token()));
         return builder.build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> resolveStoredAttributes(final UUID authorizationId) {
+        final Object storedAttributes = redisStore.get(RedisUtility.AUTHORIZATION_ATTRIBUTES + authorizationId);
+        if (!(storedAttributes instanceof Map<?, ?> storedMap)) {
+            return Collections.emptyMap();
+        }
+        return (Map<String, Object>) storedMap;
     }
 
 }

@@ -47,11 +47,13 @@ public final class ClientUser extends AbstractUser {
             return this;
         }
 
+        @Override
         public ClientUserBuilder from(final UUID id) {
             super.from(id);
             return this;
         }
 
+        @Override
         public ClientUserBuilder from(final String email) {
             super.from(email);
             return this;

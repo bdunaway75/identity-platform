@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.util.Assert;
 
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -47,9 +47,9 @@ public final class Authorization {
 
         private AuthorizationGrantTypeInternal grant;
 
-        private Set<String> scopes = new LinkedHashSet<>();
+        private Set<String> scopes = new HashSet<>();
 
-        private Set<AuthToken> tokens = new LinkedHashSet<>();
+        private Set<AuthToken> tokens = new HashSet<>();
 
         protected Builder(final UUID id) {
             this.id = id;
@@ -65,7 +65,7 @@ public final class Authorization {
             return this;
         }
 
-        public Builder scopes(Set<String> scopes) {
+        public Builder scopes(final Set<String> scopes) {
             this.scopes = scopes;
             return this;
         }

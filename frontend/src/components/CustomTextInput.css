@@ -59,6 +59,15 @@
     box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.5);
 }
 
+.text-input-field:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
+    border-color: rgba(250, 204, 21, 0.18) !important;
+    background:
+        linear-gradient(180deg, rgba(71, 50, 6, 0.34), rgba(38, 28, 8, 0.2)),
+        rgba(255, 255, 255, 0.02) !important;
+}
+
 .text-input-error {
     color: #fca5a5;
     font-size: 11px;

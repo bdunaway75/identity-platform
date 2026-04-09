@@ -28,7 +28,7 @@ public enum TokenFormat {
 
     public abstract OAuth2TokenFormat getOAuth2TokenFormat();
 
-    public static TokenFormat from(String value) {
+    public static TokenFormat from(final String value) {
         for (TokenFormat tokenFormat : values()) {
             if (tokenFormat.getValue().equals(value)) {
                 return tokenFormat;

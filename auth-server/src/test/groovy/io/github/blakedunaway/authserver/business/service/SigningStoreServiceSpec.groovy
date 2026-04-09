@@ -9,7 +9,9 @@ import io.github.blakedunaway.authserver.business.model.SigningKey
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys
 import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus
 import io.github.blakedunaway.authserver.config.TestConfig
+import io.github.blakedunaway.authserver.config.redis.RedisStore
 import io.github.blakedunaway.authserver.integration.repository.gateway.SigningKeyRepository
+import org.spockframework.spring.SpringBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.security.oauth2.core.AuthorizationGrantType
@@ -22,8 +24,11 @@ import java.time.Instant
 
 import static org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType.BEARER
 
-@Import(TestConfig)
+@Import([TestConfig, SigningKeyStore, AuthorizationService, RegisteredClientService])
 class SigningStoreServiceSpec extends TestSpec {
+    @SpringBean
+    private RedisStore redisStore = Mock()
+
     @Autowired
     @Subject
     private SigningKeyStore signingKeyStore
@@ -32,7 +37,14 @@ class SigningStoreServiceSpec extends TestSpec {
     private AuthorizationService service
 
     @Autowired
+    private RegisteredClientService registeredClientService
+
+    @Autowired
     private SigningKeyRepository signingKeyRepository
+
+    def setup() {
+        redisStore.get(_ as String) >> [:]
+    }
 
     @DirtiesContext
     def "ensureActiveKey creates an ACTIVE key when none exist"() {
@@ -135,7 +147,8 @@ class SigningStoreServiceSpec extends TestSpec {
         given:
         def key = signingKeyRepository.save(signingKeyStore.createSigningKey())
 
-        def rc = AuthorizationServiceSpec.minimalRegisteredClient()
+        def rc = registeredClientService.saveRegisteredClient(AuthorizationServiceSpec.minimalRegisteredClient())
+                                        .toOAuth2RegisteredClient()
         def raw = "raw-" + UUID.randomUUID()
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(1), Set.of("r"))
@@ -173,7 +186,8 @@ class SigningStoreServiceSpec extends TestSpec {
         // start with an ACTIVE key
         def key = signingKeyRepository.save(signingKeyStore.createSigningKey())
 
-        def rc = AuthorizationServiceSpec.minimalRegisteredClient()
+        def rc = registeredClientService.saveRegisteredClient(AuthorizationServiceSpec.minimalRegisteredClient())
+                                        .toOAuth2RegisteredClient()
         def raw = "raw-" + UUID.randomUUID()
         def now = Instant.now()
         def access = new OAuth2AccessToken(BEARER, raw, now, now.plusSeconds(1), Set.of("r"))

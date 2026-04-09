@@ -19,8 +19,7 @@ public class AuthorizationConsentService implements OAuth2AuthorizationConsentSe
     @Override
     public void save(final OAuth2AuthorizationConsent authorizationConsent) {
         Assert.notNull(authorizationConsent, "AuthorizationConsent must not be null");
-        AuthorizationConsent model = AuthorizationConsent.Builder.fromSpring(authorizationConsent);
-        authorizationConsentRepository.save(model);
+        authorizationConsentRepository.save(AuthorizationConsent.Builder.fromSpring(authorizationConsent));
     }
 
     @Override

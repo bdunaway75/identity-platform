@@ -74,7 +74,7 @@ public class SigningKeyStore {
 
     @Scheduled(cron = "0 0 3 */14 * ?")
     public void rotateSigningKeys() {
-        SigningKey newKey = createSigningKey();
+        final SigningKey newKey = createSigningKey();
         signingKeyRepository.save(newKey);
         signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE)
                             .stream()

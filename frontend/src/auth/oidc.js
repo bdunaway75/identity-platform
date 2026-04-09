@@ -1,12 +1,16 @@
 import { UserManager } from "oidc-client-ts";
+import { APP_ENDPOINTS } from "../config/endpoints";
 
 export const userManager = new UserManager({
-  authority: "http://localhost:8080", // your AS base URL
-  client_id: "identity-platform",
-  redirect_uri: "http://localhost:5173/callback",
-  post_logout_redirect_uri: "http://localhost:5173/login",
+  authority: APP_ENDPOINTS.oidc.authority,
+  client_id: APP_ENDPOINTS.oidc.clientId,
+  redirect_uri: APP_ENDPOINTS.oidc.redirectUri,
+  post_logout_redirect_uri: APP_ENDPOINTS.oidc.postLogoutRedirectUri,
   response_type: "code",
   scope: "openid",
-  automaticSilentRenew: true,
+  automaticSilentRenew: false,
+  monitorSession: false,
   loadUserInfo: false,
 });
+
+userManager.stopSilentRenew();

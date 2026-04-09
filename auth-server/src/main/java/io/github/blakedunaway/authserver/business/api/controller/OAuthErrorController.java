@@ -10,8 +10,8 @@ public class OAuthErrorController {
 
     @GetMapping("/oauth-error")
     public String oauthError(
-            @RequestParam String error,
-            @RequestParam(required = false) String error_description,
+            @RequestParam final String error,
+            @RequestParam(required = false) final String error_description,
             Model model
     ) {
         model.addAttribute("error", error);

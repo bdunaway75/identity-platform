@@ -34,13 +34,17 @@ public class ClientAwareDaoAuthProvider implements AuthenticationProvider {
 
     private void defaultPreAuthenticationChecks(final UserDetails user) {
         if (!user.isAccountNonLocked()) {
-            throw new LockedException("ClientUser account is locked");
+            throw new LockedException("User account is locked");
         }
         if (!user.isEnabled()) {
-            throw new DisabledException("ClientUser is disabled");
+            throw new DisabledException("User is disabled");
         }
         if (!user.isAccountNonExpired()) {
-            throw new AccountExpiredException("ClientUser account has expired");
+            throw new AccountExpiredException("User account has expired");
+        }
+
+        if (!user.isCredentialsNonExpired()) {
+            throw new CredentialsExpiredException("User credentials have expired");
         }
     }
 

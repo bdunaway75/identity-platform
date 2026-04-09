@@ -1,56 +1,47 @@
 import { ClientAuthenticationMethods } from "../constants/ClientAuthenticationMethods";
 import { AuthorizationGrants } from "../constants/AuthorizationGrantTypes";
 
-export const tokenSettingsFields = [
-    {
-        name: 'accessTokenTimeToLiveMinutes',
-        label: 'Access Token TTL (minutes)',
-        placeholder: '30',
-        type: 'number',
-        min: 1,
-    },
-    {
-        name: 'refreshTokenTimeToLiveMinutes',
-        label: 'Refresh Token TTL (minutes)',
-        placeholder: '43200',
-        type: 'number',
-        min: 1,
-    },
-    {
-        name: 'authorizationCodeTimeToLiveMinutes',
-        label: 'Authorization Code TTL (minutes)',
-        placeholder: '5',
-        type: 'number',
-        min: 1,
-    },
-];
+export interface RegisteredClientTokenSettings {
+    accessTokenTimeToLive: string;
+    refreshTokenTimeToLive: string;
+    authorizationCodeTimeToLive: string;
+    reuseRefreshTokens: boolean;
+}
 
-export const clientSettingsFields = [
-    {
-        name: 'requireProofKey',
-        label: 'Require PKCE',
-        description: 'Recommended for public or browser-based clients.',
-    },
-    {
-        name: 'requireAuthorizationConsent',
-        label: 'Require Consent',
-        description: 'Prompt the user to approve requested scopes.',
-    },
-];
+export interface RegisteredClientClientSettings {
+    requireProofKey: boolean;
+    requireAuthorizationConsent: boolean;
+}
 
-export function createRegisteredClient() {
+export interface RegisteredClientDto {
+    clientName: string;
+    clientOrigin: string;
+    clientAuthenticationMethods: string[];
+    authorizationGrantTypes: string[];
+    authorities: string[];
+    roles: string[];
+    redirectUris: string[];
+    postLogoutRedirectUris: string[];
+    scopes: string[];
+    tokenSettings: RegisteredClientTokenSettings;
+    clientSettings: RegisteredClientClientSettings;
+}
+
+export function createRegisteredClient(): RegisteredClientDto {
     return {
         clientName: '',
         clientOrigin: '',
         clientAuthenticationMethods: [ClientAuthenticationMethods.NONE.value],
         authorizationGrantTypes: [AuthorizationGrants.AUTHORIZATION_CODE.value],
+        authorities: [],
+        roles: [],
         redirectUris: [],
         postLogoutRedirectUris: [],
         scopes: [],
         tokenSettings: {
-            accessTokenTimeToLiveMinutes: '30',
-            refreshTokenTimeToLiveMinutes: '43200',
-            authorizationCodeTimeToLiveMinutes: '5',
+            accessTokenTimeToLive: '30',
+            refreshTokenTimeToLive: '43200',
+            authorizationCodeTimeToLive: '5',
             reuseRefreshTokens: true,
         },
         clientSettings: {

@@ -335,7 +335,10 @@ class AuthorizationServiceSpec extends TestSpec {
                                       .principalName("oidc")
                                       .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                                       .authorizedScopes(Set.of("openid"))
-                                      .token(idTok) { meta -> meta.put("kid", kid) }
+                                      .token(idTok) { meta ->
+                                          meta.put("kid", kid)
+                                          meta.put(OAuth2Authorization.Token.CLAIMS_METADATA_NAME, idTok.claims)
+                                      }
                                       .build()
 
         when:
@@ -379,13 +382,11 @@ class AuthorizationServiceSpec extends TestSpec {
                              .authorizationGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS))
                              .tokenSettings(TokenSettings.builder().build())
                              .clientSettings(ClientSettings.builder().requireProofKey(false).build())
-                             .clientIdIssuedAt(Instant.now())
-                             .clientSecretExpiresAt(Instant.now())
-                             .postLogoutRedirectUris(Set.of("http://test.com/*"))
+                             .clientIdIssuedAt(LocalDateTime.now())
+                             .clientSecretExpiresAt(LocalDateTime.now())
+                             .postLogoutRedirectUris(Set.of("https://test.com/logout"))
                              .scopes(Set.of("read"))
-                             .redirectUris(Set.of("http://test.com/*"))
-                             .tokenSettings(TokenSettings.builder().build())
-                             .clientSettings(ClientSettings.builder().build())
+                             .redirectUris(Set.of("https://test.com/callback"))
                              .build()
     }
 }

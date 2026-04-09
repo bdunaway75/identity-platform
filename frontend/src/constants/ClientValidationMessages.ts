@@ -1,0 +1,23 @@
+export const ClientValidationMessages = {
+  baseUrlRequired: "Base URL is required.",
+  baseUrlNoSpaces: "Base URL cannot contain spaces.",
+  baseUrlProtocol: "Base URL must start with http:// or https://.",
+  baseUrlOnly: "Base URL must be origin-only, like https://app.example.com.",
+  urlEmpty: "This entry cannot be empty.",
+  urlNoSpaces: "URLs cannot contain spaces.",
+  urlAbsolute: "Enter a valid absolute http(s) URL.",
+  urlHttpOnly: "Only http and https URLs are allowed here.",
+  urlPathOrAbsolute: "Enter either a full URL or a path starting with /.",
+  urlResolvable: "This value could not be resolved into a valid URL.",
+  invalidEntries: (fieldLabel: string) => `${fieldLabel} contains invalid entries.`,
+  invalidEntryDetails: (fieldLabel: string, error: string, value: string) =>
+    `${fieldLabel}: ${error} Offending value: ${value}.`,
+  clientNameRequired: "Client name is required.",
+  authMethodRequired: "Choose at least one client authentication method.",
+  grantTypeRequired: "Choose at least one authorization grant type.",
+  scopesRequired: "Add at least one allowed scope.",
+  redirectRequired: "At least one redirect URI is required for this grant selection.",
+  clientCredentialsNone: "Public clients cannot use the client_credentials grant.",
+  publicClientPkce: "Public clients must require PKCE.",
+  positiveWholeNumber: "Enter a positive whole number.",
+};

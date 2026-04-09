@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
 import org.springframework.util.Assert;
 
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -24,7 +24,7 @@ public final class AuthorizationConsent {
 
     private final String principalName;
 
-    private final Set<Authorities> authorities;
+    private final Set<Authority> authorities;
 
     public static Builder fromId(final UUID id) {
         return new Builder(id);
@@ -35,7 +35,7 @@ public final class AuthorizationConsent {
                                          .authorities(auth ->
                                                               auth.addAll(this.getAuthorities()
                                                                               .stream()
-                                                                              .map(Authorities::toSimpleGrantedAuthority)
+                                                                              .map(Authority::toSimpleGrantedAuthority)
                                                                               .collect(Collectors.toSet())))
                                          .build();
     }
@@ -50,7 +50,7 @@ public final class AuthorizationConsent {
 
         private String principalName;
 
-        private Set<Authorities> authorities = new LinkedHashSet<>();
+        private Set<Authority> authorities = new HashSet<>();
 
         protected Builder(final UUID consentId) {
             this.consentId = consentId;
@@ -63,7 +63,7 @@ public final class AuthorizationConsent {
             builder.authorities = authorizationConsent.getAuthorities()
                                                       .stream()
                                                       .filter(Objects::nonNull)
-                                                      .map(Authorities::from)
+                                                      .map(Authority::from)
                                                       .map(authority -> authority.toBuilder().isNew(true).build())
                                                       .collect(Collectors.toSet());
             return builder.build();
@@ -79,7 +79,7 @@ public final class AuthorizationConsent {
             return this;
         }
 
-        public Builder authorities(final Consumer<Set<Authorities>> authoritiesMutator) {
+        public Builder authorities(final Consumer<Set<Authority>> authoritiesMutator) {
             authoritiesMutator.accept(this.getAuthorities());
             return this;
         }

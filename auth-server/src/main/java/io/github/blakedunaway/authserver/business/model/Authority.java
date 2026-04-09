@@ -12,7 +12,7 @@ import java.util.UUID;
 @Getter
 @Builder(toBuilder = true)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class Authorities {
+public final class Authority {
 
     private final UUID authorityId;
 
@@ -20,12 +20,12 @@ public final class Authorities {
 
     private boolean isNew;
 
-    public static Authorities from(final GrantedAuthority simpleGrantedAuthority) {
-        return Authorities.builder().name(simpleGrantedAuthority.getAuthority().toUpperCase()).build();
+    public static Authority from(final GrantedAuthority simpleGrantedAuthority) {
+        return Authority.builder().name(simpleGrantedAuthority.getAuthority().toUpperCase()).build();
     }
 
-    public static Authorities from(final String authorityName) {
-        return Authorities.builder().name(authorityName.toUpperCase()).build();
+    public static Authority from(final String authorityName) {
+        return Authority.builder().name(authorityName.toUpperCase()).build();
     }
 
     public SimpleGrantedAuthority toSimpleGrantedAuthority() {

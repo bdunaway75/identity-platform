@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Getter
 @Setter
-public class ClientUserUpdateRequest {
+public class ClientUserRequest {
 
     private String email;
 

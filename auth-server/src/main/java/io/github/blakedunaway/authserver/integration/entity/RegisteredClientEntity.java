@@ -1,11 +1,23 @@
 package io.github.blakedunaway.authserver.integration.entity;
 
 import io.github.blakedunaway.authserver.integration.TokenSettingsJson;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -54,7 +66,6 @@ public class RegisteredClientEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     private TokenSettingsJson tokenSettings;
 
-    // ---------- children ----------
     @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
             orphanRemoval = true)
     private Set<RegisteredClientAuthMethodEntity> clientAuthenticationMethods;
@@ -70,6 +81,10 @@ public class RegisteredClientEntity {
     @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
             orphanRemoval = true)
     private Set<RegisteredClientPostLogoutRedirectUriEntity> postLogoutRedirectUris;
+
+    @OneToMany(mappedBy = "registeredClient", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE},
+            orphanRemoval = true)
+    private Set<AuthorityEntity> authorities;
 
     @Setter
     @ManyToMany(fetch = FetchType.EAGER)
@@ -89,9 +104,6 @@ public class RegisteredClientEntity {
         return rc;
     }
 
-    /**
-     * Factory for mappers/services
-     */
     public static RegisteredClientEntity create(
             final UUID registeredClientId,
             final String clientId,
@@ -139,18 +151,17 @@ public class RegisteredClientEntity {
         if (method == null || method.isBlank()) {
             return;
         }
-        if (this.getClientAuthenticationMethods() == null) {
+        if (clientAuthenticationMethods == null) {
             this.clientAuthenticationMethods = new HashSet<>();
         }
-        boolean exists =
-                clientAuthenticationMethods.stream().anyMatch(e -> method.equals(e.getClientAuthMethod()));
+        final boolean exists = clientAuthenticationMethods.stream().anyMatch(e -> method.equals(e.getClientAuthMethod()));
         if (!exists) {
             clientAuthenticationMethods.add(new RegisteredClientAuthMethodEntity(this, method));
         }
     }
 
     public void replaceClientAuthenticationMethods(final Collection<String> methods) {
-        Set<String> target =
+        final Set<String> target =
                 methods == null ?
                 Set.of()
                                 : methods.stream()
@@ -168,10 +179,10 @@ public class RegisteredClientEntity {
         if (grantType == null || grantType.isBlank()) {
             return;
         }
-        if (this.getAuthorizationGrantTypes() == null) {
+        if (authorizationGrantTypes == null) {
             this.authorizationGrantTypes = new HashSet<>();
         }
-        boolean exists =
+        final boolean exists =
                 authorizationGrantTypes.stream()
                                        .anyMatch(grantTypeEntity ->
                                                          grantType.equals(grantTypeEntity.getAuthorizationGrantType()));
@@ -181,7 +192,7 @@ public class RegisteredClientEntity {
     }
 
     public void replaceAuthorizationGrantTypes(final Collection<String> grantTypes) {
-        Set<String> target =
+        final Set<String> target =
                 grantTypes == null ?
                 Set.of() : grantTypes.stream()
                                      .filter(Objects::nonNull)
@@ -194,21 +205,52 @@ public class RegisteredClientEntity {
         }
     }
 
+    public void addAuthority(final String authority) {
+        if (StringUtils.isBlank(authority)) {
+            return;
+        }
+        final String normalizedAuthority = authority.toUpperCase();
+        if (authorities == null) {
+            this.authorities = new HashSet<>();
+        }
+        final boolean exists =
+                authorities.stream()
+                           .anyMatch(authorityEntity -> normalizedAuthority.equals(authorityEntity.getName()));
+        if (!exists) {
+            authorities.add(new AuthorityEntity(authority, this));
+        }
+    }
+
+    public void replaceAuthorities(final Set<String> authorities) {
+        final Set<String> target =
+                authorities == null ? Set.of()
+                                    : authorities.stream()
+                                                 .filter(StringUtils::isNotBlank)
+                                                 .map(String::toUpperCase)
+                                                 .collect(Collectors.toSet());
+        if (this.authorities != null) {
+            this.authorities.removeIf(e -> !target.contains(e.getName()));
+        }
+        for (final String authority : target) {
+            addAuthority(authority);
+        }
+    }
+
     public void addRedirectUri(final String uri) {
         if (uri == null || uri.isBlank()) {
             return;
         }
-        if (this.getRedirectUris() == null) {
+        if (redirectUris == null) {
             this.redirectUris = new HashSet<>();
         }
-        boolean exists = redirectUris.stream().anyMatch(e -> uri.equals(e.getRedirectUri()));
+        final boolean exists = redirectUris.stream().anyMatch(e -> uri.equals(e.getRedirectUri()));
         if (!exists) {
             redirectUris.add(new RegisteredClientRedirectUriEntity(this, uri));
         }
     }
 
     public void replaceRedirectUris(final Collection<String> uris) {
-        Set<String> target =
+        final Set<String> target =
                 uris == null ?
                 Set.of()
                              : uris.stream()
@@ -226,18 +268,18 @@ public class RegisteredClientEntity {
         if (uri == null || uri.isBlank()) {
             return;
         }
-        if (this.postLogoutRedirectUris == null) {
-            this.postLogoutRedirectUris = new HashSet<>();
+        if (postLogoutRedirectUris == null) {
+            postLogoutRedirectUris = new HashSet<>();
         }
-        boolean exists = postLogoutRedirectUris.stream()
-                                               .anyMatch(uriEntity -> uri.equals(uriEntity.getPostLogoutRedirectUri()));
+        final boolean exists = postLogoutRedirectUris.stream()
+                                                     .anyMatch(uriEntity -> uri.equals(uriEntity.getPostLogoutRedirectUri()));
         if (!exists) {
             postLogoutRedirectUris.add(new RegisteredClientPostLogoutRedirectUriEntity(this, uri));
         }
     }
 
     public void replacePostLogoutRedirectUris(final Collection<String> uris) {
-        Set<String> target =
+        final Set<String> target =
                 uris == null ?
                 Set.of()
                              : uris.stream()
@@ -255,17 +297,17 @@ public class RegisteredClientEntity {
         if (scope == null || scope.isBlank()) {
             return;
         }
-        if (this.scopes == null) {
-            this.scopes = new HashSet<>();
+        if (scopes == null) {
+            scopes = new HashSet<>();
         }
-        boolean exists = scopes.stream().anyMatch(scopeEntity -> scope.equals(scopeEntity.getScope()));
+        final boolean exists = scopes.stream().anyMatch(scopeEntity -> scope.equals(scopeEntity.getScope()));
         if (!exists) {
             scopes.add(new RegisteredClientScopeEntity(null, scope));
         }
     }
 
     public void replaceScopes(final Collection<String> newScopes) {
-        Set<String> target =
+        final Set<String> target =
                 newScopes == null ?
                 Set.of()
                                   : newScopes.stream()

@@ -1,14 +1,18 @@
 package io.github.blakedunaway.authserver.business.api.controller;
 
+import io.github.blakedunaway.authserver.business.api.dto.ClientUserActivity;
 import io.github.blakedunaway.authserver.business.model.user.ClientRegisterDto;
 import io.github.blakedunaway.authserver.business.service.UserService;
+import io.github.blakedunaway.authserver.config.redis.RedisStore;
 import io.github.blakedunaway.authserver.security.session.AuthSessionHandler;
+import io.github.blakedunaway.authserver.util.RedisUtility;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -24,12 +28,12 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @Controller
 public class ClientLoginController {
-
-    private static final String PLATFORM_CLIENT_ID = "identity-platform";
 
     private final UserService userService;
 
@@ -38,6 +42,11 @@ public class ClientLoginController {
     private final RequestCache requestCache;
 
     private final AuthSessionHandler authSessionHandler;
+
+    private final RedisStore redisStore;
+
+    @Value("${auth-server.frontend.client-id}")
+    private String platformClientId;
 
     @GetMapping("/login")
     public String login(final HttpServletRequest request, final HttpServletResponse response, final Model model) {
@@ -55,7 +64,7 @@ public class ClientLoginController {
             return "redirect:/oauth-error?error=invalid_request&error_description=Missing%20client_id";
         }
 
-        if (PLATFORM_CLIENT_ID.equals(dto.getClientId())) {
+        if (platformClientId.equals(dto.getClientId())) {
             return "redirect:/platform/login";
         }
 
@@ -66,7 +75,8 @@ public class ClientLoginController {
     @PostMapping("/login")
     public void login(final HttpServletRequest request,
                       final HttpServletResponse response,
-                      @ModelAttribute("registerDto") final ClientRegisterDto clientRegisterDto) throws IOException, ServletException {
+                      @ModelAttribute("registerDto") final ClientRegisterDto clientRegisterDto)
+            throws IOException, ServletException {
 
         final SavedRequest saved = requestCache.getRequest(request, response);
         if (saved != null && clientRegisterDto.getClientId() == null) {
@@ -78,7 +88,12 @@ public class ClientLoginController {
             response.sendRedirect("/oauth-error?error=invalid_request&error_description=Missing%20client_id");
             return;
         }
-
+        redisStore.pushToList(RedisUtility.CLIENT_LOGIN_ATTRIBUTE + clientRegisterDto.getClientId(),
+                              ClientUserActivity.builder()
+                                                .email(clientRegisterDto.getEmail())
+                                                .activityTs(LocalDateTime.now())
+                                                .build(),
+                              Duration.ofMinutes(15));
         try {
             final Authentication result = authenticationManager.authenticate(clientRegisterDto.toAuthenticationToken());
             authSessionHandler.successfulAuthentication(request, response, result);
@@ -110,6 +125,12 @@ public class ClientLoginController {
                 return "redirect:/oauth-error?error=invalid_request&error_description=Missing%20client_id";
             }
             userService.signUpClientUser(clientRegisterDto);
+            redisStore.pushToList(RedisUtility.CLIENT_SIGNUP_ATTRIBUTE + clientRegisterDto.getClientId(),
+                                  ClientUserActivity.builder()
+                                                    .email(clientRegisterDto.getEmail())
+                                                    .activityTs(LocalDateTime.now())
+                                                    .build(),
+                                  Duration.ofMinutes(15));
             return "redirect:/login";
         } else {
             return "redirect:/oauth-error?error=invalid_request&error_description=Missing%20client_id";

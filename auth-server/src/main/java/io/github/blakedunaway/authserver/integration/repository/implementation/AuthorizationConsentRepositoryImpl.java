@@ -3,9 +3,11 @@ package io.github.blakedunaway.authserver.integration.repository.implementation;
 import io.github.blakedunaway.authserver.business.model.AuthorizationConsent;
 import io.github.blakedunaway.authserver.integration.entity.AuthorityEntity;
 import io.github.blakedunaway.authserver.integration.entity.AuthorizationConsentEntity;
+import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
 import io.github.blakedunaway.authserver.integration.repository.gateway.AuthorizationConsentRepository;
-import io.github.blakedunaway.authserver.integration.repository.jpa.AuthoritiesJpaRepository;
+import io.github.blakedunaway.authserver.integration.repository.jpa.AuthorityJpaRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.AuthorizationConsentJpaRepository;
+import io.github.blakedunaway.authserver.integration.repository.jpa.RegisterClientJpaRepository;
 import io.github.blakedunaway.authserver.mapper.AuthorizationConsentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -21,16 +23,21 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AuthorizationConsentRepositoryImpl implements AuthorizationConsentRepository {
 
-    private final AuthoritiesJpaRepository authoritiesJpaRepository;
+    private final AuthorityJpaRepository authorityJpaRepository;
 
     private final AuthorizationConsentMapper authorizationConsentMapper;
 
     private final AuthorizationConsentJpaRepository authorizationConsentJpaRepository;
 
+    private final RegisterClientJpaRepository registerClientJpaRepository;
+
     @Override
     @Transactional
     public AuthorizationConsent save(final AuthorizationConsent authorizationConsent) {
-        final AuthorizationConsentEntity entity = authorizationConsentMapper.authorizationConsentToAuthorizationConsentEntity(authorizationConsent);
+        final RegisteredClientEntity registeredClient = registerClientJpaRepository.findById(authorizationConsent.getRegisteredClientId())
+                                                                                   .orElseThrow();
+        final AuthorizationConsentEntity entity =
+                authorizationConsentMapper.authorizationConsentToAuthorizationConsentEntity(authorizationConsent, registeredClient);
         authorizationConsentJpaRepository.findByRegisteredClientIdAndPrincipalName(entity.getRegisteredClientId(), entity.getPrincipalName())
                                          .ifPresent(found -> {
                                              entity.setConsentId(found.getConsentId());
@@ -41,11 +48,15 @@ public class AuthorizationConsentRepositoryImpl implements AuthorizationConsentR
     }
 
     private void attachManagedAuthoritiesToUnmanagedConsentEntity(AuthorizationConsentEntity nonManagedEntity) {
-        final Set<AuthorityEntity> attachedAuthorityEntities = authoritiesJpaRepository.findAllByNameIn(nonManagedEntity.getAuthorities()
-                                                                                                                        .stream()
-                                                                                                                        .map(AuthorityEntity::getName)
-                                                                                                                        .map(String::toUpperCase)
-                                                                                                                        .collect(Collectors.toSet()));
+        final Set<AuthorityEntity> attachedAuthorityEntities =
+                authorityJpaRepository.findAllByRegisteredClient_RegisteredClientIdAndNameIn(
+                        nonManagedEntity.getRegisteredClientId(),
+                        nonManagedEntity.getAuthorities()
+                                        .stream()
+                                        .map(AuthorityEntity::getName)
+                                        .map(String::toUpperCase)
+                                        .collect(Collectors.toSet())
+                );
         for (AuthorityEntity managed : attachedAuthorityEntities) {
             if (nonManagedEntity.getAuthorities().contains(managed)) {
                 nonManagedEntity.getAuthorities().remove(managed); // removes unmanaged equivalent if present

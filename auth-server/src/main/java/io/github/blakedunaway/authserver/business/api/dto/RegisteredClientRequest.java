@@ -38,16 +38,48 @@ public class RegisteredClientRequest {
 
     private Set<String> scopes;
 
+    private Set<String> authorities;
+
+    private Set<String> roles;
+
     private Map<String, Object> clientSettings;
 
     private Map<String, Object> tokenSettings;
 
     public Map<String, Object> getClientSettings() {
-        return new  HashMap<>(clientSettings);
+        return clientSettings == null ? new HashMap<>() : new HashMap<>(clientSettings);
     }
 
     public Map<String, Object> getTokenSettings() {
-        return new HashMap<>(this.tokenSettings);
+        return tokenSettings == null ? new HashMap<>() : new HashMap<>(tokenSettings);
+    }
+
+    public Set<String> getClientAuthenticationMethods() {
+        return clientAuthenticationMethods == null ? Set.of() : Set.copyOf(clientAuthenticationMethods);
+    }
+
+    public Set<String> getAuthorizationGrantTypes() {
+        return authorizationGrantTypes == null ? Set.of() : Set.copyOf(authorizationGrantTypes);
+    }
+
+    public Set<String> getRedirectUris() {
+        return redirectUris == null ? Set.of() : Set.copyOf(redirectUris);
+    }
+
+    public Set<String> getPostLogoutRedirectUris() {
+        return postLogoutRedirectUris == null ? Set.of() : Set.copyOf(postLogoutRedirectUris);
+    }
+
+    public Set<String> getScopes() {
+        return scopes == null ? Set.of() : Set.copyOf(scopes);
+    }
+
+    public Set<String> getAuthorities() {
+        return authorities == null ? Set.of() : Set.copyOf(authorities);
+    }
+
+    public Set<String> getRoles() {
+        return roles == null ? Set.of() : Set.copyOf(roles);
     }
 
 }

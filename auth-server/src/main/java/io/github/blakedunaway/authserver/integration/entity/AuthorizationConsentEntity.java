@@ -53,7 +53,7 @@ public class AuthorizationConsentEntity {
         Assert.notNull(principalName, "principalName cannot be null");
         Assert.notNull(registeredClientId, "registeredClientId cannot be null");
         Assert.notNull(authorities, "authorities cannot be null");
-        AuthorizationConsentEntity entity = new AuthorizationConsentEntity();
+        final AuthorizationConsentEntity entity = new AuthorizationConsentEntity();
         entity.consentId = consentId;
         entity.registeredClientId = registeredClientId;
         entity.principalName = principalName;

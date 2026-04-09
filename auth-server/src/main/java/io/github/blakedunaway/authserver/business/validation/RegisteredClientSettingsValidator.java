@@ -5,16 +5,19 @@ import java.util.Set;
 
 public class RegisteredClientSettingsValidator {
 
+    private static final String REQUIRE_PROOF_KEY = "settings.client.require-proof-key";
+    private static final String REQUIRE_AUTHORIZATION_CONSENT = "settings.client.require-authorization-consent";
+
     private static final Set<String> TOKEN_KEYS = Set.of(
-            "accessTokenTimeToLiveMinutes",
-            "refreshTokenTimeToLiveMinutes",
-            "authorizationCodeTimeToLiveMinutes",
+            "accessTokenTimeToLive",
+            "refreshTokenTimeToLive",
+            "authorizationCodeTimeToLive",
             "reuseRefreshTokens"
     );
 
     private static final Set<String> CLIENT_KEYS = Set.of(
-            "requireProofKey",
-            "requireAuthorizationConsent"
+            REQUIRE_PROOF_KEY,
+            REQUIRE_AUTHORIZATION_CONSENT
     );
 
     public static void validateTokenSettings(final Map<String, Object> map) {
@@ -45,8 +48,8 @@ public class RegisteredClientSettingsValidator {
             }
         }
 
-        validateBoolean(map, "requireProofKey");
-        validateBoolean(map, "requireAuthorizationConsent");
+        validateBoolean(map, REQUIRE_PROOF_KEY);
+        validateBoolean(map, REQUIRE_AUTHORIZATION_CONSENT);
     }
 
     private static void validateNumber(final Map<String, Object> map, final String key) {

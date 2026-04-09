@@ -1,16 +1,18 @@
 package io.github.blakedunaway.authserver.business.model.user;
 
-import io.github.blakedunaway.authserver.business.model.Authorities;
+import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.validation.ValidEmail;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +40,7 @@ public class AbstractUser {
 
     private Map<String, Object> userAttributes;
 
-    private Set<Authorities> authorities;
+    private Set<Authority> authorities;
 
     private boolean locked;
 
@@ -47,17 +49,17 @@ public class AbstractUser {
     private boolean credentialsExpired;
 
     public UserDetails toSpring() {
-        return org.springframework.security.core.userdetails.User.withUsername(this.getEmail())
-                                                                 .password(this.getPasswordHash())
-                                                                 .authorities(this.getAuthorities()
-                                                                                  .stream()
-                                                                                  .map(Authorities::toSimpleGrantedAuthority)
-                                                                                  .collect(Collectors.toSet()))
-                                                                 .accountExpired(this.isExpired())
-                                                                 .accountLocked(this.isLocked())
-                                                                 .credentialsExpired(this.isCredentialsExpired())
-                                                                 .disabled(this.isLocked())
-                                                                 .build();
+        return User.withUsername(this.getEmail())
+                   .password(this.getPasswordHash())
+                   .authorities(this.getAuthorities()
+                                    .stream()
+                                    .map(Authority::toSimpleGrantedAuthority)
+                                    .collect(Collectors.toSet()))
+                   .accountExpired(this.isExpired())
+                   .accountLocked(this.isLocked())
+                   .credentialsExpired(this.isCredentialsExpired())
+                   .disabled(this.isLocked())
+                   .build();
     }
 
     @Getter
@@ -79,7 +81,7 @@ public class AbstractUser {
 
         protected Set<UUID> registeredClientIds = new HashSet<>();
 
-        protected Set<Authorities> authorities = new HashSet<>();
+        protected Set<Authority> authorities = new HashSet<>();
 
         protected boolean locked;
 
@@ -113,7 +115,7 @@ public class AbstractUser {
         }
 
         public T userAttributes(final Map<String, Object> userAttributes) {
-            this.userAttributes = userAttributes == null ? Collections.emptyMap() : userAttributes;
+            this.userAttributes = userAttributes == null ? new HashMap<>() : new HashMap<>(userAttributes);
             return this.self();
         }
 
@@ -122,7 +124,7 @@ public class AbstractUser {
             return this.self();
         }
 
-        public T authorities(final Consumer<Set<Authorities>> authoritiesMutator) {
+        public T authorities(final Consumer<Set<Authority>> authoritiesMutator) {
             authoritiesMutator.accept(authorities);
             return this.self();
         }
@@ -150,7 +152,7 @@ public class AbstractUser {
             Assert.hasText(this.email, "Email address must not be empty");
             Assert.hasText(this.passwordHash, "Password hash must not be empty");
             Assert.isTrue(this.passwordHash.startsWith("$argon2"), "Password has not been hashed");
-            Assert.notNull(this.authorities, "Authorities must not be null");
+            Assert.notNull(this.authorities, "Authority must not be null");
             user.id = this.id;
             user.email = this.email;
             user.passwordHash = this.passwordHash;
@@ -172,8 +174,8 @@ public class AbstractUser {
             this.verified = user.isVerified();
             this.createdAt = user.getCreatedAt();
             this.updatedAt = user.getUpdatedAt();
-            this.userAttributes = user.getUserAttributes();
-            this.authorities = Set.copyOf(user.getAuthorities());
+            this.userAttributes = user.getUserAttributes() == null ? new HashMap<>() : new HashMap<>(user.getUserAttributes());
+            this.authorities = user.getAuthorities() == null ? new HashSet<>() : new HashSet<>(user.getAuthorities());
             this.locked = user.isLocked();
             this.expired = user.isExpired();
             this.credentialsExpired = user.isCredentialsExpired();
@@ -191,5 +193,7 @@ public class AbstractUser {
             this.email = email;
             return this.self();
         }
+
     }
+
 }

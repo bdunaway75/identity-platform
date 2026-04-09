@@ -4,6 +4,7 @@ import io.github.blakedunaway.authserver.business.model.Authorization;
 import io.github.blakedunaway.authserver.config.redis.RedisStore;
 import io.github.blakedunaway.authserver.integration.repository.gateway.AuthorizationRepository;
 import io.github.blakedunaway.authserver.mapper.AuthorizationMapper;
+import io.github.blakedunaway.authserver.util.RedisUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -18,7 +19,6 @@ import java.util.UUID;
 @Service
 public class AuthorizationService implements OAuth2AuthorizationService {
 
-    private static final String REDIS_HANDLE = "auth:attrs:";
 
     private final AuthorizationRepository authorizationRepository;
 
@@ -29,13 +29,13 @@ public class AuthorizationService implements OAuth2AuthorizationService {
     @Override
     public void save(final OAuth2Authorization src) {
         final Authorization authorization = authorizationRepository.save(src);
-        redisStore.put(REDIS_HANDLE + authorization.getId().toString(), src.getAttributes(), Duration.ofSeconds(60));
+        redisStore.put(RedisUtility.AUTHORIZATION_ATTRIBUTES + authorization.getId().toString(), src.getAttributes(), Duration.ofSeconds(60));
     }
 
     @Override
     public void remove(final OAuth2Authorization authorization) {
         authorizationRepository.remove(authorization.getId());
-        redisStore.consume(REDIS_HANDLE + authorization.getId());
+        redisStore.consume(RedisUtility.AUTHORIZATION_ATTRIBUTES + authorization.getId());
     }
 
     @Override

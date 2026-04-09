@@ -8,8 +8,10 @@ import jakarta.validation.Validator
 import org.springframework.boot.autoconfigure.domain.EntityScan
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
-import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.PropertySource
+import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Primary
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType
@@ -23,10 +25,11 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
 
 import javax.sql.DataSource
 
-@Configuration
+@TestConfiguration
 @EnableJpaRepositories(basePackages = "io.github.blakedunaway.authserver.integration.repository.jpa")
 @ComponentScan(["io.github.blakedunaway.authserver.integration.repository", "io.github.blakedunaway.authserver.mapper"])
 @EntityScan(basePackages = "io.github.blakedunaway.authserver.integration.entity")
+@PropertySource("classpath:application.properties")
 @EnableTransactionManagement
 class TestConfig {
 
@@ -35,6 +38,11 @@ class TestConfig {
     DataSource dataSource() {
         return new EmbeddedDatabaseBuilder().setType(EmbeddedDatabaseType.HSQL)
                                             .build();
+    }
+
+    @Bean
+    static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+        return new PropertySourcesPlaceholderConfigurer()
     }
 
     @Primary

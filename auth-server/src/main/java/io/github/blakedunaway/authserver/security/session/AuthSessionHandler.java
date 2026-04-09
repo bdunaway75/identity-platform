@@ -31,13 +31,17 @@ public class AuthSessionHandler {
     public void successfulAuthentication(final HttpServletRequest request,
                                          final HttpServletResponse response,
                                          final Authentication authResult) throws ServletException, IOException {
-        final SecurityContext context = securityContextHolderStrategy.createEmptyContext();
-        context.setAuthentication(authResult);
-        SecurityContextHolder.setContext(context);
-
-        securityContextRepository.saveContext(context, request, response);
+        storeSecurityContext(request, response, authResult);
         authenticationSuccessHandler.onAuthenticationSuccess(request, response, authResult);
 
+    }
+
+    public void successfulAuthentication(final HttpServletRequest request,
+                                         final HttpServletResponse response,
+                                         final Authentication authResult,
+                                         final String redirectUrl) throws IOException {
+        storeSecurityContext(request, response, authResult);
+        response.sendRedirect(redirectUrl);
     }
 
     public void unsuccessfulAuthentication(final HttpServletRequest request,
@@ -45,6 +49,15 @@ public class AuthSessionHandler {
                                            final AuthenticationException failed) throws ServletException, IOException {
         securityContextHolderStrategy.clearContext();
         authenticationFailureHandler.onAuthenticationFailure(request, response, failed);
+    }
+
+    private void storeSecurityContext(final HttpServletRequest request,
+                                      final HttpServletResponse response,
+                                      final Authentication authResult) {
+        final SecurityContext context = securityContextHolderStrategy.createEmptyContext();
+        context.setAuthentication(authResult);
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, request, response);
     }
 
 }

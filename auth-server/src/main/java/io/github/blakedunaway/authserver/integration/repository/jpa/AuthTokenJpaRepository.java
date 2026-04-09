@@ -15,27 +15,27 @@ import java.util.UUID;
 public interface AuthTokenJpaRepository extends JpaRepository<AuthTokenEntity, UUID> {
 
     @Query(value = """
-            select at.*
-            from auth_token at
-            join auth_authorization aa on aa.id = at.authorization_id
-            join registered_client rc on rc.registered_client_id = aa.registered_client_id
-            where rc.registered_client_id in (:registeredClientIds)
-            order by at.issued_at desc
+            select auth_token.*
+            from auth.auth_token auth_token
+            join auth.auth_authorization authorization_record on authorization_record.id = auth_token.authorization_id
+            join auth.registered_client registered_client on registered_client.registered_client_id = authorization_record.registered_client_id
+            where registered_client.registered_client_id in (:registeredClientIds)
+            order by auth_token.issued_at desc
             """, nativeQuery = true)
     List<AuthTokenEntity> findAllByRegisteredClientIds(final Set<UUID> registeredClientIds);
 
     @Modifying
     @Query(value = """
-            update auth_token
+            update auth.auth_token
             set revoked_at = :revokedAt
             where id = :authTokenId
               and revoked_at is null
               and exists (
                   select 1
-                  from auth_authorization aa
-                  join registered_client rc on rc.registered_client_id = aa.registered_client_id
-                  where aa.id = auth_token.authorization_id
-                    and rc.registered_client_id in (:registeredClientIds)
+                  from auth.auth_authorization authorization_record
+                  join auth.registered_client registered_client on registered_client.registered_client_id = authorization_record.registered_client_id
+                  where authorization_record.id = auth.auth_token.authorization_id
+                    and registered_client.registered_client_id in (:registeredClientIds)
               )
             """, nativeQuery = true)
     int invalidateByIdAndRegisteredClientIds(final UUID authTokenId,
@@ -44,12 +44,15 @@ public interface AuthTokenJpaRepository extends JpaRepository<AuthTokenEntity, U
 
     @Modifying
     @Query(value = """
-            update auth_token at
+            update auth.auth_token
             set revoked_at = :revokedAt
-            from auth_authorization aa
-            where aa.id = at.authorization_id
-              and aa.registered_client_id = :registeredClientId
-              and at.revoked_at is null
+            where revoked_at is null
+              and exists (
+                  select 1
+                  from auth.auth_authorization authorization_record
+                  where authorization_record.id = auth.auth_token.authorization_id
+                    and authorization_record.registered_client_id = :registeredClientId
+              )
             """, nativeQuery = true)
     int invalidateAllByRegisteredClientId(final UUID registeredClientId, final Instant revokedAt);
 }

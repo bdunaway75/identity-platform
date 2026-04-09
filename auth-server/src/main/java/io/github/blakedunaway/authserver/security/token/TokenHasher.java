@@ -2,7 +2,9 @@ package io.github.blakedunaway.authserver.security.token;
 
 import lombok.experimental.UtilityClass;
 
+import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @UtilityClass
@@ -20,7 +22,7 @@ public class TokenHasher {
         if (raw.length < 32) {
             throw new IllegalStateException("pepper too short: " + raw.length + " bytes; need >= 32");
         }
-        key = new javax.crypto.spec.SecretKeySpec(raw, "HmacSHA256");
+        key = new SecretKeySpec(raw, "HmacSHA256");
 
     }
 
@@ -32,7 +34,7 @@ public class TokenHasher {
         // normalize to standard and try again
         final String std = pad4(s.replace('-', '+').replace('_', '/'));
         try {
-            return java.util.Base64.getDecoder().decode(std);
+            return Base64.getDecoder().decode(std);
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("pepper not valid base64/base64url", e);
         }
@@ -60,10 +62,10 @@ public class TokenHasher {
             if (isHmacSha256Base64Url(tokenValue)) {
                 return tokenValue;
             }
-            final javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            final Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(key);
-            final byte[] digest = mac.doFinal(tokenValue.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+            final byte[] digest = mac.doFinal(tokenValue.getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
         } catch (Exception e) {
             throw new IllegalStateException("HMAC failure", e);
         }

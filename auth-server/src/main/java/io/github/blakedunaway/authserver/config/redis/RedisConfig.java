@@ -14,14 +14,13 @@ public class RedisConfig {
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate(
-            RedisConnectionFactory factory,
-            @Qualifier("securityObjectMapper")
-            ObjectMapper securityObjectMapper
+            final RedisConnectionFactory factory,
+            @Qualifier("securityObjectMapper") final ObjectMapper objectMapper
     ) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        final RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         template.setKeySerializer(new StringRedisSerializer());
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(securityObjectMapper));
+        template.setValueSerializer(new GenericJackson2JsonRedisSerializer(objectMapper));
         template.afterPropertiesSet();
         return template;
     }

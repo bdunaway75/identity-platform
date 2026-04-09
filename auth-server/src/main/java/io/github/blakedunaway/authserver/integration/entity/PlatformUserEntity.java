@@ -7,6 +7,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,7 +34,7 @@ import java.util.UUID;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class PlatformUserEntity extends AbstractUserEntity{
+public class PlatformUserEntity extends AbstractUserEntity {
 
     public PlatformUserEntity(
             final UUID userId,
@@ -67,7 +68,16 @@ public class PlatformUserEntity extends AbstractUserEntity{
 
     @Setter
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_clients", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "registered_client_id"))
+    @JoinTable(
+            name = "user_clients",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "registered_client_id")
+    )
     private Set<RegisteredClientEntity> registeredClients;
+
+    @Setter
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tier_id")
+    private PlatformUserTierEntity tier;
 
 }

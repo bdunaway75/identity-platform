@@ -13,6 +13,8 @@
 <c:set var="loginAction" value="${isPlatformFlow ? '/platform/login' : '/login'}" />
 <c:set var="signUpHref" value="${isPlatformFlow ? '/platform/signUp' : '/signUp'}" />
 <c:set var="resolvedClientId" value="${not empty registerDto.clientId ? registerDto.clientId : param.client_id}" />
+<c:set var="hasAuthError" value="${not empty param.error}" />
+<c:set var="hasAuthMessage" value="${not empty param.message}" />
 <div class="auth-shell">
     <form class="auth-card" method="post" action="${loginAction}" autocomplete="on">
         <div class="auth-content">
@@ -30,9 +32,33 @@
                 </c:if>
             </div>
 
-            <% if (request.getParameter("error") != null) { %>
-            <div class="auth-error">Invalid email or password. Please try again.</div>
-            <% } %>
+            <c:if test="${hasAuthMessage}">
+            <div class="auth-notice" aria-live="polite">
+                ${param.message}
+            </div>
+            </c:if>
+
+            <c:if test="${hasAuthError}">
+            <div class="auth-error" aria-live="polite">
+                <c:choose>
+                    <c:when test="${param.error eq 'true'}">
+                        We could not find a user with those credentials, or the password was incorrect. Please try again.
+                    </c:when>
+                    <c:when test="${param.error eq 'locked'}">
+                        Your account is locked. Contact your support team to regain access.
+                    </c:when>
+                    <c:when test="${param.error eq 'disabled'}">
+                        Your account is disabled. Contact your support team if you believe this is a mistake.
+                    </c:when>
+                    <c:when test="${param.error eq 'account_expired'}">
+                        Your account has expired. Contact your support team to continue.
+                    </c:when>
+                    <c:otherwise>
+                        ${param.error}
+                    </c:otherwise>
+                </c:choose>
+            </div>
+            </c:if>
 
             <c:if test="${not isPlatformFlow}">
             <input type="hidden" name="clientId"

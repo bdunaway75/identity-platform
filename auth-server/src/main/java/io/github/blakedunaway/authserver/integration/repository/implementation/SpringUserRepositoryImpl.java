@@ -1,20 +1,22 @@
 package io.github.blakedunaway.authserver.integration.repository.implementation;
 
-import io.github.blakedunaway.authserver.business.model.Authorities;
+import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
 import io.github.blakedunaway.authserver.integration.entity.AuthorityEntity;
 import io.github.blakedunaway.authserver.integration.entity.ClientUserEntity;
+import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
 import io.github.blakedunaway.authserver.integration.repository.gateway.UserRepository;
-import io.github.blakedunaway.authserver.integration.repository.jpa.AuthoritiesJpaRepository;
+import io.github.blakedunaway.authserver.integration.repository.jpa.AuthorityJpaRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.ClientUserJpaRepository;
+import io.github.blakedunaway.authserver.integration.repository.jpa.RegisterClientJpaRepository;
 import io.github.blakedunaway.authserver.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -29,7 +31,9 @@ public class SpringUserRepositoryImpl implements UserRepository {
 
     private final UserMapper userMapper;
 
-    private final AuthoritiesJpaRepository authoritiesJpaRepository;
+    private final AuthorityJpaRepository authorityJpaRepository;
+
+    private final RegisterClientJpaRepository registerClientJpaRepository;
 
     @Override
     @Transactional
@@ -45,31 +49,26 @@ public class SpringUserRepositoryImpl implements UserRepository {
                                                     ? Collections.emptySet()
                                                     : clientUser.getAuthorities()
                                                                 .stream()
-                                                                .map(Authorities::getName)
+                                                                .map(Authority::getName)
                                                                 .filter(name -> name != null && !name.isBlank())
                                                                 .map(String::toUpperCase)
                                                                 .collect(Collectors.toSet());
 
         if (requestedAuthorityNames.isEmpty()) {
-            return new LinkedHashSet<>();
+            return new HashSet<>();
         }
 
-        final Set<AuthorityEntity> attachedAuthorityEntities = authoritiesJpaRepository.findAllByNameIn(requestedAuthorityNames);
-        final Set<String> existingAuthorityNames = attachedAuthorityEntities.stream()
-                                                                            .map(AuthorityEntity::getName)
-                                                                            .filter(name -> name != null && !name.isBlank())
-                                                                            .map(String::toUpperCase)
-                                                                            .collect(Collectors.toSet());
-
-        final Set<AuthorityEntity> createdAuthorities = requestedAuthorityNames.stream()
-                                                                               .filter(name -> !existingAuthorityNames.contains(name))
-                                                                               .map(AuthorityEntity::create)
-                                                                               .collect(Collectors.toSet());
-        if (!createdAuthorities.isEmpty()) {
-            attachedAuthorityEntities.addAll(authoritiesJpaRepository.saveAll(createdAuthorities));
+        final UUID registeredClientId = registerClientJpaRepository.findByClientId(clientUser.getClientId())
+                                                                   .map(RegisteredClientEntity::getRegisteredClientId)
+                                                                   .orElse(null);
+        if (registeredClientId == null) {
+            return new HashSet<>();
         }
 
-        return new LinkedHashSet<>(attachedAuthorityEntities);
+        final Set<AuthorityEntity> attachedAuthorityEntities =
+                authorityJpaRepository.findAllByRegisteredClient_RegisteredClientIdAndNameIn(registeredClientId, requestedAuthorityNames);
+
+        return new HashSet<>(attachedAuthorityEntities);
     }
 
     @Override

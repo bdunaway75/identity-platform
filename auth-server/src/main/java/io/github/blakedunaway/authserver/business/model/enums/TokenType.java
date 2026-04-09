@@ -33,9 +33,11 @@ public enum TokenType {
         }
 
         @Override
-        public  AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
+        public AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
             OAuth2AccessToken accessToken = cast(oAuth2Token.getToken());
-            return this.buildBasicModel(oAuth2Token).scopes(scopes -> scopes.addAll(accessToken.getScopes())).build();
+            return this.buildBasicModel(oAuth2Token)
+                       .scopes(scopes -> scopes.addAll(accessToken.getScopes()))
+                       .build();
         }
     },
     REFRESH("refresh_token", OAuth2RefreshToken.class) {
@@ -45,7 +47,7 @@ public enum TokenType {
         }
 
         @Override
-        public  AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
+        public AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
             cast(oAuth2Token.getToken());
             return this.buildBasicModel(oAuth2Token).build();
         }
@@ -57,7 +59,7 @@ public enum TokenType {
         }
 
         @Override
-        public  AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
+        public AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
             cast(oAuth2Token.getToken());
             return this.buildBasicModel(oAuth2Token).build();
         }
@@ -71,16 +73,7 @@ public enum TokenType {
         @Override
         public AuthToken applyToken(OAuth2Authorization.Token<?> oAuth2Token) {
             OidcIdToken idToken = cast(oAuth2Token.getToken());
-            AuthToken.Builder basicAuthTokenBuilder = this.buildBasicModel(oAuth2Token);
-            if (idToken.getClaims() != null) {
-                if (!oAuth2Token.getMetadata().containsKey(CLAIMS_METADATA_NAME)) {
-                    basicAuthTokenBuilder.metadata(metadata -> metadata.put(CLAIMS_METADATA_NAME, idToken.getClaims())); // TODO look into duplications from buildBasicModel
-                }
-                if (idToken.getClaim(MetaDataKeys.SUBJECT.getValue()) != null) {
-                    basicAuthTokenBuilder.subject(idToken.getClaim(MetaDataKeys.SUBJECT.getValue()));
-                }
-            }
-            return basicAuthTokenBuilder.build();
+            return this.buildBasicModel(oAuth2Token).build();
         }
     };
 
@@ -117,6 +110,17 @@ public enum TokenType {
         throw new IllegalArgumentException("No token type of " + wireName + " exists!");
     }
 
+    public static Set<AuthToken> retrieveFromSpring(OAuth2Authorization authorization) {
+        Set<AuthToken> foundTokens = new HashSet<>();
+        for (TokenType tokenType : TOKEN_MAP.values()) {
+            OAuth2Authorization.Token<?> springToken = authorization.getToken(tokenType.associatedOAuth2TokenClass);
+            if (springToken != null) {
+                foundTokens.add(tokenType.applyToken(springToken));
+            }
+        }
+        return foundTokens;
+    }
+
     public abstract OAuth2Token applyToken(final AuthToken token, final String tokenValue);
 
     public abstract AuthToken applyToken(final OAuth2Authorization.Token<?> oAuth2Token);
@@ -133,25 +137,24 @@ public enum TokenType {
 
     public <T extends OAuth2Token> AuthToken.Builder buildBasicModel(OAuth2Authorization.Token<T> oAuth2Token) {
         OAuth2Token rawToken = oAuth2Token.getToken();
-        return AuthToken.builder()
-                        .metadata(mutator -> mutator.putAll(oAuth2Token.getMetadata()))
-                        .tokenType(this)
-                        .hashedTokenValue(TokenHasher.isHmacSha256Base64Url(rawToken.getTokenValue())
-                                          ? rawToken.getTokenValue()
-                                          : TokenHasher.hmacCurrent(rawToken.getTokenValue()))
-                        .issuedAt(rawToken.getIssuedAt())
-                        .expiresAt(rawToken.getExpiresAt());
-    }
-
-    public static Set<AuthToken> retrieveFromSpring(OAuth2Authorization authorization) {
-        Set<AuthToken> foundTokens = new HashSet<>();
-        for (TokenType tokenType : TOKEN_MAP.values()) {
-            OAuth2Authorization.Token<?> springToken = authorization.getToken(tokenType.associatedOAuth2TokenClass);
-            if (springToken != null) {
-                foundTokens.add(tokenType.applyToken(springToken));
+        final AuthToken.Builder builder = AuthToken.builder()
+                                                   .metadata(mutator -> mutator.putAll(oAuth2Token.getMetadata()))
+                                                   .tokenType(this)
+                                                   .hashedTokenValue(TokenHasher.isHmacSha256Base64Url(rawToken.getTokenValue())
+                                                                     ? rawToken.getTokenValue()
+                                                                     : TokenHasher.hmacCurrent(rawToken.getTokenValue()))
+                                                   .issuedAt(rawToken.getIssuedAt())
+                                                   .expiresAt(rawToken.getExpiresAt());
+        if (!oAuth2Token.getMetadata().containsKey(CLAIMS_METADATA_NAME) && oAuth2Token.getClaims() != null) {
+            builder.metadata(metadata -> metadata.put(CLAIMS_METADATA_NAME, oAuth2Token.getClaims()));
+        }
+        if (oAuth2Token.getClaims() != null) {
+            final Object subject = oAuth2Token.getClaims().get(MetaDataKeys.SUBJECT.getValue());
+            if (subject instanceof String subjectValue && !subjectValue.isBlank()) {
+                builder.subject(subjectValue);
             }
         }
-        return foundTokens;
+        return builder;
     }
 
 

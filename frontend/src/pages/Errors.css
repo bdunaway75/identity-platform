@@ -6,3 +6,8 @@
     border-radius: 8px;
     background: rgba(230, 10, 10, 0.185);
 }
+
+.error-container.error-container-centered {
+    margin-left: auto;
+    margin-right: auto;
+}

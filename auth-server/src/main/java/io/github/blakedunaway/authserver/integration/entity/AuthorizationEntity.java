@@ -16,7 +16,6 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +24,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "auth_authorization")
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthorizationEntity {
 
@@ -60,12 +58,12 @@ public class AuthorizationEntity {
             final Set<String> authorizedScopes,
             final Set<AuthTokenEntity> tokens) {
         final AuthorizationEntity authorization = new AuthorizationEntity();
-        authorization.setAuthId(id);
-        authorization.setPrincipalName(principalName);
-        authorization.setAuthorizationGrantType(authorizationGrantType);
-        authorization.setAuthorizedScopes(authorizedScopes);
+        authorization.authId = id;
+        authorization.principalName = principalName;
+        authorization.authorizationGrantType = authorizationGrantType;
+        authorization.authorizedScopes = authorizedScopes;
         authorization.replaceTokens(tokens);
-        authorization.setRegisteredClient(registeredClientEntity);
+        authorization.registeredClient = registeredClientEntity;
         return authorization;
     }
 
@@ -77,7 +75,7 @@ public class AuthorizationEntity {
         if (tokens == null) {
             tokens = new HashSet<>();
         }
-        boolean exists = tokens.stream().anyMatch(t -> t.equals(token));
+        final boolean exists = tokens.stream().anyMatch(t -> t.equals(token));
         if (!exists) {
             tokens.add(token.setAuthorizationEntity(this));
         }
@@ -93,7 +91,7 @@ public class AuthorizationEntity {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -107,6 +105,4 @@ public class AuthorizationEntity {
     public int hashCode() {
         return authId != null ? authId.hashCode() : 0;
     }
-
-
 }

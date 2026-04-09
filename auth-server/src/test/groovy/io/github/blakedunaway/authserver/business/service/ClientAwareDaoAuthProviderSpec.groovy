@@ -65,10 +65,9 @@ class ClientAwareDaoAuthProviderSpec extends TestSpec {
                             boolean accountExpired = false,
                             boolean credentialsExpired = false) {
         def now = LocalDateTime.now()
-        return ClientUser.fromEmail(email)
+        return ClientUser.from(email)
                          .passwordHash(passwordEncoder.encode(rawPassword))
                          .clientId(rcId)
-                         .plan("FREE")
                          .verified(!disabled)
                          .createdAt(now)
                          .updatedAt(now)
@@ -89,13 +88,11 @@ class ClientAwareDaoAuthProviderSpec extends TestSpec {
                              .authorizationGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS))
                              .tokenSettings(TokenSettings.builder().build())
                              .clientSettings(ClientSettings.builder().requireProofKey(false).build())
-                             .clientIdIssuedAt(Instant.now())
-                             .clientSecretExpiresAt(Instant.now())
-                             .postLogoutRedirectUris(Set.of("http://test.com/*"))
+                             .clientIdIssuedAt(LocalDateTime.now())
+                             .clientSecretExpiresAt(LocalDateTime.now())
+                             .postLogoutRedirectUris(Set.of("https://test.com/logout"))
                              .scopes(Set.of("read"))
-                             .redirectUris(Set.of("http://test.com/*"))
-                             .tokenSettings(TokenSettings.builder().build())
-                             .clientSettings(ClientSettings.builder().build())
+                             .redirectUris(Set.of("https://test.com/callback"))
                              .build()
     }
 

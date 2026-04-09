@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public final class AuthTokenView {
+public final class AuthTokenResponse {
 
     private final UUID id;
 
@@ -27,8 +27,8 @@ public final class AuthTokenView {
 
     private final String subject;
 
-    public static AuthTokenView fromModel(final AuthToken authToken) {
-        return new AuthTokenView(
+    public static AuthTokenResponse fromModel(final AuthToken authToken) {
+        return new AuthTokenResponse(
                 authToken.getId(),
                 authToken.getKid(),
                 authToken.getIssuedAt(),

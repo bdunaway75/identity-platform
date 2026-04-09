@@ -85,14 +85,6 @@ public final class RegisteredClientValidator {
 
         boolean valid = true;
 
-        if (isBlank(client.getClientName())) {
-            add(validations, "clientName", "client_name is required");
-            valid = false;
-        }
-        if (isBlank(client.getClientId())) {
-            add(validations, "clientId", "client_id is required");
-            valid = false;
-        }
         if (client.getClientSettings() == null) {
             add(validations, "clientSettings", "client_settings is required");
             valid = false;

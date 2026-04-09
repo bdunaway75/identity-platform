@@ -12,8 +12,9 @@ import org.springframework.util.Assert;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -57,11 +58,6 @@ public final class AuthToken {
         return new Builder();
     }
 
-    public boolean isHashedToken(final String hashedTokenValue) {
-        return this.getHashedTokenValue()
-                   .equals(hashedTokenValue);
-    }
-
     public OAuth2Token toOAuth2Token() {
         return this.getTokenType().applyToken(this, this.hashedTokenValue);
     }
@@ -74,18 +70,17 @@ public final class AuthToken {
         if (!(o instanceof AuthToken other)) {
             return false;
         }
-        // Prefer business key if id can be null for new tokens
         if (this.id != null && other.id != null) {
             return this.id.equals(other.id);
         }
         return this.tokenType == other.tokenType
-               && java.util.Objects.equals(this.hashedTokenValue, other.hashedTokenValue);
+               && Objects.equals(this.hashedTokenValue, other.hashedTokenValue);
     }
 
     @Override
     public int hashCode() {
         return (id != null) ? id.hashCode()
-                            : java.util.Objects.hash(tokenType, hashedTokenValue);
+                            : Objects.hash(tokenType, hashedTokenValue);
     }
 
     public Builder toBuilder() {
@@ -125,7 +120,7 @@ public final class AuthToken {
 
         private String hashedTokenValue;
 
-        private final Set<String> scopes = new LinkedHashSet<>();
+        private final Set<String> scopes = new HashSet<>();
 
         private final Map<String, Object> metadata = new LinkedHashMap<>();
 

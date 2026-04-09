@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.business.service
 
 import io.github.blakedunaway.authserver.TestSpec
+import io.github.blakedunaway.authserver.business.model.Authority
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel
 import io.github.blakedunaway.authserver.business.model.user.ClientUser
 import io.github.blakedunaway.authserver.config.redis.RedisStore
@@ -19,7 +20,6 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 import org.springframework.test.annotation.DirtiesContext
 import spock.lang.Subject
 
-import java.time.Instant
 import java.time.LocalDateTime
 
 @Import([UserService, RegisteredClientService])
@@ -52,10 +52,9 @@ class ClientUserDetailsServiceSpec extends TestSpec {
                                    String rcId = "rc-1",
                                    String hash = HASH) {
         def now = LocalDateTime.now()
-        return ClientUser.fromEmail(email)
+        return ClientUser.from(email)
                          .passwordHash(hash)
                          .clientId(rcId)
-                         .plan("FREE")
                          .verified(true)
                          .createdAt(now)
                          .updatedAt(now)
@@ -120,6 +119,57 @@ class ClientUserDetailsServiceSpec extends TestSpec {
         details.enabled
     }
 
+    @DirtiesContext
+    def "saveUser persists requested authorities that exist for the registered client"() {
+        given:
+        registeredClientService.updateRegisteredClientAuthorities(
+                UUID.fromString(registeredClient.getId()),
+                ["PERM_READ", "ROLE_SUPPORT"] as Set
+        )
+        def userWithAuthorities = ClientUser.from(user("authority@example.com", registeredClient.getClientId(), HASH))
+                                            .authorities { auths ->
+                                                auths.clear()
+                                                auths.add(Authority.from("perm_read"))
+                                                auths.add(Authority.from("ROLE_SUPPORT"))
+                                            }
+                                            .build()
+
+        when:
+        def updated = service.saveUser(userWithAuthorities)
+
+        then:
+        updated != null
+        updated.getAuthorities()*.getName() as Set == ["PERM_READ", "ROLE_SUPPORT"] as Set
+
+        and:
+        def persisted = userRepository.findByClient_IdAndEmail(registeredClient.getClientId(), "authority@example.com").orElse(null)
+        persisted != null
+        persisted.getAuthorities()*.getName() as Set == ["PERM_READ", "ROLE_SUPPORT"] as Set
+    }
+
+    @DirtiesContext
+    def "saveUser filters out authorities that are not registered for the client"() {
+        given:
+        registeredClientService.updateRegisteredClientAuthorities(
+                UUID.fromString(registeredClient.getId()),
+                ["PERM_READ"] as Set
+        )
+        def userWithMixedAuthorities = ClientUser.from(user("existing@example.com", registeredClient.getClientId(), HASH))
+                                                 .authorities { auths ->
+                                                     auths.clear()
+                                                     auths.add(Authority.from("PERM_READ"))
+                                                     auths.add(Authority.from("ROLE_UNKNOWN"))
+                                                 }
+                                                 .build()
+
+        when:
+        def updated = service.saveUser(userWithMixedAuthorities)
+
+        then:
+        updated != null
+        updated.getAuthorities()*.getName() as Set == ["PERM_READ"] as Set
+    }
+
     private static RegisteredClientModel minimalRegisteredClient() {
         RegisteredClientModel.builder()
                              .id(null)
@@ -130,13 +180,11 @@ class ClientUserDetailsServiceSpec extends TestSpec {
                              .authorizationGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS))
                              .tokenSettings(TokenSettings.builder().build())
                              .clientSettings(ClientSettings.builder().requireProofKey(false).build())
-                             .clientIdIssuedAt(Instant.now())
-                             .clientSecretExpiresAt(Instant.now())
-                             .postLogoutRedirectUris(Set.of("http://test.com/*"))
+                             .clientIdIssuedAt(LocalDateTime.now())
+                             .clientSecretExpiresAt(LocalDateTime.now())
+                             .postLogoutRedirectUris(Set.of("https://test.com/logout"))
                              .scopes(Set.of("read"))
-                             .redirectUris(Set.of("http://test.com/*"))
-                             .tokenSettings(TokenSettings.builder().build())
-                             .clientSettings(ClientSettings.builder().build())
+                             .redirectUris(Set.of("https://test.com/callback"))
                              .build()
     }
 }

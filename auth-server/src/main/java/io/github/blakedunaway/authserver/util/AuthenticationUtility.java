@@ -52,13 +52,12 @@ public class AuthenticationUtility {
         try {
             final Map<String, Object> results = MAPPER.convertValue(jsonMap.get(key), new TypeReference<>() {});
             return results == null ? new HashMap<>() : results;
-        } catch (Exception e) {
-            //TODO: add logging
+        } catch (final Exception e) {
             return new HashMap<>();
         }
     }
 
-    public static boolean isArgon2Hash(String value) {
+    public static boolean isArgon2Hash(final String value) {
         return value != null && value.startsWith("$argon2");
     }
 

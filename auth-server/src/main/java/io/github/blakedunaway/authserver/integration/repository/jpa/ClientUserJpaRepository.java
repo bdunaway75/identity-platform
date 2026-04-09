@@ -21,19 +21,19 @@ public interface ClientUserJpaRepository extends JpaRepository<ClientUserEntity,
     int countAllByClientId(final String clientId);
 
     @Query(value = """
-            select cu.*
-            from client_user cu
-            join registered_client rc on rc.client_id = cu.client_id
-            where rc.registered_client_id in (:registeredClientIds)
+            select client_user.*
+            from auth.client_user client_user
+            join auth.registered_client registered_client on registered_client.client_id = client_user.client_id
+            where registered_client.registered_client_id in (:registeredClientIds)
             """, nativeQuery = true)
     List<ClientUserEntity> findAllByRegisteredClientIds(@Param("registeredClientIds") final Set<UUID> registeredClientIds);
 
     @Query(value = """
-            select cu.*
-            from client_user cu
-            join registered_client rc on rc.client_id = cu.client_id
-            where cu.id = :clientUserId
-              and rc.registered_client_id in (:registeredClientIds)
+            select client_user.*
+            from auth.client_user client_user
+            join auth.registered_client registered_client on registered_client.client_id = client_user.client_id
+            where client_user.id = :clientUserId
+              and registered_client.registered_client_id in (:registeredClientIds)
             """, nativeQuery = true)
     Optional<ClientUserEntity> findByIdAndRegisteredClientIds(@Param("clientUserId") final UUID clientUserId,
                                                               @Param("registeredClientIds") final Set<UUID> registeredClientIds);

@@ -15,7 +15,7 @@ import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -78,7 +78,7 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientInternalR
         return registerClientJpaRepository.findAllById(ids)
                                           .stream()
                                           .map(registeredClientMapper::registeredClientEntityToRegisteredClientModel)
-                                          .collect(Collectors.toCollection(LinkedHashSet::new));
+                                          .collect(Collectors.toCollection(HashSet::new));
     }
 
     private Set<RegisteredClientScopeEntity> resolveManagedScopes(final Set<String> scopes) {
@@ -87,10 +87,10 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientInternalR
                                             : scopes.stream()
                                                     .filter(scope -> scope != null && !scope.isBlank())
                                                     .map(String::trim)
-                                                    .collect(Collectors.toCollection(LinkedHashSet::new));
+                                                    .collect(Collectors.toCollection(HashSet::new));
 
         if (requestedScopes.isEmpty()) {
-            return new LinkedHashSet<>();
+            return new HashSet<>();
         }
 
         final Set<RegisteredClientScopeEntity> attachedScopes = registeredClientScopeJpaRepository.findAllByScopeIn(requestedScopes);
@@ -102,12 +102,12 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientInternalR
         final Set<RegisteredClientScopeEntity> createdScopes = requestedScopes.stream()
                                                                               .filter(scope -> !existingScopes.contains(scope))
                                                                               .map(scope -> new RegisteredClientScopeEntity(null, scope))
-                                                                              .collect(Collectors.toCollection(LinkedHashSet::new));
+                                                                              .collect(Collectors.toCollection(HashSet::new));
         if (!createdScopes.isEmpty()) {
             attachedScopes.addAll(registeredClientScopeJpaRepository.saveAll(createdScopes));
         }
 
-        return new LinkedHashSet<>(attachedScopes);
+        return new HashSet<>(attachedScopes);
     }
 
 }

@@ -1,22 +1,31 @@
 package io.github.blakedunaway.authserver.business.service
 
 import io.github.blakedunaway.authserver.TestSpec
-import io.github.blakedunaway.authserver.config.TestConfig
+import io.github.blakedunaway.authserver.business.model.RegisteredClientModel
 import io.github.blakedunaway.authserver.config.redis.RedisStore
 import org.spockframework.spring.SpringBean
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.oauth2.core.AuthorizationGrantType
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings
 import org.springframework.test.annotation.DirtiesContext
+
+import java.time.LocalDateTime
 
 import static java.util.stream.Collectors.toSet
 
-@Import(AuthorizationConsentService)
+@Import([AuthorizationConsentService, RegisteredClientService])
 class AuthorizationConsentServiceSpec extends TestSpec {
 
     @Autowired
     private AuthorizationConsentService service
+
+    @Autowired
+    private RegisteredClientService registeredClientService
 
     @SpringBean
     RedisStore redisStore = Mock()
@@ -33,10 +42,35 @@ class AuthorizationConsentServiceSpec extends TestSpec {
         new LinkedHashSet<>(consent.getAuthorities().stream().map { it.authority }.collect(toSet()))
     }
 
+    private RegisteredClientModel createRegisteredClientWithAuthorities(final Set<String> authorities) {
+        final RegisteredClientModel savedClient = registeredClientService.saveRegisteredClient(
+                RegisteredClientModel.builder()
+                                     .id(null)
+                                     .clientId(null)
+                                     .clientName("consent-client-" + UUID.randomUUID())
+                                     .clientSecret("secret")
+                                     .clientAuthenticationMethods(Set.of(ClientAuthenticationMethod.CLIENT_SECRET_BASIC))
+                                     .authorizationGrantTypes(Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS))
+                                     .tokenSettings(TokenSettings.builder().build())
+                                     .clientSettings(ClientSettings.builder().build())
+                                     .clientIdIssuedAt(LocalDateTime.now())
+                                     .clientSecretExpiresAt(LocalDateTime.now())
+                                     .postLogoutRedirectUris(Set.of("https://test.com/logout"))
+                                     .scopes(Set.of("read"))
+                                     .redirectUris(Set.of("https://test.com/callback"))
+                                     .authorities(Set.of())
+                                     .roles(Set.of())
+                                     .build()
+        )
+        registeredClientService.updateRegisteredClientAuthorities(savedClient.getId(), authorities)
+        return registeredClientService.findRegisteredClientById(savedClient.getId())
+    }
+
     @DirtiesContext
     def "save -> findById persists authorities for user+client"() {
         given:
-        def rcId = UUID.randomUUID().toString()
+        def registeredClient = createRegisteredClientWithAuthorities(["SCOPE_READ", "SCOPE_WRITE"] as Set)
+        def rcId = registeredClient.getId().toString()
         def principal = "alice"
         def granted = ["SCOPE_READ", "SCOPE_WRITE"] as LinkedHashSet
         def authConsent = consent(rcId, principal, granted)
@@ -55,7 +89,8 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "save is idempotent for same user+client - no duplicate authorities"() {
         given:
-        def rcId = UUID.randomUUID().toString()
+        def registeredClient = createRegisteredClientWithAuthorities(["SCOPE_READ"] as Set)
+        def rcId = registeredClient.getId().toString()
         def principal = "idempotent"
         def granted = ["SCOPE_READ"] as Set
         def authConsent = consent(rcId, principal, granted)
@@ -75,7 +110,8 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "save merges newly approved authorities - progressive consent"() {
         given:
-        def rcId = UUID.randomUUID().toString()
+        def registeredClient = createRegisteredClientWithAuthorities(["SCOPE_READ", "SCOPE_WRITE"] as Set)
+        def rcId = registeredClient.getId().toString()
         def principal = "progress"
         def initial = consent(rcId, principal, ["SCOPE_READ"])
         def later = consent(rcId, principal, ["SCOPE_READ", "SCOPE_WRITE"])
@@ -94,7 +130,8 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "remove deletes consent for user+client"() {
         given:
-        def rcId = UUID.randomUUID().toString()
+        def registeredClient = createRegisteredClientWithAuthorities(["SCOPE_READ"] as Set)
+        def rcId = registeredClient.getId().toString()
         def principal = "carol"
         def c = consent(rcId, principal, ["SCOPE_READ"])
 
@@ -111,7 +148,8 @@ class AuthorizationConsentServiceSpec extends TestSpec {
     @DirtiesContext
     def "round-trip mapping: Spring -> Entity -> Spring remains equal by fields"() {
         given:
-        def rcId = UUID.randomUUID().toString()
+        def registeredClient = createRegisteredClientWithAuthorities(["SCOPE_EMAIL", "SCOPE_PROFILE"] as Set)
+        def rcId = registeredClient.getId().toString()
         def principal = "roundtrip"
         def scopes = ["SCOPE_EMAIL", "SCOPE_PROFILE"] as Set
         def springObj = consent(rcId, principal, scopes)

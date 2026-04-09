@@ -16,21 +16,22 @@ public interface PlatformUserJpaRepository extends JpaRepository<PlatformUserEnt
 
     @Query(value = """
             select count(*)
-            from platform_user pu
-            join user_clients uc on uc.user_id = pu.id
-            join registered_client rc on rc.registered_client_id = uc.registered_client_id
-            join client_user cu on cu.client_id = rc.client_id
-            where lower(pu.email) = lower(:email)
+            from auth.platform_user platform_user
+            join auth.user_clients platform_user_client on platform_user_client.user_id = platform_user.id
+            join auth.registered_client registered_client on registered_client.registered_client_id = platform_user_client.registered_client_id
+            join auth.client_user client_user on client_user.client_id = registered_client.client_id
+            where lower(platform_user.email) = lower(:email)
             """, nativeQuery = true)
     int getTotalUserCount(@Param("email") final String email);
 
     @Query(value = """
             select count(*)
-            from platform_user pu
-            join user_clients uc on uc.user_id = pu.id
-            where lower(pu.email) = lower(:email)
+            from auth.platform_user platform_user
+            join auth.user_clients platform_user_client on platform_user_client.user_id = platform_user.id
+            where lower(platform_user.email) = lower(:email)
             """, nativeQuery = true)
     int getTotalClientCount(@Param("email") final String email);
+
 
 }
 
