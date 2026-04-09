@@ -1,0 +1,303 @@
+.subscriptions-page {
+    display: grid;
+    gap: 1rem;
+    min-height: 100%;
+}
+
+.subscriptions-intro-card,
+.subscriptions-tier-card {
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background:
+        linear-gradient(165deg, rgba(20, 25, 39, 0.98), rgba(9, 12, 20, 0.98)),
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 42%);
+    box-shadow:
+        0 24px 54px rgba(0, 0, 0, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.subscriptions-intro-card {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.9rem 1rem;
+}
+
+.subscriptions-kicker {
+    color: rgba(34, 211, 238, 0.76);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.subscriptions-intro-card h1 {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: clamp(1.05rem, 1.4vw, 1.3rem);
+    line-height: 1.05;
+    letter-spacing: -0.05em;
+}
+
+.subscriptions-intro-card p {
+    margin: 0;
+    max-width: 44rem;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.74rem;
+    line-height: 1.45;
+}
+
+.subscriptions-error {
+    padding: 0.8rem 0.9rem;
+    border-radius: 14px;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    background: rgba(127, 29, 29, 0.18);
+    color: rgba(254, 202, 202, 0.94);
+    font-size: 0.74rem;
+}
+
+.subscriptions-tier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14.5rem, 1fr));
+    gap: 0.9rem;
+    align-items: stretch;
+}
+
+.subscriptions-tier-card {
+    min-height: 23rem;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 0.9rem;
+    padding: 1rem;
+    transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        background 180ms ease;
+}
+
+.subscriptions-tier-card.is-hoverable {
+    cursor: pointer;
+}
+
+.subscriptions-tier-card.is-clickable {
+    cursor: pointer;
+}
+
+.subscriptions-tier-card.is-hoverable:hover,
+.subscriptions-tier-card.is-hoverable:focus-visible {
+    transform: translateY(-0.35rem);
+    border-color: rgba(34, 211, 238, 0.24);
+    background:
+        linear-gradient(165deg, rgba(18, 28, 45, 0.98), rgba(8, 12, 22, 0.98)),
+        radial-gradient(circle at top, rgba(34, 211, 238, 0.08), transparent 42%);
+    box-shadow:
+        0 28px 60px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(34, 211, 238, 0.08) inset,
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.subscriptions-tier-card.is-hoverable:focus-visible {
+    outline: none;
+}
+
+.subscriptions-tier-card.is-hoverable:hover .subscriptions-tier-limit-row,
+.subscriptions-tier-card.is-hoverable:hover .subscriptions-tier-usage-row,
+.subscriptions-tier-card.is-hoverable:focus-visible .subscriptions-tier-limit-row,
+.subscriptions-tier-card.is-hoverable:focus-visible .subscriptions-tier-usage-row {
+    border-color: rgba(34, 211, 238, 0.12);
+    background: rgba(34, 211, 238, 0.04);
+}
+
+.subscriptions-tier-card.is-busy {
+    pointer-events: none;
+    opacity: 0.78;
+}
+
+.subscriptions-tier-card.is-current {
+    border-color: rgba(74, 222, 128, 0.32);
+    background:
+        linear-gradient(180deg, rgba(16, 38, 27, 0.98), rgba(8, 17, 16, 0.98)),
+        radial-gradient(circle at top, rgba(74, 222, 128, 0.16), transparent 42%);
+    box-shadow:
+        0 24px 54px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(74, 222, 128, 0.08) inset,
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.subscriptions-tier-card.is-downgrade-option {
+    border-color: rgba(245, 158, 11, 0.18);
+    background:
+        linear-gradient(165deg, rgba(34, 28, 15, 0.98), rgba(15, 12, 9, 0.98)),
+        radial-gradient(circle at top, rgba(245, 158, 11, 0.08), transparent 42%);
+    box-shadow:
+        0 24px 54px rgba(0, 0, 0, 0.22),
+        0 0 0 1px rgba(245, 158, 11, 0.06) inset,
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.subscriptions-tier-card.is-downgrade-option.is-hoverable:hover,
+.subscriptions-tier-card.is-downgrade-option.is-hoverable:focus-visible {
+    border-color: rgba(245, 158, 11, 0.3);
+    background:
+        linear-gradient(165deg, rgba(43, 33, 16, 0.98), rgba(20, 14, 9, 0.98)),
+        radial-gradient(circle at top, rgba(245, 158, 11, 0.12), transparent 42%);
+    box-shadow:
+        0 28px 60px rgba(0, 0, 0, 0.28),
+        0 0 0 1px rgba(245, 158, 11, 0.08) inset,
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.subscriptions-tier-top {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.subscriptions-tier-name-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.subscriptions-tier-name {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: 1.02rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.subscriptions-tier-current-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.45rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(74, 222, 128, 0.22);
+    background: rgba(74, 222, 128, 0.1);
+    color: rgba(220, 252, 231, 0.96);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.subscriptions-tier-action-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.45rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(34, 211, 238, 0.18);
+    background: rgba(34, 211, 238, 0.08);
+    color: rgba(207, 250, 254, 0.96);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition:
+        transform 180ms ease,
+        background 180ms ease,
+        border-color 180ms ease;
+}
+
+.subscriptions-tier-downgrade-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.45rem;
+    padding: 0.12rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: rgba(245, 158, 11, 0.1);
+    color: rgba(254, 243, 199, 0.96);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.subscriptions-tier-card.is-hoverable:hover .subscriptions-tier-action-badge,
+.subscriptions-tier-card.is-hoverable:focus-visible .subscriptions-tier-action-badge {
+    transform: translateX(0.18rem);
+    border-color: rgba(34, 211, 238, 0.3);
+    background: rgba(34, 211, 238, 0.14);
+}
+
+.subscriptions-tier-price {
+    margin-top: 0.22rem;
+    color: rgba(191, 219, 254, 0.94);
+    font-size: 1.28rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+}
+
+.subscriptions-tier-description {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.74rem;
+    line-height: 1.55;
+}
+
+.subscriptions-tier-limits {
+    display: grid;
+    align-content: start;
+    gap: 0.55rem;
+}
+
+.subscriptions-tier-limit-row,
+.subscriptions-tier-usage-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    padding: 0.7rem 0.78rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.subscriptions-tier-card.is-current .subscriptions-tier-limit-row,
+.subscriptions-tier-card.is-current .subscriptions-tier-usage-row {
+    border-color: rgba(74, 222, 128, 0.12);
+    background: rgba(74, 222, 128, 0.05);
+}
+
+.subscriptions-tier-limit-label,
+.subscriptions-tier-usage-label {
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.subscriptions-tier-limit-value,
+.subscriptions-tier-usage-value {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.subscriptions-tier-usage {
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 0.15rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.subscriptions-tier-warning {
+    padding: 0.72rem 0.8rem;
+    border-radius: 14px;
+    border: 1px solid rgba(245, 158, 11, 0.18);
+    background: rgba(245, 158, 11, 0.08);
+    color: rgba(253, 230, 138, 0.96);
+    font-size: 0.7rem;
+    line-height: 1.45;
+}
+
+.subscriptions-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}

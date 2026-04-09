@@ -1,24 +1,59 @@
-import { userManager } from "../auth/oidc";
+import { getValidAccessToken, authenticatedFetch } from "../auth/session";
+import { APP_ENDPOINTS } from "../config/endpoints";
 import { isDevAuthBypassed } from "../auth/devAuth";
+import { fetchDashboard, fetchPlatformUserTiers } from "./platform";
 
 export const DEFAULT_TIER = "free";
 export const PAID_TIER = "paid";
-export const SUBSCRIPTION_TIER_ENDPOINT =
-  "http://localhost:8080/platform/register-client/tier-status";
-export const TOTAL_USER_COUNT_ENDPOINT =
-  "http://localhost:8080/platform/register-client/total-user-count";
-export const TOTAL_CLIENT_COUNT_ENDPOINT =
-  "http://localhost:8080/platform/register-client/total-client-count";
-export const REGISTERED_CLIENTS_ENDPOINT =
-  "http://localhost:8080/platform/register-client";
-export const REGISTERED_CLIENT_USERS_ENDPOINT =
-  "http://localhost:8080/platform/register-client/users";
-export const REGISTERED_CLIENT_TOKENS_ENDPOINT =
-  "http://localhost:8080/platform/register-client/tokens";
+
 const DEV_SUBSCRIPTION_TIER_KEY = "local-dev-subscription-tier";
 const DEV_SUBSCRIPTION_EVENT = "codex:dev-subscription-tier-changed";
-const SUBSCRIPTION_SUCCESS_CACHE_MS = 30_000;
+const PENDING_SUBSCRIPTION_CHECKOUT_KEY = "pending-subscription-checkout";
+const SUBSCRIPTION_SUCCESS_CACHE_MS = 120_000;
 const SUBSCRIPTION_FAILURE_CACHE_MS = 10_000;
+const TIER_LIMITS_BY_KEY = {
+  free: {
+    allowedNumberOfRegisteredClients: 0,
+    allowedNumberOfGlobalUsers: 0,
+  },
+  paid: {
+    allowedNumberOfRegisteredClients: 5,
+    allowedNumberOfGlobalUsers: 500,
+  },
+};
+
+async function readErrorMessage(response, fallbackMessage) {
+  const rawBody = (await response.text()).trim();
+  if (!rawBody) {
+    return fallbackMessage;
+  }
+
+  try {
+    const parsedBody = JSON.parse(rawBody);
+    if (typeof parsedBody?.message === "string" && parsedBody.message.trim().length > 0) {
+      return parsedBody.message.trim();
+    }
+  } catch {
+    // Fall through to the raw response body.
+  }
+
+  return rawBody;
+}
+
+function buildDevTiers() {
+  return Object.entries(TIER_LIMITS_BY_KEY).map(([tierKey, tierLimits]) => ({
+    id: tierKey,
+    stripePriceId: tierKey === "paid" ? "dev-price-id" : "",
+    name: tierKey.charAt(0).toUpperCase() + tierKey.slice(1),
+    price: tierKey === "paid" ? 1 : 0,
+    description: `${tierKey.charAt(0).toUpperCase() + tierKey.slice(1)} tier for local development mode.`,
+    tierOrder: tierKey === "paid" ? 1 : 0,
+    allowedNumberOfRegisteredClients: tierLimits.allowedNumberOfRegisteredClients,
+    allowedNumberOfGlobalUsers: tierLimits.allowedNumberOfGlobalUsers,
+    allowedNumberOfGlobalScopes: 0,
+    allowedNumberOfGlobalAuthorities: 0,
+  }));
+}
 
 let cachedTierResult = null;
 let cachedTierResultAt = 0;
@@ -33,6 +68,176 @@ function isLocalDevHost() {
   );
 }
 
+function normalizeTier(value) {
+  if (typeof value !== "string") {
+    return DEFAULT_TIER;
+  }
+
+  const normalizedValue = value.trim().toLowerCase();
+  return normalizedValue || DEFAULT_TIER;
+}
+
+function toSafeInteger(value, fallback = 0) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getTierLimitsByKey(tierKey) {
+  return TIER_LIMITS_BY_KEY[tierKey] || TIER_LIMITS_BY_KEY[DEFAULT_TIER];
+}
+
+function buildSubscriptionSnapshot({
+  tierKey,
+  tierName,
+  source,
+  tiers,
+  allowedNumberOfRegisteredClients,
+  allowedNumberOfGlobalUsers,
+  allowedNumberOfGlobalScopes,
+  allowedNumberOfGlobalAuthorities,
+  totalRegisteredClients,
+  totalUsers,
+  totalScopes,
+  totalAuthorities,
+  totalRoles,
+}) {
+  return {
+    tier: normalizeTier(tierKey),
+    tierName: typeof tierName === "string" && tierName.trim().length > 0
+      ? tierName.trim()
+      : normalizeTier(tierKey),
+    source,
+    tiers: Array.isArray(tiers) ? tiers : [],
+    allowedNumberOfRegisteredClients: toSafeInteger(allowedNumberOfRegisteredClients, 0),
+    allowedNumberOfGlobalUsers: toSafeInteger(allowedNumberOfGlobalUsers, 0),
+    allowedNumberOfGlobalScopes: toSafeInteger(allowedNumberOfGlobalScopes, 0),
+    allowedNumberOfGlobalAuthorities: toSafeInteger(allowedNumberOfGlobalAuthorities, 0),
+    totalRegisteredClients: toSafeInteger(totalRegisteredClients, 0),
+    totalUsers: toSafeInteger(totalUsers, 0),
+    totalScopes: toSafeInteger(totalScopes, 0),
+    totalAuthorities: toSafeInteger(totalAuthorities, 0),
+    totalRoles: toSafeInteger(totalRoles, 0),
+  };
+}
+
+function buildSubscriptionFromDashboardAndTiers(dashboardPayload, tiersPayload) {
+  const dashboardTier = dashboardPayload?.tier;
+  const tierKey = normalizeTier(dashboardTier?.name);
+  const fallbackLimits = getTierLimitsByKey(tierKey);
+  const matchingTier = Array.isArray(tiersPayload)
+    ? tiersPayload.find((tier) => normalizeTier(tier?.name) === tierKey) ?? null
+    : null;
+
+  return buildSubscriptionSnapshot({
+    tierKey,
+    tierName:
+      typeof matchingTier?.name === "string" && matchingTier.name.trim().length > 0
+        ? matchingTier.name
+        : typeof dashboardTier?.name === "string"
+          ? dashboardTier.name
+        : tierKey,
+    source: matchingTier ? "tiers" : "dashboard",
+    tiers: tiersPayload,
+    allowedNumberOfRegisteredClients: matchingTier?.allowedNumberOfRegisteredClients ??
+      fallbackLimits.allowedNumberOfRegisteredClients,
+    allowedNumberOfGlobalUsers: matchingTier?.allowedNumberOfGlobalUsers ??
+      fallbackLimits.allowedNumberOfGlobalUsers,
+    allowedNumberOfGlobalScopes: matchingTier?.allowedNumberOfGlobalScopes ?? 0,
+    allowedNumberOfGlobalAuthorities: matchingTier?.allowedNumberOfGlobalAuthorities ?? 0,
+    totalRegisteredClients: dashboardPayload?.totalRegisteredClients,
+    totalUsers: dashboardPayload?.totalUsers,
+    totalScopes: dashboardPayload?.totalScopes,
+    totalAuthorities: dashboardPayload?.totalAuthorities,
+    totalRoles: dashboardPayload?.totalRoles,
+  });
+}
+
+function getCachedTierResult() {
+  if (!cachedTierResult) {
+    return null;
+  }
+
+  if (Date.now() - cachedTierResultAt > SUBSCRIPTION_SUCCESS_CACHE_MS) {
+    cachedTierResult = null;
+    cachedTierResultAt = 0;
+    return null;
+  }
+
+  return cachedTierResult;
+}
+
+function getCachedTierError() {
+  if (!cachedTierError) {
+    return null;
+  }
+
+  if (Date.now() - cachedTierErrorAt > SUBSCRIPTION_FAILURE_CACHE_MS) {
+    cachedTierError = null;
+    cachedTierErrorAt = 0;
+    return null;
+  }
+
+  return cachedTierError;
+}
+
+function cacheTierResult(result) {
+  cachedTierResult = result;
+  cachedTierResultAt = Date.now();
+  cachedTierError = null;
+  cachedTierErrorAt = 0;
+}
+
+function cacheTierError(error) {
+  cachedTierError = error;
+  cachedTierErrorAt = Date.now();
+}
+
+function canUseSessionStorage() {
+  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+}
+
+export function setPendingSubscriptionCheckout(checkout) {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(PENDING_SUBSCRIPTION_CHECKOUT_KEY, JSON.stringify({
+      tierId: checkout?.tierId ?? null,
+      tierName: String(checkout?.tierName ?? "").trim(),
+      price: Number(checkout?.price ?? 0),
+      startedAt: Date.now(),
+    }));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function getPendingSubscriptionCheckout() {
+  if (!canUseSessionStorage()) {
+    return null;
+  }
+
+  try {
+    const rawValue = window.sessionStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_KEY);
+    return rawValue ? JSON.parse(rawValue) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingSubscriptionCheckout() {
+  if (!canUseSessionStorage()) {
+    return;
+  }
+
+  try {
+    window.sessionStorage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_KEY);
+  } catch {
+    // Ignore storage cleanup failures.
+  }
+}
+
 export function isDevSubscriptionOverrideAvailable() {
   return Boolean(import.meta.env.DEV && isLocalDevHost());
 }
@@ -42,7 +247,12 @@ export function getDevSubscriptionOverrideTier() {
     return "";
   }
 
-  return normalizeTier(window.localStorage.getItem(DEV_SUBSCRIPTION_TIER_KEY) || "");
+  const rawOverride = window.localStorage.getItem(DEV_SUBSCRIPTION_TIER_KEY);
+  if (typeof rawOverride !== "string" || rawOverride.trim().length === 0) {
+    return "";
+  }
+
+  return normalizeTier(rawOverride);
 }
 
 export function setDevSubscriptionOverrideTier(tier) {
@@ -88,72 +298,6 @@ export function subscribeToSubscriptionTierChanges(callback) {
   };
 }
 
-function normalizeTier(value) {
-  if (typeof value !== "string") {
-    return DEFAULT_TIER;
-  }
-
-  const normalizedValue = value.trim().toLowerCase();
-  return normalizedValue || DEFAULT_TIER;
-}
-
-function extractTier(payload) {
-  if (typeof payload === "string") {
-    return normalizeTier(payload);
-  }
-
-  if (!payload || typeof payload !== "object") {
-    return DEFAULT_TIER;
-  }
-
-  return normalizeTier(
-    payload.tier ||
-    payload.subscriptionTier ||
-    payload.plan ||
-    payload.level
-  );
-}
-
-function getCachedTierResult() {
-  if (!cachedTierResult) {
-    return null;
-  }
-
-  if (Date.now() - cachedTierResultAt > SUBSCRIPTION_SUCCESS_CACHE_MS) {
-    cachedTierResult = null;
-    cachedTierResultAt = 0;
-    return null;
-  }
-
-  return cachedTierResult;
-}
-
-function getCachedTierError() {
-  if (!cachedTierError) {
-    return null;
-  }
-
-  if (Date.now() - cachedTierErrorAt > SUBSCRIPTION_FAILURE_CACHE_MS) {
-    cachedTierError = null;
-    cachedTierErrorAt = 0;
-    return null;
-  }
-
-  return cachedTierError;
-}
-
-function cacheTierResult(result) {
-  cachedTierResult = result;
-  cachedTierResultAt = Date.now();
-  cachedTierError = null;
-  cachedTierErrorAt = 0;
-}
-
-function cacheTierError(error) {
-  cachedTierError = error;
-  cachedTierErrorAt = Date.now();
-}
-
 export function clearSubscriptionTierCache() {
   cachedTierResult = null;
   cachedTierResultAt = 0;
@@ -162,8 +306,142 @@ export function clearSubscriptionTierCache() {
   inFlightTierRequest = null;
 }
 
+export async function fetchSubscriptionCheckoutStatus(sessionId) {
+  const normalizedSessionId = String(sessionId ?? "").trim();
+  if (!normalizedSessionId) {
+    throw new Error("Checkout session id is required.");
+  }
+
+  const response = await fetch(
+    `${APP_ENDPOINTS.platform.subscriptionStatus}?session_id=${encodeURIComponent(normalizedSessionId)}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Subscription status lookup failed with status ${response.status}.`);
+  }
+
+  const payload = await response.json();
+  return String(payload?.status ?? "").trim().toLowerCase() || "pending";
+}
+
+export async function createSubscriptionCheckoutSession(platformUserTier) {
+  if (isDevAuthBypassed()) {
+    throw new Error("Subscription checkout is unavailable in local dev mode.");
+  }
+
+  if (!platformUserTier?.id || !platformUserTier?.stripePriceId) {
+    throw new Error("A billable subscription tier is required.");
+  }
+
+  const accessToken = await getValidAccessToken("Missing access token for subscription checkout.");
+  const response = await authenticatedFetch(APP_ENDPOINTS.platform.subscription, {
+    method: "POST",
+    headers: {
+      Accept: "text/plain",
+      "Content-Type": "text/plain",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: platformUserTier.stripePriceId,
+  });
+
+  if (!response.ok) {
+    const message = await readErrorMessage(
+      response,
+      `Subscription checkout failed with status ${response.status}.`
+    );
+    throw new Error(message || `Subscription checkout failed with status ${response.status}.`);
+  }
+
+  const checkoutUrl = (await response.text()).trim();
+  if (!checkoutUrl) {
+    throw new Error("Subscription checkout did not return a Stripe checkout URL.");
+  }
+
+  setPendingSubscriptionCheckout({
+    tierId: platformUserTier.id,
+    tierName: platformUserTier.name,
+    price: platformUserTier.price,
+  });
+  return checkoutUrl;
+}
+
+async function changeExistingSubscription(endpoint, platformUserTier, defaultErrorMessage) {
+  if (isDevAuthBypassed()) {
+    throw new Error("Subscription changes are unavailable in local dev mode.");
+  }
+
+  if (!platformUserTier?.id || !platformUserTier?.stripePriceId) {
+    throw new Error("A billable subscription tier is required.");
+  }
+
+  const accessToken = await getValidAccessToken("Missing access token for subscription change.");
+  const response = await authenticatedFetch(endpoint, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "text/plain",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: platformUserTier.stripePriceId,
+  });
+
+  if (!response.ok) {
+    const message = await readErrorMessage(
+      response,
+      `${defaultErrorMessage} failed with status ${response.status}.`
+    );
+    throw new Error(message || `${defaultErrorMessage} failed with status ${response.status}.`);
+  }
+
+  clearSubscriptionTierCache();
+  return response.status === 204 ? {} : response.json().catch(() => ({}));
+}
+
+export async function upgradeSubscription(platformUserTier) {
+  return changeExistingSubscription(
+    APP_ENDPOINTS.platform.subscriptionUpgrade,
+    platformUserTier,
+    "Subscription upgrade"
+  );
+}
+
+export async function downgradeSubscription(platformUserTier) {
+  return changeExistingSubscription(
+    APP_ENDPOINTS.platform.subscriptionDowngrade,
+    platformUserTier,
+    "Subscription downgrade"
+  );
+}
+
 export async function fetchSubscriptionTier(options = {}) {
   const { force = false } = options;
+  const devOverrideTier = getDevSubscriptionOverrideTier();
+  if (devOverrideTier) {
+    const tierLimits = getTierLimitsByKey(devOverrideTier);
+    const overrideResult = buildSubscriptionSnapshot({
+      tierKey: devOverrideTier,
+      tierName: devOverrideTier,
+      source: "dev-override",
+      tiers: buildDevTiers(),
+      allowedNumberOfRegisteredClients: tierLimits.allowedNumberOfRegisteredClients,
+      allowedNumberOfGlobalUsers: tierLimits.allowedNumberOfGlobalUsers,
+      allowedNumberOfGlobalScopes: 0,
+      allowedNumberOfGlobalAuthorities: 0,
+      totalRegisteredClients: 0,
+      totalUsers: 0,
+      totalScopes: 0,
+      totalAuthorities: 0,
+      totalRoles: 0,
+    });
+    cacheTierResult(overrideResult);
+    return overrideResult;
+  }
 
   if (!force) {
     const cachedResult = getCachedTierResult();
@@ -182,71 +460,39 @@ export async function fetchSubscriptionTier(options = {}) {
   }
 
   inFlightTierRequest = (async () => {
-  if (SUBSCRIPTION_TIER_ENDPOINT === "PASTE_YOUR_AUTH_SERVER_TIER_ENDPOINT_HERE") {
-    const result = {
-      tier: DEFAULT_TIER,
-      source: "placeholder",
-    };
-    cacheTierResult(result);
-    return result;
-  }
-
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    const devOverrideTier = getDevSubscriptionOverrideTier();
-    if (devOverrideTier) {
-      const result = {
-        tier: devOverrideTier,
-        source: "dev-override",
-      };
-      cacheTierResult(result);
-      return result;
-    }
-
     if (isDevAuthBypassed()) {
-      const result = {
-        tier: DEFAULT_TIER,
+      const tierLimits = getTierLimitsByKey(DEFAULT_TIER);
+      const bypassResult = buildSubscriptionSnapshot({
+        tierKey: DEFAULT_TIER,
+        tierName: DEFAULT_TIER,
         source: "dev-bypass",
-      };
-      cacheTierResult(result);
-      return result;
+        tiers: buildDevTiers(),
+        allowedNumberOfRegisteredClients: tierLimits.allowedNumberOfRegisteredClients,
+        allowedNumberOfGlobalUsers: tierLimits.allowedNumberOfGlobalUsers,
+        allowedNumberOfGlobalScopes: 0,
+        allowedNumberOfGlobalAuthorities: 0,
+        totalRegisteredClients: 0,
+        totalUsers: 0,
+        totalScopes: 0,
+        totalAuthorities: 0,
+        totalRoles: 0,
+      });
+      cacheTierResult(bypassResult);
+      return bypassResult;
     }
 
-    const error = new Error("Missing access token for subscription lookup.");
-    cacheTierError(error);
-    throw error;
-  }
-
-  const response = await fetch(SUBSCRIPTION_TIER_ENDPOINT, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const error = new Error(`Subscription lookup failed with status ${response.status}.`);
-    cacheTierError(error);
-    throw error;
-  }
-
-  const rawPayload = await response.text();
-  let payload;
-
-  try {
-    payload = JSON.parse(rawPayload);
-  } catch {
-    payload = rawPayload;
-  }
-
-  const result = {
-    tier: extractTier(payload),
-    source: "api",
-  };
-  cacheTierResult(result);
-  return result;
+    try {
+      const [dashboardPayload, tiersPayload] = await Promise.all([
+        fetchDashboard({ force }),
+        fetchPlatformUserTiers({ force }),
+      ]);
+      const result = buildSubscriptionFromDashboardAndTiers(dashboardPayload, tiersPayload);
+      cacheTierResult(result);
+      return result;
+    } catch (error) {
+      cacheTierError(error);
+      throw error;
+    }
   })();
 
   try {
@@ -254,246 +500,4 @@ export async function fetchSubscriptionTier(options = {}) {
   } finally {
     inFlightTierRequest = null;
   }
-}
-
-export async function fetchTotalUserCount() {
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for user count lookup.");
-  }
-
-  const response = await fetch(TOTAL_USER_COUNT_ENDPOINT, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`User count lookup failed with status ${response.status}.`);
-  }
-
-  const rawPayload = await response.text();
-  const parsedCount = Number.parseInt(rawPayload, 10);
-
-  if (Number.isFinite(parsedCount)) {
-    return parsedCount;
-  }
-
-  throw new Error("User count lookup returned an invalid response.");
-}
-
-export async function fetchTotalClientCount() {
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for client count lookup.");
-  }
-
-  const response = await fetch(TOTAL_CLIENT_COUNT_ENDPOINT, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Client count lookup failed with status ${response.status}.`);
-  }
-
-  const rawPayload = await response.text();
-  const parsedCount = Number.parseInt(rawPayload, 10);
-
-  if (Number.isFinite(parsedCount)) {
-    return parsedCount;
-  }
-
-  throw new Error("Client count lookup returned an invalid response.");
-}
-
-export async function fetchRegisteredClients() {
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for registered clients lookup.");
-  }
-
-  const response = await fetch(REGISTERED_CLIENTS_ENDPOINT, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Registered clients lookup failed with status ${response.status}.`);
-  }
-
-  return response.json();
-}
-
-export async function fetchRegisteredClient(registeredClientId) {
-  if (!registeredClientId) {
-    throw new Error("Registered client ID is required.");
-  }
-
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for registered client lookup.");
-  }
-
-  const response = await fetch(`${REGISTERED_CLIENTS_ENDPOINT}/${registeredClientId}`, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Registered client lookup failed with status ${response.status}.`);
-  }
-
-  return response.json();
-}
-
-export async function fetchRegisteredClientUsers(registeredClientIds) {
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for registered client users lookup.");
-  }
-
-  const response = await fetch(REGISTERED_CLIENT_USERS_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-    body: JSON.stringify({
-      registeredClientIds: Array.isArray(registeredClientIds) ? registeredClientIds : [],
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Registered client users lookup failed with status ${response.status}.`);
-  }
-
-  return response.json();
-}
-
-export async function updateRegisteredClientUser(clientUserId, updates) {
-  if (!clientUserId) {
-    throw new Error("Client user ID is required.");
-  }
-
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for client user update.");
-  }
-
-  const response = await fetch(`${REGISTERED_CLIENT_USERS_ENDPOINT}/${clientUserId}`, {
-    method: "PATCH",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-    body: JSON.stringify(updates ?? {}),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Client user update failed with status ${response.status}.`);
-  }
-
-  return response.json();
-}
-
-export async function fetchRegisteredClientTokens(registeredClientIds) {
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for registered client tokens lookup.");
-  }
-
-  const response = await fetch(REGISTERED_CLIENT_TOKENS_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-    body: JSON.stringify({
-      registeredClientIds: Array.isArray(registeredClientIds) ? registeredClientIds : [],
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Registered client tokens lookup failed with status ${response.status}.`);
-  }
-
-  return response.json();
-}
-
-export async function invalidateRegisteredClientToken(authTokenId) {
-  if (!authTokenId) {
-    throw new Error("Auth token ID is required.");
-  }
-
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for auth token invalidation.");
-  }
-
-  const response = await fetch(`${REGISTERED_CLIENT_TOKENS_ENDPOINT}/${authTokenId}/invalidate`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${user.access_token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Auth token invalidation failed with status ${response.status}.`);
-  }
-}
-
-export async function invalidateAllRegisteredClientTokens(registeredClientId) {
-  if (!registeredClientId) {
-    throw new Error("Registered client ID is required.");
-  }
-
-  const user = await userManager.getUser();
-
-  if (!user?.access_token) {
-    throw new Error("Missing access token for registered client token invalidation.");
-  }
-
-  const response = await fetch(`${REGISTERED_CLIENTS_ENDPOINT}/${registeredClientId}/tokens/invalidate`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Registered client token invalidation failed with status ${response.status}.`);
-  }
-
-  const rawPayload = await response.text();
-  const parsedCount = Number.parseInt(rawPayload, 10);
-
-  if (Number.isFinite(parsedCount)) {
-    return parsedCount;
-  }
-
-  throw new Error("Registered client token invalidation returned an invalid response.");
 }

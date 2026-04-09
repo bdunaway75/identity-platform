@@ -1,0 +1,100 @@
+.docs-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.docs-hero,
+.docs-article {
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(165deg, rgba(20, 25, 39, 0.98), rgba(9, 12, 20, 0.98)),
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.08), transparent 42%);
+  box-shadow:
+    0 24px 54px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.docs-hero {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1.1rem 1.2rem;
+}
+
+.docs-kicker {
+  color: rgba(34, 211, 238, 0.76);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.docs-hero h1,
+.docs-section h2 {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.96);
+  letter-spacing: -0.05em;
+}
+
+.docs-hero h1 {
+  font-size: clamp(1.15rem, 1.8vw, 1.55rem);
+  line-height: 1.02;
+}
+
+.docs-hero p,
+.docs-section p,
+.docs-step-list li {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.docs-trust-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.docs-trust-pill {
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(34, 211, 238, 0.14);
+  background: rgba(34, 211, 238, 0.06);
+  color: rgba(223, 252, 255, 0.92);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.docs-article {
+  display: grid;
+  gap: 0;
+  padding: 0.25rem 0;
+}
+
+.docs-section {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.05rem 1.2rem;
+}
+
+.docs-section + .docs-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.docs-section h2 {
+  font-size: 1rem;
+  line-height: 1.08;
+}
+
+.docs-section-emphasis {
+  background:
+    linear-gradient(180deg, rgba(18, 34, 54, 0.8), rgba(9, 12, 20, 0.12));
+}
+
+.docs-step-list {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  padding-left: 1rem;
+}

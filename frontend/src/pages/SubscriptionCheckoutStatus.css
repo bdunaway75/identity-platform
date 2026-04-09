@@ -1,0 +1,206 @@
+.subscription-checkout-page {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+}
+
+.subscription-checkout-card {
+    width: min(100%, 34rem);
+    display: grid;
+    gap: 0.95rem;
+    padding: 1.2rem;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        linear-gradient(165deg, rgba(20, 25, 39, 0.98), rgba(9, 12, 20, 0.98)),
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 42%);
+    box-shadow:
+        0 24px 54px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.subscription-checkout-card-confirmed {
+    border-color: rgba(74, 222, 128, 0.32);
+    background:
+        linear-gradient(180deg, rgba(16, 38, 27, 0.98), rgba(8, 17, 16, 0.98)),
+        radial-gradient(circle at top, rgba(74, 222, 128, 0.16), transparent 42%);
+}
+
+.subscription-checkout-card-pending {
+    border-color: rgba(34, 211, 238, 0.22);
+}
+
+.subscription-checkout-card-timeout,
+.subscription-checkout-card-cancel {
+    border-color: rgba(251, 191, 36, 0.24);
+    background:
+        linear-gradient(180deg, rgba(41, 28, 9, 0.98), rgba(16, 12, 8, 0.98)),
+        radial-gradient(circle at top, rgba(251, 191, 36, 0.12), transparent 42%);
+}
+
+.subscription-checkout-kicker {
+    color: rgba(34, 211, 238, 0.76);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.subscription-checkout-title {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: clamp(1.3rem, 2vw, 1.9rem);
+    line-height: 1.04;
+    letter-spacing: -0.05em;
+}
+
+.subscription-checkout-id {
+    color: rgba(191, 219, 254, 0.94);
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.subscription-checkout-copy {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.82rem;
+    line-height: 1.6;
+}
+
+.subscription-checkout-detail {
+    display: grid;
+    gap: 0.3rem;
+    padding: 0.85rem 0.95rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.subscription-checkout-detail-label {
+    color: rgba(255, 255, 255, 0.54);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.subscription-checkout-detail-value {
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.8rem;
+    font-weight: 700;
+    word-break: break-word;
+}
+
+.subscription-checkout-pulse {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.subscription-checkout-status-note,
+.subscription-checkout-redirect-copy {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.72rem;
+}
+
+.subscription-checkout-progress-track {
+    height: 0.5rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.subscription-checkout-progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(34, 211, 238, 0.84), rgba(96, 165, 250, 0.92));
+}
+
+.subscription-checkout-progress-bar-animated {
+    width: 45%;
+    animation: subscription-checkout-progress 1.25s ease-in-out infinite;
+}
+
+@keyframes subscription-checkout-progress {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(260%);
+    }
+}
+
+.subscription-checkout-redirect {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.subscription-checkout-countdown {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.subscription-checkout-countdown-window {
+    width: 4rem;
+    height: 3.2rem;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(96, 165, 250, 0.18);
+    background: rgba(5, 16, 27, 0.68);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.subscription-checkout-countdown-strip {
+    transition: transform 0.45s ease;
+}
+
+.subscription-checkout-countdown-digit {
+    height: 3.2rem;
+    display: grid;
+    place-items: center;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+}
+
+.subscription-checkout-countdown-meta {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.subscription-checkout-countdown-label {
+    color: rgba(255, 255, 255, 0.56);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.subscription-checkout-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.subscription-checkout-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.7rem 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.subscription-checkout-link-primary {
+    border-color: rgba(34, 211, 238, 0.2);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(37, 99, 235, 0.62));
+}
