@@ -25,9 +25,9 @@ public class AuthorizationServerSecurityConfig {
         http.securityMatcher(as.getEndpointsMatcher())
             .cors(cors -> cors.configurationSource(request -> corsConfiguration))
             .formLogin(form ->
-                               form.loginPage("/login")
-                                   .loginProcessingUrl("/login")
-                                   .failureUrl("/login?error=true")
+                               form.loginPage("/platform/login")
+                                   .loginProcessingUrl("/platform/login")
+                                   .failureUrl("/platform/login?error=true")
                                    .permitAll())
             .with(as, (server) -> {
                 server.oidc(Customizer.withDefaults());

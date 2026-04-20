@@ -15,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Controller;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,9 @@ public class PlatformLoginController {
 
     private final DemoAccessCodeService demoAccessCodeService;
 
+    @Value("${auth-server.frontend.origin}")
+    private String frontendOrigin;
+
     @PostMapping("/demo-access-code")
     public void loginWithDemoAccessCode(final HttpServletRequest request,
                                         final HttpServletResponse response,
@@ -47,7 +51,7 @@ public class PlatformLoginController {
         final DemoAccessCode demoAccessCode = demoAccessCodeService.findByAccessCode(code);
         if (demoAccessCode == null || demoAccessCode.isDispensed() || demoAccessCode.getUser() == null) {
             log.warn("Demo access code login failed for code {}.", code);
-            response.sendRedirect("http://localhost:5173/demo-access?error=invalid_code");
+            response.sendRedirect(frontendOrigin + "/demo-access?error=invalid_code");
             return;
         }
 

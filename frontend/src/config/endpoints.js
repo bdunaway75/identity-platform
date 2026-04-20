@@ -1,6 +1,10 @@
+const runtimeOrigin = typeof window !== "undefined" && window.location?.origin
+  ? window.location.origin.replace(/\/+$/, "")
+  : "";
+
 const APP_ENDPOINT_DEFAULTS = {
-  authServerOrigin: "http://localhost:8080",
-  frontendOrigin: "http://localhost:5173",
+  authServerOrigin: runtimeOrigin || "https://identificationplatform.com",
+  frontendOrigin: runtimeOrigin || "https://identificationplatform.com",
   oidcClientId: "identity-platform",
 };
 

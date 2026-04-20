@@ -46,7 +46,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    CorsConfiguration platformCorsConfiguration(@Value("${auth-server.platform.allowed-origins:http://localhost:5173}") final String allowedOriginsProperty) {
+    CorsConfiguration platformCorsConfiguration(@Value("${auth-server.platform.allowed-origins}") final String allowedOriginsProperty) {
         final CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.setAllowedOrigins(Arrays.stream(allowedOriginsProperty.split(","))

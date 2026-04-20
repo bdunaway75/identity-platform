@@ -3,6 +3,7 @@ package io.github.blakedunaway.authserver.security.config;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
+import org.springframework.beans.factory.annotation.Value;
 import io.github.blakedunaway.authserver.business.service.SigningKeyStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,8 +22,8 @@ import org.springframework.security.oauth2.server.authorization.token.OAuth2Toke
 public class JwtConfig {
 
     @Bean
-    AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder().issuer("http://localhost:8080").build();
+    AuthorizationServerSettings authorizationServerSettings(@Value("${auth-server.issuer}") final String issuer) {
+        return AuthorizationServerSettings.builder().issuer(issuer).build();
     }
 
     @Bean
