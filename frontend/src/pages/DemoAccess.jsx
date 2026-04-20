@@ -12,17 +12,26 @@ function normalizeDemoCode(value) {
   return String(value ?? "").trim();
 }
 
+function resolveRequestedDemoCode(searchParams) {
+  return normalizeDemoCode(searchParams.get("code") ?? searchParams.get("number"));
+}
+
 export default function DemoAccess() {
   const [searchParams] = useSearchParams();
   const [demoCode, setDemoCode] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const requestedDemoCode = useMemo(() => resolveRequestedDemoCode(searchParams), [searchParams]);
 
   useEffect(() => {
+    if (requestedDemoCode) {
+      setDemoCode(requestedDemoCode);
+    }
+
     if (searchParams.get("error") === "invalid_code") {
       setErrorMsg("That demo access code is invalid or has already been used.");
     }
-  }, [searchParams]);
+  }, [requestedDemoCode, searchParams]);
 
   const submitDisabled = useMemo(
     () => submitting || normalizeDemoCode(demoCode).length === 0,
@@ -82,7 +91,7 @@ export default function DemoAccess() {
           <div className="login-kicker">Demo Access</div>
           <h1>Enter your demo code</h1>
           <p className="login-copy">
-            Use a one-time demo access code to continue into the platform workspace without the normal sign-in form.
+            Use a one-time demo access code to sign in without the normal login form.
           </p>
           {errorMsg ? <ErrorContainer errors={errorMsg} className="error-container-centered" /> : null}
 

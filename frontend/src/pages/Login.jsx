@@ -1,7 +1,7 @@
 import "./Login.css";
 import "./Errors.css";
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import LoginButton from "../components/LoginButton";
 import ErrorContainer from "../components/ErrorContainer";
@@ -11,7 +11,15 @@ import { PAID_TIER, setDevSubscriptionOverrideTier } from "../services/subscript
 export default function Login() {
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const canBypassAuth = isDevAuthBypassAvailable();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("expired") === "1") {
+      setErrorMsg("Your session expired. Please sign in again.");
+    }
+  }, [location.search]);
 
   const handleLocalAccess = () => {
     enableDevAuthBypass();
@@ -27,7 +35,7 @@ export default function Login() {
           <div className="login-kicker">Platform Login</div>
           <h1>Please sign in.</h1>
           <p className="login-copy">
-            Continue with your normal platform account, or use a separate demo access code if one was issued to you.
+            Sign in with your platform account, or use a demo access code if you were given one.
           </p>
           <LoginButton onError={() => setErrorMsg("Unable to authenticate.")} />
           <Link

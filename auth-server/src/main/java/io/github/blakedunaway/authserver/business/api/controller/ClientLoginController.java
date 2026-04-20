@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @Controller
+@Slf4j
 public class ClientLoginController {
 
     private final UserService userService;
@@ -61,6 +63,7 @@ public class ClientLoginController {
         }
 
         if (dto.getClientId() == null || dto.getClientId().isBlank()) {
+            log.warn("Client login page was requested without a client id.");
             return "redirect:/oauth-error?error=invalid_request&error_description=Missing%20client_id";
         }
 
@@ -85,6 +88,7 @@ public class ClientLoginController {
         }
 
         if (StringUtils.isEmpty(clientRegisterDto.getClientId())) {
+            log.warn("Client login attempt for {} was rejected because no client id was supplied.", clientRegisterDto.getEmail());
             response.sendRedirect("/oauth-error?error=invalid_request&error_description=Missing%20client_id");
             return;
         }
@@ -98,6 +102,7 @@ public class ClientLoginController {
             final Authentication result = authenticationManager.authenticate(clientRegisterDto.toAuthenticationToken());
             authSessionHandler.successfulAuthentication(request, response, result);
         } catch (final AuthenticationException ex) {
+            log.warn("Client login failed for email {} and client {}", clientRegisterDto.getEmail(), clientRegisterDto.getClientId(), ex);
             authSessionHandler.unsuccessfulAuthentication(request, response, ex);
         }
     }
@@ -122,6 +127,7 @@ public class ClientLoginController {
             final String clientId = uri.getQueryParams().getFirst("client_id");
             clientRegisterDto.setClientId(clientId);
             if (clientId == null || clientId.isBlank()) {
+                log.warn("Client sign up attempt for {} was rejected because no client id was supplied.", clientRegisterDto.getEmail());
                 return "redirect:/oauth-error?error=invalid_request&error_description=Missing%20client_id";
             }
             userService.signUpClientUser(clientRegisterDto);
@@ -133,6 +139,7 @@ public class ClientLoginController {
                                   Duration.ofMinutes(15));
             return "redirect:/login";
         } else {
+            log.warn("Client sign up post for {} was received without a saved OAuth request.", clientRegisterDto.getEmail());
             return "redirect:/oauth-error?error=invalid_request&error_description=Missing%20client_id";
         }
     }

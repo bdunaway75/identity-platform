@@ -331,7 +331,7 @@ export default function ClientUserDetail() {
               </span>
             </div>
             <p>
-              Attached to <strong>{registeredClient?.clientName || registeredClient?.clientId}</strong>. Review account status, refine authorities and roles, and inspect token activity from one place.
+              Attached to <strong>{registeredClient?.clientName || registeredClient?.clientId}</strong>. Review account status, update roles and authorities, and check token activity here.
             </p>
           </div>
           <div className="client-user-summary-strip">
@@ -432,7 +432,7 @@ export default function ClientUserDetail() {
                 <span className="client-user-toggle-switch" aria-hidden="true" />
                 <span className="client-user-toggle-copy">
                   <span className="client-user-toggle-title">Verified</span>
-                  <span className="client-user-toggle-description">Marks the account as confirmed and trusted.</span>
+                  <span className="client-user-toggle-description">Marks the account as verified.</span>
                 </span>
               </label>
 

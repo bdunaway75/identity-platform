@@ -75,6 +75,26 @@ function buildDowngradeConsequences(plan, usage) {
   return consequences;
 }
 
+function buildPlanChangeConfirmationMessage({
+  currentTierName,
+  targetTierName,
+  isDowngrade,
+  downgradeConsequences,
+}) {
+  const safeCurrentTierName = String(currentTierName ?? "your current tier").trim() || "your current tier";
+  const safeTargetTierName = String(targetTierName ?? "the selected tier").trim() || "the selected tier";
+
+  if (!isDowngrade) {
+    return `Are you sure you want to upgrade from ${safeCurrentTierName} to ${safeTargetTierName}?\n\nYour paid subscription will be updated to the new tier.`;
+  }
+
+  if (downgradeConsequences.length > 0) {
+    return `Are you sure you want to downgrade from ${safeCurrentTierName} to ${safeTargetTierName}?\n\nThis change will apply at the end of your current billing period.\n\nYour current usage is over the new limit for ${downgradeConsequences.join(", ")}, so cleanup may be required.`;
+  }
+
+  return `Are you sure you want to downgrade from ${safeCurrentTierName} to ${safeTargetTierName}?\n\nThis change will apply at the end of your current billing period.`;
+}
+
 export default function Subscriptions() {
   const navigate = useNavigate();
   const {
@@ -88,7 +108,8 @@ export default function Subscriptions() {
     refreshTier,
   } = useSubscription();
   const [checkoutError, setCheckoutError] = useState("");
-  const [isRedirectingToCheckout, setIsRedirectingToCheckout] = useState(false);
+  const [pendingPlanId, setPendingPlanId] = useState("");
+  const [pendingActionLabel, setPendingActionLabel] = useState("");
   const canUseDevTierOverride = isDevSubscriptionOverrideAvailable();
   const currentTierKey = normalizeTierKey(tierName);
   const shouldHighlightCurrentPlan = source !== "dev-override" && source !== "dev-bypass";
@@ -105,6 +126,16 @@ export default function Subscriptions() {
   const currentTierOrder = Number(
     currentTier?.tierOrder ?? currentTier?.price ?? 0
   );
+  const isWorking = pendingPlanId.length > 0;
+
+  if (status === "loading") {
+    return (
+      <div className="subscriptions-loading-state" aria-live="polite">
+        <div className="subscriptions-loading-spinner" aria-hidden="true" />
+        <div className="subscriptions-loading-copy">Loading plans...</div>
+      </div>
+    );
+  }
 
   const handleSwitchToFree = () => {
     setDevSubscriptionOverrideTier(DEFAULT_TIER);
@@ -115,36 +146,46 @@ export default function Subscriptions() {
   };
 
   const handleSelectPlan = async (plan) => {
-    if (!plan || isRedirectingToCheckout) {
+    if (!plan || isWorking) {
       return;
     }
+    const planId = String(plan?.id ?? plan?.name ?? "").trim();
     const planKey = normalizeTierKey(plan?.name);
     const isCurrentPlan = planKey === currentTierKey;
     const canChangePlan = String(plan?.stripePriceId ?? "").trim().length > 0;
     const planTierOrder = Number(plan?.tierOrder ?? plan?.price ?? 0);
     const isDowngrade = planTierOrder < currentTierOrder;
     const downgradeConsequences = buildDowngradeConsequences(plan, usage);
+    const isInitialPaidCheckout = !currentTier || Number(currentTier?.price || 0) <= 0;
 
     if (isCurrentPlan || !canChangePlan) {
       return;
     }
 
-    if (isDowngrade) {
-      const warningMessage = downgradeConsequences.length > 0
-        ? `Switching to ${plan?.name} puts this workspace over the new limit for ${downgradeConsequences.join(", ")}.\n\nThat can require deleting data to fit the selected tier.\n\nDo you want to continue?`
-        : `Switching to ${plan?.name} is a downgrade.\n\nIf your workspace later exceeds that tier, you may need to delete data to stay within the new limits.\n\nDo you want to continue?`;
+    if (!isInitialPaidCheckout) {
+      const confirmationMessage = buildPlanChangeConfirmationMessage({
+        currentTierName: currentTier?.name,
+        targetTierName: plan?.name,
+        isDowngrade,
+        downgradeConsequences,
+      });
 
-      if (!window.confirm(warningMessage)) {
+      if (!window.confirm(confirmationMessage)) {
         return;
       }
     }
 
     setCheckoutError("");
-    setIsRedirectingToCheckout(true);
+    setPendingPlanId(planId);
+    setPendingActionLabel(
+      isInitialPaidCheckout
+        ? "Opening checkout..."
+        : isDowngrade
+          ? "Scheduling downgrade..."
+          : "Submitting upgrade..."
+    );
 
     try {
-      const isInitialPaidCheckout = !currentTier || Number(currentTier?.price || 0) <= 0;
-
       if (isDowngrade) {
         await downgradeSubscription(plan);
         navigate("/subscriptions/success", {
@@ -162,7 +203,7 @@ export default function Subscriptions() {
             mode: "upgrade",
             tierName: plan?.name,
             title: "Upgrade submitted",
-            message: `${plan?.name || "Your selected tier"} has been submitted successfully. Your workspace will refresh after Stripe finishes syncing the subscription update.`,
+            message: `${plan?.name || "Your selected tier"} has been submitted. Your plan will refresh after Stripe syncs the subscription update.`,
           },
         });
       } else {
@@ -173,7 +214,8 @@ export default function Subscriptions() {
     } catch (error) {
       setCheckoutError(error?.message || "Unable to start subscription checkout.");
     } finally {
-      setIsRedirectingToCheckout(false);
+      setPendingPlanId("");
+      setPendingActionLabel("");
     }
   };
 
@@ -181,9 +223,9 @@ export default function Subscriptions() {
     <div className="subscriptions-page">
       <section className="subscriptions-intro-card">
         <div className="subscriptions-kicker">Plans</div>
-        <h1>Workspace tiers</h1>
+        <h1>Plans</h1>
         <p>
-          Each plan below shows the full client, user, scope, and authority limits for the workspace.
+          Each plan below shows the client, user, scope, and authority limits.
         </p>
         {error ? <div className="subscriptions-error">{error}</div> : null}
         {checkoutError ? <div className="subscriptions-error">{checkoutError}</div> : null}
@@ -191,6 +233,8 @@ export default function Subscriptions() {
 
       <section className="subscriptions-tier-grid">
         {sortedTiers.map((plan) => {
+          const planId = String(plan?.id ?? plan?.name ?? "").trim();
+          const isPendingPlan = planId.length > 0 && planId === pendingPlanId;
           const isCurrentPlan = shouldHighlightCurrentPlan && normalizeTierKey(plan?.name) === currentTierKey;
           const isSelectedPlan = normalizeTierKey(plan?.name) === currentTierKey;
           const planTierOrder = Number(plan?.tierOrder ?? plan?.price ?? 0);
@@ -203,7 +247,7 @@ export default function Subscriptions() {
           const downgradeConsequences = isLowerTier ? buildDowngradeConsequences(plan, usage) : [];
           return (
             <article
-              className={`subscriptions-tier-card${isCurrentPlan ? " is-current" : ""}${isLowerTier ? " is-downgrade-option" : ""}${cardHoverable ? " is-hoverable" : ""}${cardClickable ? " is-clickable" : ""}${isRedirectingToCheckout ? " is-busy" : ""}`}
+              className={`subscriptions-tier-card${isCurrentPlan ? " is-current" : ""}${isLowerTier ? " is-downgrade-option" : ""}${cardHoverable ? " is-hoverable" : ""}${cardClickable ? " is-clickable" : ""}${isPendingPlan ? " is-busy" : ""}${isWorking && !isPendingPlan ? " is-blocked" : ""}`}
               key={plan?.id || plan?.name}
               onClick={() => handleSelectPlan(plan)}
               onKeyDown={(event) => {
@@ -214,7 +258,7 @@ export default function Subscriptions() {
               }}
               role={cardClickable ? "button" : "article"}
               tabIndex={cardClickable ? 0 : -1}
-              aria-disabled={cardClickable ? isRedirectingToCheckout : undefined}
+              aria-disabled={cardClickable ? isWorking : undefined}
             >
               <div className="subscriptions-tier-top">
                 <div>
@@ -222,13 +266,18 @@ export default function Subscriptions() {
                     <h2 className="subscriptions-tier-name">{plan?.name}</h2>
                     {isCurrentPlan ? (
                       <span className="subscriptions-tier-current-badge">Current plan</span>
+                    ) : isPendingPlan ? (
+                      <span className="subscriptions-tier-action-badge is-busy">
+                        <span className="subscriptions-tier-action-spinner" aria-hidden="true" />
+                        {pendingActionLabel || "Opening checkout..."}
+                      </span>
                     ) : isLowerTier ? (
                       <span className="subscriptions-tier-downgrade-badge">
                         {downgradeConsequences.length > 0 ? "Cleanup warning" : "Lower tier"}
                       </span>
                     ) : cardClickable ? (
                       <span className="subscriptions-tier-action-badge">
-                        {isRedirectingToCheckout ? "Opening checkout..." : cardActionLabel}
+                        {cardActionLabel}
                       </span>
                     ) : null}
                   </div>
@@ -250,7 +299,7 @@ export default function Subscriptions() {
                 <div className="subscriptions-tier-warning">
                   {downgradeConsequences.length > 0
                     ? `This downgrade would leave you over the new limit for ${downgradeConsequences.join(", ")}.`
-                    : "This lower tier may require cleanup if your workspace later exceeds its limits."}
+                    : "This lower tier may require cleanup if your usage later exceeds its limits."}
                 </div>
               ) : null}
 

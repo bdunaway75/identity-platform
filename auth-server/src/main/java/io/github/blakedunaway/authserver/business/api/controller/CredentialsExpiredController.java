@@ -4,6 +4,7 @@ import io.github.blakedunaway.authserver.business.api.dto.CredentialsExpiredPass
 import io.github.blakedunaway.authserver.business.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -15,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class CredentialsExpiredController {
 
     private final UserService userService;
@@ -25,6 +27,7 @@ public class CredentialsExpiredController {
                                            @RequestParam(required = false) final String error,
                                            final Model model) {
         if (email == null || email.isBlank() || clientId == null || clientId.isBlank()) {
+            log.warn("Client credentials-expired flow was requested without the required email/client id values.");
             return "redirect:" + UriComponentsBuilder.fromPath("/login")
                                                      .queryParam("message", "Unable to start the password update flow. Please sign in again.")
                                                      .encode()
@@ -47,6 +50,7 @@ public class CredentialsExpiredController {
                                            final BindingResult bindingResult,
                                            final Model model) {
         if (request.getClientId() == null || request.getClientId().isBlank()) {
+            log.warn("Client password update for {} was rejected because the client id was missing.", request.getEmail());
             return "redirect:" + UriComponentsBuilder.fromPath("/login")
                                                      .queryParam("message", "Unable to determine which client user is changing their password.")
                                                      .encode()
@@ -55,6 +59,7 @@ public class CredentialsExpiredController {
         }
 
         if (bindingResult.hasErrors()) {
+            log.warn("Client password update validation failed for {}.", request.getEmail());
             model.addAttribute("passwordChangeRequest", request);
             model.addAttribute("isPlatformFlow", false);
             model.addAttribute("errorMessage", bindingResult.getAllErrors().getFirst().getDefaultMessage());
@@ -62,6 +67,7 @@ public class CredentialsExpiredController {
         }
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            log.warn("Client password update confirmation mismatch for {}.", request.getEmail());
             model.addAttribute("passwordChangeRequest", request);
             model.addAttribute("isPlatformFlow", false);
             model.addAttribute("errorMessage", "New password and confirmation must match.");
@@ -75,6 +81,7 @@ public class CredentialsExpiredController {
                 request.getNewPassword()
         );
         if (!updated) {
+            log.warn("Client password update failed current password verification for {} and client {}.", request.getEmail(), request.getClientId());
             model.addAttribute("passwordChangeRequest", request);
             model.addAttribute("isPlatformFlow", false);
             model.addAttribute("errorMessage", "We could not verify your current password. Please try again.");
@@ -94,6 +101,7 @@ public class CredentialsExpiredController {
                                              @RequestParam(required = false) final String error,
                                              final Model model) {
         if (email == null || email.isBlank()) {
+            log.warn("Platform credentials-expired flow was requested without an email.");
             return "redirect:" + UriComponentsBuilder.fromPath("/platform/login")
                                                      .queryParam("message", "Unable to start the password update flow. Please sign in again.")
                                                      .encode()
@@ -115,6 +123,7 @@ public class CredentialsExpiredController {
                                              final BindingResult bindingResult,
                                              final Model model) {
         if (bindingResult.hasErrors()) {
+            log.warn("Platform password update validation failed for {}.", request.getEmail());
             model.addAttribute("passwordChangeRequest", request);
             model.addAttribute("isPlatformFlow", true);
             model.addAttribute("errorMessage", bindingResult.getAllErrors().getFirst().getDefaultMessage());
@@ -122,6 +131,7 @@ public class CredentialsExpiredController {
         }
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            log.warn("Platform password update confirmation mismatch for {}.", request.getEmail());
             model.addAttribute("passwordChangeRequest", request);
             model.addAttribute("isPlatformFlow", true);
             model.addAttribute("errorMessage", "New password and confirmation must match.");
@@ -134,6 +144,7 @@ public class CredentialsExpiredController {
                 request.getNewPassword()
         );
         if (!updated) {
+            log.warn("Platform password update failed current password verification for {}.", request.getEmail());
             model.addAttribute("passwordChangeRequest", request);
             model.addAttribute("isPlatformFlow", true);
             model.addAttribute("errorMessage", "We could not verify your current password. Please try again.");

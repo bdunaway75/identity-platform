@@ -8,6 +8,48 @@ import {
 import { clearPlatformApiCache } from "../services/platform";
 import "./Login.css";
 
+function buildFallbackLogoutUrl() {
+  const authority = String(userManager.settings.authority ?? "").trim();
+  const clientId = String(userManager.settings.client_id ?? "").trim();
+  const postLogoutRedirectUri = String(userManager.settings.post_logout_redirect_uri ?? "").trim();
+
+  if (!authority) {
+    return "/login";
+  }
+
+  const logoutUrl = new URL("/connect/logout", authority);
+
+  if (clientId) {
+    logoutUrl.searchParams.set("client_id", clientId);
+  }
+
+  if (postLogoutRedirectUri) {
+    logoutUrl.searchParams.set("post_logout_redirect_uri", postLogoutRedirectUri);
+  }
+
+  return logoutUrl.toString();
+}
+
+function buildSignoutRequest(user) {
+  const request = {};
+  const clientId = String(userManager.settings.client_id ?? "").trim();
+  const postLogoutRedirectUri = String(userManager.settings.post_logout_redirect_uri ?? "").trim();
+
+  if (clientId) {
+    request.client_id = clientId;
+  }
+
+  if (postLogoutRedirectUri) {
+    request.post_logout_redirect_uri = postLogoutRedirectUri;
+  }
+
+  if (user?.id_token) {
+    request.id_token_hint = user.id_token;
+  }
+
+  return request;
+}
+
 export default function Logout() {
   useEffect(() => {
     const wasUsingDevBypass = isDevAuthBypassed();
@@ -23,16 +65,10 @@ export default function Logout() {
 
     userManager
       .getUser()
-      .then((user) =>
-        userManager.signoutRedirect(
-          user?.id_token
-            ? { id_token_hint: user.id_token }
-            : undefined
-        )
-      )
+      .then((user) => userManager.signoutRedirect(buildSignoutRequest(user)))
       .catch((error) => {
         console.error("Logout failed", error);
-        window.location.replace("/login");
+        window.location.replace(buildFallbackLogoutUrl());
       });
   }, []);
 

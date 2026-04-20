@@ -2,19 +2,33 @@ import { isDevAuthBypassed } from "./devAuth";
 import { userManager } from "./oidc";
 
 let isRedirectingToLogout = false;
+const SESSION_PLATFORM_CACHE_KEY = "platform-api-cache";
+const PENDING_SUBSCRIPTION_CHECKOUT_KEY = "pending-subscription-checkout";
 
 function isAuthRoute(pathname) {
   return pathname === "/login" || pathname === "/logout" || pathname === "/callback";
 }
 
-function redirectToLogout() {
+function clearExpiredSessionArtifacts() {
+  if (typeof window === "undefined" || typeof window.sessionStorage === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.removeItem(SESSION_PLATFORM_CACHE_KEY);
+    window.sessionStorage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_KEY);
+  } catch {
+    // Ignore storage cleanup failures and continue redirecting.
+  }
+}
+
+function redirectToLogin() {
   if (typeof window === "undefined" || isRedirectingToLogout) {
     return;
   }
 
   isRedirectingToLogout = true;
-  const pathname = window.location.pathname;
-  window.location.replace(isAuthRoute(pathname) ? "/login" : "/logout");
+  window.location.replace(isAuthRoute(window.location.pathname) ? "/login" : "/login?expired=1");
 }
 
 export async function forceLogoutForExpiredSession() {
@@ -28,7 +42,8 @@ export async function forceLogoutForExpiredSession() {
     // Ignore local session cleanup failures and continue to redirect.
   }
 
-  redirectToLogout();
+  clearExpiredSessionArtifacts();
+  redirectToLogin();
 }
 
 export async function getValidAccessToken(errorMessage) {
@@ -67,11 +82,9 @@ export function registerAuthSessionHandlers() {
 
   userManager.events.addAccessTokenExpired(handleSessionExpired);
   userManager.events.addUserSignedOut(handleSessionExpired);
-  userManager.events.addUserUnloaded(handleSessionExpired);
 
   return () => {
     userManager.events.removeAccessTokenExpired(handleSessionExpired);
     userManager.events.removeUserSignedOut(handleSessionExpired);
-    userManager.events.removeUserUnloaded(handleSessionExpired);
   };
 }

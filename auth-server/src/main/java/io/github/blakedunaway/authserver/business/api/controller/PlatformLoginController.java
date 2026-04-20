@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -25,6 +26,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Controller
 @RequestMapping("/platform")
+@Slf4j
 public class PlatformLoginController {
 
     private static final String DEMO_ACCESS_CODE_ERROR_QUERY = "error=true";
@@ -44,6 +46,7 @@ public class PlatformLoginController {
         final String code = requestParams.get("code");
         final DemoAccessCode demoAccessCode = demoAccessCodeService.findByAccessCode(code);
         if (demoAccessCode == null || demoAccessCode.isDispensed() || demoAccessCode.getUser() == null) {
+            log.warn("Demo access code login failed for code {}.", code);
             response.sendRedirect("http://localhost:5173/demo-access?error=invalid_code");
             return;
         }
@@ -73,6 +76,7 @@ public class PlatformLoginController {
             final Authentication result = authenticationManager.authenticate(platformRegisterDto.toAuthenticationToken());
             authSessionHandler.successfulAuthentication(request, response, result);
         } catch (final AuthenticationException ex) {
+            log.warn("Platform login failed for {}.", platformRegisterDto.getEmail(), ex);
             authSessionHandler.unsuccessfulAuthentication(request, response, ex);
         }
     }
@@ -87,6 +91,7 @@ public class PlatformLoginController {
     public String signUp(@ModelAttribute("platformRegisterDto") @Valid final PlatformRegisterDto platformRegisterDto,
                          final BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
+            log.warn("Platform sign up validation failed for {}.", platformRegisterDto.getEmail());
             return "signUp";
         }
         userService.signUpPlatformUser(platformRegisterDto);

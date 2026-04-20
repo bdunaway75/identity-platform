@@ -732,8 +732,8 @@ export default function CreateClient() {
                 </div>
                 <div className="client-card-caption">
                   {isEditMode
-                    ? "Adjust sign-in settings, callback URLs, and client access with the existing configuration preloaded."
-                    : "Name the app, choose how it signs in, and configure URLs and permissions."}
+                    ? "Update sign-in settings, callback URLs, and client access with the current values already loaded."
+                    : "Name the app, choose its sign-in method, and set its URLs and permissions."}
                 </div>
               </div>
               <div className="client-card-contents">
@@ -910,7 +910,7 @@ export default function CreateClient() {
                     <div className="client-card-title">Sign-in and session settings</div>
                   </div>
                   <div className="client-card-caption">
-                    Fine-tune how secure sign-in should be and how long sessions last.
+                    Choose sign-in rules and token lifetimes.
                   </div>
                 </div>
                 <div className="client-card-contents">

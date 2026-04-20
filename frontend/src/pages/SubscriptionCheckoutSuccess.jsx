@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { clearPlatformApiCache } from "../services/platform";
 import {
   clearSubscriptionTierCache,
@@ -7,6 +7,7 @@ import {
   fetchSubscriptionCheckoutStatus,
   getPendingSubscriptionCheckout,
 } from "../services/subscription";
+import { useSubscription } from "../context/SubscriptionContext";
 import "./SubscriptionCheckoutStatus.css";
 
 const POLL_INTERVAL_MS = 3000;
@@ -18,6 +19,8 @@ function buildCountdownDigits(seconds) {
 }
 
 export default function SubscriptionCheckoutSuccess() {
+  const navigate = useNavigate();
+  const { refreshTier } = useSubscription();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const successMode = String(location.state?.mode ?? (searchParams.get("session_id") ? "checkout" : "change")).trim().toLowerCase();
@@ -31,6 +34,14 @@ export default function SubscriptionCheckoutSuccess() {
   const countdownDigits = useMemo(() => buildCountdownDigits(REDIRECT_SECONDS), []);
   const customTitle = String(location.state?.title ?? "").trim();
   const customMessage = String(location.state?.message ?? "").trim();
+  const hasSyncedSubscriptionRef = useRef(false);
+
+  async function syncSubscriptionState() {
+    clearPendingSubscriptionCheckout();
+    clearPlatformApiCache();
+    clearSubscriptionTierCache();
+    await refreshTier();
+  }
 
   useEffect(() => {
     if (!shouldPollWebhook || !sessionId || syncState !== "pending") {
@@ -85,14 +96,31 @@ export default function SubscriptionCheckoutSuccess() {
   }, [shouldPollWebhook, syncState]);
 
   useEffect(() => {
+    if (syncState !== "confirmed" || hasSyncedSubscriptionRef.current) {
+      return undefined;
+    }
+
+    hasSyncedSubscriptionRef.current = true;
+    let isMounted = true;
+
+    syncSubscriptionState().catch((error) => {
+      if (isMounted) {
+        console.error("Unable to refresh subscription tier after successful billing", error);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshTier, syncState]);
+
+  useEffect(() => {
     if (syncState !== "confirmed") {
       return undefined;
     }
 
     if (secondsRemaining <= 0) {
-      clearPlatformApiCache();
-      clearSubscriptionTierCache();
-      window.location.replace("/subscriptions");
+      navigate("/subscriptions", { replace: true });
       return undefined;
     }
 
@@ -113,6 +141,16 @@ export default function SubscriptionCheckoutSuccess() {
     : syncState === "timeout"
       ? "Stripe checkout completed, but the webhook has not confirmed the upgrade yet. It may still be processing in the background."
       : "Stripe checkout completed. We are waiting for the subscription webhook confirmation.");
+
+  const handleReturnToSubscriptions = async () => {
+    try {
+      await syncSubscriptionState();
+    } catch (error) {
+      console.error("Unable to refresh subscription tier before returning", error);
+    } finally {
+      navigate("/subscriptions");
+    }
+  };
 
   return (
     <div className="subscription-checkout-page">
@@ -137,7 +175,6 @@ export default function SubscriptionCheckoutSuccess() {
 
         {syncState === "confirmed" ? (
           <div className="subscription-checkout-redirect">
-            <div className="subscription-checkout-redirect-copy">Returning to subscriptions shortly</div>
             <div className="subscription-checkout-countdown" aria-label={`${secondsRemaining} seconds remaining`}>
               <div className="subscription-checkout-countdown-window">
                 <div
@@ -168,9 +205,13 @@ export default function SubscriptionCheckoutSuccess() {
               Check again
             </button>
           ) : null}
-          <Link className="subscription-checkout-link" to="/subscriptions">
+          <button
+            type="button"
+            className="subscription-checkout-link"
+            onClick={handleReturnToSubscriptions}
+          >
             Back to subscriptions
-          </Link>
+          </button>
         </div>
       </section>
     </div>

@@ -252,10 +252,10 @@ export default function Home() {
       <div className="client-shell">
         <div className="client-header">
           <div className="client-header-copy">
-            <div className="client-eyebrow">Workspace</div>
-            <div className="client-title">Identity workspace</div>
+            <div className="client-eyebrow">Dashboard</div>
+            <div className="client-title">Identity dashboard</div>
             <div className="client-subtitle">
-              Track plan limits, manage registered clients, and move quickly into the next task without leaving the control plane.
+              See your plan limits, manage clients, and jump back into your account.
             </div>
           </div>
         </div>
@@ -370,20 +370,20 @@ export default function Home() {
                 <div>
                   <div className="client-card-kicker">Next Step</div>
                   <div className="client-card-title">
-                    {isPaid ? "Your client workspace is ready" : "Client tools are locked on free"}
+                    {isPaid ? "Client tools are ready" : "Client tools are locked on free"}
                   </div>
                 </div>
                 <div className="client-card-caption">
                   {isPaid
-                    ? "Jump into the registry or create a new client without reloading the whole workspace."
+                    ? "Open the registry or add a new client."
                     : "Upgrade to unlock the registry, new client creation, and client-user management."}
                 </div>
               </div>
               <div className="client-card-contents dashboard-actions-panel">
                 <div className="dashboard-actions-copy">
                   {isPaid
-                    ? "You can register more clients, inspect attached users, and track token activity from the client workspace."
-                    : "Free tier keeps the client workspace hidden until the plan is upgraded."}
+                    ? "You can add clients, review users, and check token activity here."
+                    : "Client tools stay locked until the plan is upgraded."}
                 </div>
                 <div className="dashboard-actions-row">
                   <Link to={primaryActionHref} className="dashboard-link-button dashboard-link-button-primary">

@@ -17,6 +17,7 @@ import io.github.blakedunaway.authserver.config.redis.RedisStore;
 import io.github.blakedunaway.authserver.util.RedisUtility;
 import io.github.blakedunaway.authserver.util.StripeEventUtility;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +41,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/platform")
 @RequiredArgsConstructor
+@Slf4j
 public class PlatformUserSubscriptionController {
 
     private final UserService userService;
@@ -62,13 +64,16 @@ public class PlatformUserSubscriptionController {
                                                         @RequestBody final String stripePriceId) throws StripeException {
         final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
         if (platformUser == null) {
+            log.warn("Checkout session creation rejected because the platform user {} could not be resolved.", jwt.getSubject());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (stripePriceId.isBlank()) {
+            log.warn("Checkout session creation rejected for platform user {} because the requested tier was blank.", jwt.getSubject());
             return ResponseEntity.badRequest().body("A valid subscription tier is required.");
         }
         final PlatformUserTier platformUserTier = platformUserTierService.findTierByStripePriceId(stripePriceId);
         if (platformUserTier == null || platformUserTier.getId() == null) {
+            log.warn("Checkout session creation rejected for platform user {} because stripe price id {} did not resolve to a tier.", jwt.getSubject(), stripePriceId);
             return ResponseEntity.badRequest().body("A valid subscription tier is required.");
         }
         final SessionCreateParams params = SessionCreateParams.builder()
@@ -100,6 +105,7 @@ public class PlatformUserSubscriptionController {
     @GetMapping(value = "/subscription-status", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, String>> getSubscriptionStatus(@RequestParam("session_id") final String sessionId) {
         if (sessionId.isBlank()) {
+            log.warn("Subscription status lookup was requested without a session id.");
             return ResponseEntity.badRequest().body(Map.of("status", "invalid"));
         }
 
@@ -116,6 +122,7 @@ public class PlatformUserSubscriptionController {
             return request.failureResponse();
         }
         if (request.platformUserTier().getTierOrder() >= request.platformUser().getTier().getTierOrder()) {
+            log.warn("Platform user {} attempted an invalid downgrade to tier {}.", jwt.getSubject(), stripePriceId);
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid subscription tier."));
         }
         updateSubscriptionTier(request);
@@ -131,6 +138,7 @@ public class PlatformUserSubscriptionController {
             return request.failureResponse();
         }
         if (request.platformUserTier().getTierOrder() <= request.platformUser().getTier().getTierOrder()) {
+            log.warn("Platform user {} attempted an invalid upgrade to tier {}.", jwt.getSubject(), stripePriceId);
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid subscription tier."));
         }
         updateSubscriptionTier(request);
@@ -148,6 +156,7 @@ public class PlatformUserSubscriptionController {
                 if (session != null && !syncPlatformUserTier(session.getMetadata().get("platformUserId"),
                                                              session.getMetadata().get("tierId"),
                                                              null)) {
+                    log.error("Stripe checkout session webhook failed to sync a platform user tier for session {}.", session.getId());
                     redisStore.put(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + session.getId(), "failed", Duration.ofMinutes(30));
                     return ResponseEntity.badRequest()
                                          .body(Map.of("message", "An error occurred processing your subscription, support has been notified."));
@@ -162,12 +171,14 @@ public class PlatformUserSubscriptionController {
                 if (subscription != null && !syncPlatformUserTier(subscription.getMetadata().get("platformUserId"),
                                                                   subscription.getMetadata().get("tierId"),
                                                                   subscription)) {
+                    log.error("Stripe subscription update webhook failed to sync a platform user tier for subscription {}.", subscription.getId());
                     return ResponseEntity.badRequest()
                                          .body(Map.of("message", "An error occurred processing your subscription, support has been notified."));
                 }
             }
             return ResponseEntity.ok().body(Map.of("message", "User tier updated successfully."));
         } catch (Exception e) {
+            log.error("Stripe billing webhook processing failed.", e);
             return ResponseEntity.badRequest().body(Map.of("message", "An error occurred processing your subscription, support has been notified."));
         }
     }
@@ -190,6 +201,7 @@ public class PlatformUserSubscriptionController {
     private SubscriptionChangeRequest resolveSubscriptionChangeRequest(final Jwt jwt,
                                                                       final String stripePriceId) throws StripeException {
         if (stripePriceId.isBlank()) {
+            log.warn("Subscription change rejected because the requested stripe price id was blank.");
             return new SubscriptionChangeRequest(null,
                                                  null,
                                                  null,
@@ -198,11 +210,13 @@ public class PlatformUserSubscriptionController {
 
         final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
         if (platformUser == null) {
+            log.warn("Subscription change rejected because the platform user {} could not be resolved.", jwt.getSubject());
             return new SubscriptionChangeRequest(null, null, null, ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
         }
 
         final PlatformUserTier platformUserTier = platformUserTierService.findTierByStripePriceId(stripePriceId);
         if (platformUserTier == null || platformUser.getTier() == null) {
+            log.warn("Subscription change rejected for platform user {} because stripe price id {} did not resolve to a valid tier.", jwt.getSubject(), stripePriceId);
             return new SubscriptionChangeRequest(null,
                                                  null,
                                                  null,
@@ -211,6 +225,7 @@ public class PlatformUserSubscriptionController {
 
         final Subscription subscription = findActiveSubscriptionByPlatformUserId(platformUser.getId());
         if (subscription == null) {
+            log.warn("Subscription change rejected for platform user {} because no active Stripe subscription was found.", jwt.getSubject());
             return new SubscriptionChangeRequest(null,
                                                  null,
                                                  null,
@@ -221,6 +236,7 @@ public class PlatformUserSubscriptionController {
                                                   ? null
                                                   : subscription.getItems().getData().getFirst();
         if (subscriptionItem == null) {
+            log.warn("Subscription change rejected for platform user {} because no Stripe subscription item was found.", jwt.getSubject());
             return new SubscriptionChangeRequest(null,
                                                  null,
                                                  null,
