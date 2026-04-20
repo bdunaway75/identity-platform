@@ -14,7 +14,7 @@ import org.springframework.security.oauth2.server.authorization.settings.TokenSe
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +50,7 @@ public class RegisteredClientService {
 
     public Set<RegisteredClientModel> findRegisteredClientsByIds(final Set<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Collections.emptySet();
+            return new HashSet<>();
         }
         return registeredClientInternalRepository.findAllByIds(ids);
     }
