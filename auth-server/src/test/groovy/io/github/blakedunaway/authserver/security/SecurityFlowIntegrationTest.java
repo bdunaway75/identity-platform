@@ -1,12 +1,20 @@
 package io.github.blakedunaway.authserver.security;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jwt.SignedJWT;
 import com.stripe.StripeClient;
 import io.github.blakedunaway.authserver.business.api.dto.RegisteredClientRequest;
 import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
+import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
+import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import io.github.blakedunaway.authserver.config.app.Application;
 import io.github.blakedunaway.authserver.config.redis.RedisStore;
@@ -15,6 +23,7 @@ import io.github.blakedunaway.authserver.integration.entity.PlatformUserEntity;
 import io.github.blakedunaway.authserver.integration.entity.PlatformUserTierEntity;
 import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
 import io.github.blakedunaway.authserver.integration.entity.RegisteredClientScopeEntity;
+import io.github.blakedunaway.authserver.integration.repository.gateway.SigningKeyRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.DemoAccessCodeJpaRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.PlatformUserJpaRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.PlatformUserTierJpaRepository;
@@ -51,12 +60,16 @@ import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.interfaces.RSAPrivateKey;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -85,6 +98,7 @@ public class SecurityFlowIntegrationTest {
 
     private static final String PLATFORM_CLIENT_ID = "identity-platform";
     private static final String FRONTEND_CLIENT_ID = "test-frontend-client";
+    private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper();
 
     @Autowired
     private MockMvc mockMvc;
@@ -118,6 +132,9 @@ public class SecurityFlowIntegrationTest {
 
     @Autowired
     private JwtEncoder jwtEncoder;
+
+    @Autowired
+    private SigningKeyRepository signingKeyRepository;
 
     @MockitoBean
     private RedisStore redisStore;
@@ -184,14 +201,63 @@ public class SecurityFlowIntegrationTest {
     }
 
     @Test
+    void platformPaidEndpointRejectsJwtWithoutPaidAuthority() throws Exception {
+        final String email = uniqueEmail("platform-no-paid");
+        savePlatformUser(email, "Password123!");
+
+        mockMvc.perform(post("/platform/api/users")
+                                .header("Authorization", bearerToken(email, PLATFORM_CLIENT_ID, List.of("ROLE_PLATFORM_USER")))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("[]"))
+               .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void platformEndpointRejectsJwtForUnknownPlatformSubject() throws Exception {
+        mockMvc.perform(get("/platform/api/dashboard")
+                                .header("Authorization", bearerToken(uniqueEmail("missing-platform"),
+                                                                     PLATFORM_CLIENT_ID,
+                                                                     List.of("ROLE_PLATFORM_USER"))))
+               .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void platformEndpointRejectsJwtSignedWithUnknownKid() throws Exception {
+        final String email = uniqueEmail("platform-unknown-kid");
+        savePlatformUser(email, "Password123!");
+
+        mockMvc.perform(get("/platform/api/dashboard")
+                                .header("Authorization", forgedBearerToken(email,
+                                                                           PLATFORM_CLIENT_ID,
+                                                                           List.of("ROLE_PLATFORM_USER"),
+                                                                           "unknown-kid-" + UUID.randomUUID(),
+                                                                           generateRsaKeyPair())))
+               .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void platformEndpointRejectsJwtSignedWithKnownKidButWrongPrivateKey() throws Exception {
+        final String email = uniqueEmail("platform-wrong-signature");
+        savePlatformUser(email, "Password123!");
+
+        final String trustedKid = signingKeyRepository.findByStatus(SigningKeyStatus.ACTIVE)
+                                                      .stream()
+                                                      .findFirst()
+                                                      .orElseThrow()
+                                                      .getKid();
+
+        mockMvc.perform(get("/platform/api/dashboard")
+                                .header("Authorization", forgedBearerToken(email,
+                                                                           PLATFORM_CLIENT_ID,
+                                                                           List.of("ROLE_PLATFORM_USER"),
+                                                                           trustedKid,
+                                                                           generateRsaKeyPair())))
+               .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void platformClientAuthorizationRoutesToPlatformLogin() throws Exception {
         final String redirectUri = "http://localhost:9001/callback";
-        savePublicAuthorizationCodeClientWithExplicitClientId(
-                PLATFORM_CLIENT_ID,
-                redirectUri,
-                Set.of("read"),
-                true
-        );
 
         final String codeVerifier = "platform-verifier-12345678901234567890123456789012345678901234567890";
         final String codeChallenge = sha256Base64Url(codeVerifier);
@@ -199,7 +265,7 @@ public class SecurityFlowIntegrationTest {
         authorizeParams.add("response_type", "code");
         authorizeParams.add("client_id", PLATFORM_CLIENT_ID);
         authorizeParams.add("redirect_uri", redirectUri);
-        authorizeParams.add("scope", "read");
+        authorizeParams.add("scope", "openid");
         authorizeParams.add("state", "platform-state");
         authorizeParams.add("code_challenge", codeChallenge);
         authorizeParams.add("code_challenge_method", "S256");
@@ -207,7 +273,8 @@ public class SecurityFlowIntegrationTest {
         final MvcResult authorizeRedirect = mockMvc.perform(get(
                                                             UriComponentsBuilder.fromPath("/oauth2/authorize")
                                                                                 .queryParams(authorizeParams)
-                                                                                .build(true)
+                                                                                .build()
+                                                                                .encode()
                                                                                 .toUriString())
                                                             .accept(MediaType.TEXT_HTML))
                                                  .andExpect(status().is3xxRedirection())
@@ -234,6 +301,7 @@ public class SecurityFlowIntegrationTest {
                                                       .updatedAt(LocalDateTime.now())
                                                       .registeredClientIds(ids -> ids.clear())
                                                       .authorities(authorities -> authorities.add(Authority.from("ROLE_PLATFORM_USER")))
+                                                      .tier(resolvePlatformUserTier("BASIC"))
                                                       .locked(false)
                                                       .expired(false)
                                                       .credentialsExpired(true)
@@ -296,7 +364,8 @@ public class SecurityFlowIntegrationTest {
         final MvcResult authorizeRedirect = mockMvc.perform(get(
                                                             UriComponentsBuilder.fromPath("/oauth2/authorize")
                                                                                 .queryParams(authorizeParams)
-                                                                                .build(true)
+                                                                                .build()
+                                                                                .encode()
                                                                                 .toUriString())
                                                             .accept(MediaType.TEXT_HTML))
                                                    .andExpect(status().is3xxRedirection())
@@ -473,6 +542,66 @@ public class SecurityFlowIntegrationTest {
     }
 
     @Test
+    void confidentialClientRefreshTokenCannotBeReusedWhenRotationEnabled() throws Exception {
+        final String redirectUri = "http://localhost:9202/callback";
+        final String email = uniqueEmail("refresh-rotation-user");
+        final String password = "Password123!";
+
+        final RegisteredClientFixture registeredClient =
+                saveConfidentialAuthorizationCodeClientWithRefreshTokens(redirectUri, Set.of("read"), false);
+        final String clientId = registeredClient.registeredClient().getClientId();
+        final String clientSecret = registeredClient.rawClientSecret();
+        saveClientUser(email, password, clientId);
+
+        final String authorizationCode = authorizeClientUserAndCaptureCode(
+                clientId,
+                redirectUri,
+                email,
+                password,
+                Set.of("read"),
+                null
+        );
+
+        final MvcResult codeExchange = mockMvc.perform(post("/oauth2/token")
+                                                               .with(httpBasic(clientId, clientSecret))
+                                                               .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                                               .param(MetaDataKeys.GRANT_TYPE.getValue(), AuthorizationGrantType.AUTHORIZATION_CODE.getValue())
+                                                               .param(MetaDataKeys.CODE.getValue(), authorizationCode)
+                                                               .param(MetaDataKeys.REDIRECT_URI.getValue(), redirectUri))
+                                              .andExpect(status().isOk())
+                                              .andExpect(jsonPath("$.access_token").exists())
+                                              .andExpect(jsonPath("$.refresh_token").exists())
+                                              .andReturn();
+
+        final JsonNode codeExchangeJson = JSON_OBJECT_MAPPER.readTree(codeExchange.getResponse().getContentAsString());
+        final String originalRefreshToken = codeExchangeJson.get("refresh_token").asText();
+        assertThat(originalRefreshToken).isNotBlank();
+
+        final MvcResult refreshExchange = mockMvc.perform(post("/oauth2/token")
+                                                                  .with(httpBasic(clientId, clientSecret))
+                                                                  .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                                                  .param(MetaDataKeys.GRANT_TYPE.getValue(), AuthorizationGrantType.REFRESH_TOKEN.getValue())
+                                                                  .param("refresh_token", originalRefreshToken))
+                                                 .andExpect(status().isOk())
+                                                 .andExpect(jsonPath("$.access_token").exists())
+                                                 .andExpect(jsonPath("$.refresh_token").exists())
+                                                 .andReturn();
+
+        final JsonNode refreshExchangeJson = JSON_OBJECT_MAPPER.readTree(refreshExchange.getResponse().getContentAsString());
+        final String rotatedRefreshToken = refreshExchangeJson.get("refresh_token").asText();
+        assertThat(rotatedRefreshToken).isNotBlank();
+        assertThat(rotatedRefreshToken).isNotEqualTo(originalRefreshToken);
+
+        mockMvc.perform(post("/oauth2/token")
+                                .with(httpBasic(clientId, clientSecret))
+                                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                .param(MetaDataKeys.GRANT_TYPE.getValue(), AuthorizationGrantType.REFRESH_TOKEN.getValue())
+                                .param("refresh_token", originalRefreshToken))
+               .andExpect(status().isBadRequest())
+               .andExpect(jsonPath("$.error").value("invalid_grant"));
+    }
+
+    @Test
     void confidentialClientCredentialsFlowSucceeds() throws Exception {
         final RegisteredClientFixture registeredClient =
                 saveConfidentialClientCredentialsClient(Set.of("service.read"));
@@ -510,7 +639,8 @@ public class SecurityFlowIntegrationTest {
         final MvcResult authorizeRedirect = mockMvc.perform(get(
                                                             UriComponentsBuilder.fromPath("/oauth2/authorize")
                                                                                 .queryParams(authorizeParams)
-                                                                                .build(true)
+                                                                                .build()
+                                                                                .encode()
                                                                                 .toUriString())
                                                             .accept(MediaType.TEXT_HTML))
                                                    .andExpect(status().is3xxRedirection())
@@ -585,6 +715,22 @@ public class SecurityFlowIntegrationTest {
         ), rawClientSecret);
     }
 
+    private RegisteredClientFixture saveConfidentialAuthorizationCodeClientWithRefreshTokens(final String redirectUri,
+                                                                                             final Set<String> scopes,
+                                                                                             final boolean reuseRefreshTokens) {
+        final String rawClientSecret = "RefreshSecret123!";
+        return saveRegisteredClient(registeredClientRequest(
+                uniqueClientId("confidential-refresh"),
+                rawClientSecret,
+                Set.of(ClientAuthenticationMethod.CLIENT_SECRET_BASIC),
+                Set.of(AuthorizationGrantType.AUTHORIZATION_CODE, AuthorizationGrantType.REFRESH_TOKEN),
+                Set.of(redirectUri),
+                scopes,
+                false,
+                reuseRefreshTokens
+        ), rawClientSecret);
+    }
+
     private RegisteredClientFixture saveConfidentialClientCredentialsClient(final Set<String> scopes) {
         final String rawClientSecret = "ServiceSecret123!";
         return saveRegisteredClient(registeredClientRequest(
@@ -628,6 +774,7 @@ public class SecurityFlowIntegrationTest {
                                                       .updatedAt(LocalDateTime.now())
                                                       .registeredClientIds(ids -> ids.clear())
                                                       .authorities(authorities -> authorities.add(Authority.from("ROLE_PLATFORM_USER")))
+                                                      .tier(resolvePlatformUserTier("BASIC"))
                                                       .locked(false)
                                                       .expired(false)
                                                       .credentialsExpired(false)
@@ -636,16 +783,31 @@ public class SecurityFlowIntegrationTest {
     }
 
     private void ensureFrontendClientExists() {
-        if (registerClientJpaRepository.findByClientId(FRONTEND_CLIENT_ID).isPresent()) {
+        ensureClientExists(
+                PLATFORM_CLIENT_ID,
+                "http://localhost:9001/callback",
+                Set.of("openid")
+        );
+        ensureClientExists(
+                FRONTEND_CLIENT_ID,
+                "http://localhost:9999/frontend/callback",
+                Set.of("openid")
+        );
+    }
+
+    private void ensureClientExists(final String clientId,
+                                    final String redirectUri,
+                                    final Set<String> scopes) {
+        if (registerClientJpaRepository.findByClientId(clientId).isPresent()) {
             return;
         }
         saveRegisteredClient(registeredClientRequest(
-                FRONTEND_CLIENT_ID,
+                clientId,
                 null,
                 Set.of(ClientAuthenticationMethod.NONE),
                 Set.of(AuthorizationGrantType.AUTHORIZATION_CODE),
-                Set.of("http://localhost:9999/frontend/callback"),
-                Set.of("openid"),
+                Set.of(redirectUri),
+                scopes,
                 true
         ), null);
     }
@@ -669,6 +831,23 @@ public class SecurityFlowIntegrationTest {
         ));
     }
 
+    private PlatformUserTier resolvePlatformUserTier(final String tierName) {
+        final PlatformUserTierEntity tierEntity = platformUserTierJpaRepository.findByTierNameIgnoreCase(tierName)
+                                                                               .orElseThrow();
+        return PlatformUserTier.builder()
+                               .id(tierEntity.getTierId())
+                               .stripePriceId(tierEntity.getStripPriceId())
+                               .name(tierEntity.getTierName())
+                               .price(tierEntity.getTierPrice())
+                               .description(tierEntity.getTierDescription())
+                               .tierOrder(tierEntity.getTierOrder())
+                               .allowedNumberOfRegisteredClients(tierEntity.getAllowedNumberOfRegisteredClients())
+                               .allowedNumberOfGlobalUsers(tierEntity.getAllowedNumberOfGlobalUsers())
+                               .allowedNumberOfGlobalScopes(tierEntity.getAllowedNumberOfGlobalScopes())
+                               .allowedNumberOfGlobalAuthorities(tierEntity.getAllowedNumberOfGlobalAuthorities())
+                               .build();
+    }
+
     private String bearerToken(final String subject,
                                final String azp,
                                final List<String> authorities) {
@@ -685,6 +864,37 @@ public class SecurityFlowIntegrationTest {
                 JwsHeader.with(SignatureAlgorithm.RS256).build(),
                 claims
         )).getTokenValue();
+    }
+
+    private String forgedBearerToken(final String subject,
+                                     final String azp,
+                                     final List<String> authorities,
+                                     final String kid,
+                                     final KeyPair keyPair) throws Exception {
+        final Instant issuedAt = Instant.now();
+        final com.nimbusds.jwt.JWTClaimsSet claims = new com.nimbusds.jwt.JWTClaimsSet.Builder()
+                .subject(subject)
+                .issueTime(Date.from(issuedAt))
+                .expirationTime(Date.from(issuedAt.plus(15, ChronoUnit.MINUTES)))
+                .claim(MetaDataKeys.AZP.getValue(), azp)
+                .claim("authorities", authorities)
+                .build();
+
+        final SignedJWT signedJwt = new SignedJWT(
+                new com.nimbusds.jose.JWSHeader.Builder(JWSAlgorithm.RS256)
+                        .type(JOSEObjectType.JWT)
+                        .keyID(kid)
+                        .build(),
+                claims
+        );
+        signedJwt.sign(new RSASSASigner((RSAPrivateKey) keyPair.getPrivate()));
+        return "Bearer " + signedJwt.serialize();
+    }
+
+    private KeyPair generateRsaKeyPair() throws Exception {
+        final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(2048);
+        return keyPairGenerator.generateKeyPair();
     }
 
     private String sha256Base64Url(final String value) throws Exception {
@@ -715,6 +925,24 @@ public class SecurityFlowIntegrationTest {
                                                             final Set<String> redirectUris,
                                                             final Set<String> scopes,
                                                             final boolean requireProofKey) {
+        return registeredClientRequest(clientId,
+                                       clientSecret,
+                                       authenticationMethods,
+                                       grantTypes,
+                                       redirectUris,
+                                       scopes,
+                                       requireProofKey,
+                                       true);
+    }
+
+    private RegisteredClientRequest registeredClientRequest(final String clientId,
+                                                            final String clientSecret,
+                                                            final Set<ClientAuthenticationMethod> authenticationMethods,
+                                                            final Set<AuthorizationGrantType> grantTypes,
+                                                            final Set<String> redirectUris,
+                                                            final Set<String> scopes,
+                                                            final boolean requireProofKey,
+                                                            final boolean reuseRefreshTokens) {
         return RegisteredClientRequest.builder()
                                       .clientId(clientId)
                                       .clientIdIssuedAt(LocalDateTime.now())
@@ -731,7 +959,7 @@ public class SecurityFlowIntegrationTest {
                                       .postLogoutRedirectUris(Collections.emptySet())
                                       .scopes(scopes)
                                       .clientSettings(clientSettingsRequest(requireProofKey))
-                                      .tokenSettings(tokenSettingsRequest())
+                                      .tokenSettings(tokenSettingsRequest(reuseRefreshTokens))
                                       .build();
     }
 
@@ -747,7 +975,7 @@ public class SecurityFlowIntegrationTest {
                 registeredClientRequest.getClientSecretExpiresAt(),
                 registeredClientRequest.getClientName(),
                 new HashMap<>(clientSettings(requireProofKey).getSettings()),
-                tokenSettingsMapper.oAuthTokenSettingsToTokenSettingsJson(TokenSettings.builder().build())
+                tokenSettingsMapper.mapToTokenSettingsJson(registeredClientRequest.getTokenSettings())
         );
         registeredClientRequest.getClientAuthenticationMethods().forEach(entity::addClientAuthenticationMethod);
         registeredClientRequest.getAuthorizationGrantTypes().forEach(entity::addAuthorizationGrantType);
@@ -796,11 +1024,15 @@ public class SecurityFlowIntegrationTest {
     }
 
     private HashMap<String, Object> tokenSettingsRequest() {
+        return tokenSettingsRequest(true);
+    }
+
+    private HashMap<String, Object> tokenSettingsRequest(final boolean reuseRefreshTokens) {
         final HashMap<String, Object> tokenSettings = new HashMap<>();
         tokenSettings.put("accessTokenTimeToLiveMinutes", 5);
         tokenSettings.put("refreshTokenTimeToLiveMinutes", 60);
         tokenSettings.put("authorizationCodeTimeToLiveMinutes", 5);
-        tokenSettings.put("reuseRefreshTokens", true);
+        tokenSettings.put("reuseRefreshTokens", reuseRefreshTokens);
         return tokenSettings;
     }
 

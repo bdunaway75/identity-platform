@@ -188,7 +188,7 @@ public class UserMapper {
     public PlatformUser platformRegisterDtoToPlatformUser(final PlatformRegisterDto platformRegisterDto) {
         return PlatformUser.from(platformRegisterDto.getEmail())
                            .email(platformRegisterDto.getEmail())
-                           .registeredClientIds(ids -> ids.clear())
+                           .registeredClientIds(Set::clear)
                            .authorities(authorities -> authorities.add(Authority.from("ROLE_PLATFORM_USER")))
                            .expired(false)
                            .credentialsExpired(false)

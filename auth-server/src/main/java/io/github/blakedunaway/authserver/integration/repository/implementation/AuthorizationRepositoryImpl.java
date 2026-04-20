@@ -116,7 +116,7 @@ public class AuthorizationRepositoryImpl implements AuthorizationRepository {
                                              }
                                              return authorizationMapper.authorizationEntityToAuthorization(entity);
                                          })
-                                         .orElseThrow();
+                                         .orElse(null);
 
     }
 

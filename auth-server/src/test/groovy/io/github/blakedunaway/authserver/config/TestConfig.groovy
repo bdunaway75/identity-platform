@@ -27,7 +27,11 @@ import javax.sql.DataSource
 
 @TestConfiguration
 @EnableJpaRepositories(basePackages = "io.github.blakedunaway.authserver.integration.repository.jpa")
-@ComponentScan(["io.github.blakedunaway.authserver.integration.repository", "io.github.blakedunaway.authserver.mapper"])
+@ComponentScan([
+        "io.github.blakedunaway.authserver.integration.repository",
+        "io.github.blakedunaway.authserver.mapper",
+        "io.github.blakedunaway.authserver.security.token"
+])
 @EntityScan(basePackages = "io.github.blakedunaway.authserver.integration.entity")
 @PropertySource("classpath:application.properties")
 @EnableTransactionManagement

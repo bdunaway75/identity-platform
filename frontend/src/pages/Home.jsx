@@ -219,10 +219,6 @@ export default function Home() {
     };
   }, [authorityLimit, clientLimit, scopeLimit, totalAuthorities, totalClients, totalScopes, totalUsers, userLimit]);
 
-  const primaryActionHref = isPaid ? "/clients/new" : "/subscriptions";
-  const primaryActionLabel = isPaid ? "Create client" : "View plans";
-  const secondaryActionHref = isPaid ? "/clients" : "/subscriptions";
-  const secondaryActionLabel = isPaid ? "Open registry" : "Upgrade tier";
   const summaryTiles = [
     {
       label: "Current Tier",
@@ -245,6 +241,21 @@ export default function Home() {
           },
         ]
       : []),
+  ];
+  // TODO: Replace these placeholder sections with real logout and session-expiry events once the platform activity model exposes them.
+  const futureActivitySections = [
+    {
+      key: "logout",
+      heading: "Recently logged out",
+      timeLabel: "Logged out",
+      emptyMessage: isLoading ? "Loading activity..." : "No logout activity yet.",
+    },
+    {
+      key: "expired",
+      heading: "Recently expired sessions",
+      timeLabel: "Expired",
+      emptyMessage: isLoading ? "Loading activity..." : "No expired sessions yet.",
+    },
   ];
 
   return (
@@ -368,42 +379,15 @@ export default function Home() {
             <section className="client-card client-card-secondary">
               <div className="client-card-header">
                 <div>
-                  <div className="client-card-kicker">Next Step</div>
-                  <div className="client-card-title">
-                    {isPaid ? "Client tools are ready" : "Client tools are locked on free"}
-                  </div>
-                </div>
-                <div className="client-card-caption">
-                  {isPaid
-                    ? "Open the registry or add a new client."
-                    : "Upgrade to unlock the registry, new client creation, and client-user management."}
-                </div>
-              </div>
-              <div className="client-card-contents dashboard-actions-panel">
-                <div className="dashboard-actions-copy">
-                  {isPaid
-                    ? "You can add clients, review users, and check token activity here."
-                    : "Client tools stay locked until the plan is upgraded."}
-                </div>
-                <div className="dashboard-actions-row">
-                  <Link to={primaryActionHref} className="dashboard-link-button dashboard-link-button-primary">
-                    {primaryActionLabel}
-                  </Link>
-                  <Link to={secondaryActionHref} className="dashboard-link-button dashboard-link-button-secondary">
-                    {secondaryActionLabel}
-                  </Link>
-                </div>
-              </div>
-            </section>
-
-            <section className="client-card client-card-secondary">
-              <div className="client-card-header">
-                <div>
                   <div className="client-card-kicker">Activity</div>
                   <div className="client-card-title">Recent user activity</div>
                 </div>
+                <div className="client-card-caption">
+                  Track new users, fresh logins, and upcoming session activity signals from one place.
+                </div>
               </div>
               <div className="client-card-contents dashboard-activity-panel">
+                <div className="dashboard-activity-grid">
                 <div className="dashboard-activity-section">
                   <div className="dashboard-activity-heading">Recently created users</div>
                   <div className="dashboard-activity-table-shell">
@@ -449,7 +433,7 @@ export default function Home() {
                 </div>
 
                 <div className="dashboard-activity-section">
-                  <div className="dashboard-activity-heading">Recently active users</div>
+                  <div className="dashboard-activity-heading">Recent logins</div>
                   <div className="dashboard-activity-table-shell">
                     <div className="dashboard-activity-table-head" role="row">
                       <span role="columnheader">User</span>
@@ -490,6 +474,23 @@ export default function Home() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {futureActivitySections.map((section) => (
+                  <div className="dashboard-activity-section" key={section.key}>
+                    <div className="dashboard-activity-heading">{section.heading}</div>
+                    <div className="dashboard-activity-table-shell">
+                      <div className="dashboard-activity-table-head" role="row">
+                        <span role="columnheader">User</span>
+                        <span role="columnheader">{section.timeLabel}</span>
+                        <span role="columnheader">Action</span>
+                      </div>
+                      <div className="dashboard-activity-empty">
+                        {section.emptyMessage}
+                      </div>
+                    </div>
+                  </div>
+                ))}
                 </div>
               </div>
             </section>

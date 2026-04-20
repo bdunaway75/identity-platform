@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
 @Service
 public class UserService implements UserDetailsService {
 
-    private static final String DEFAULT_PLATFORM_TIER_NAME = "BASIC";
-
     private final UserRepository userRepository;
 
     private final PlatformUserRepository platformUserRepository;
@@ -72,7 +70,7 @@ public class UserService implements UserDetailsService {
         final PlatformUser resolvedPlatformUser = platformUser.getTier() == null
                                                   ? PlatformUser.from(platformUser)
                                                                 .tier(PlatformUserTier.builder()
-                                                                                      .name(DEFAULT_PLATFORM_TIER_NAME)
+                                                                                      .name("FREE")
                                                                                       .build())
                                                                 .build()
                                                   : platformUser;

@@ -15,6 +15,7 @@ import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
+import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
 import io.github.blakedunaway.authserver.business.service.RegisteredClientService;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import io.github.blakedunaway.authserver.config.app.Application;
@@ -44,15 +45,22 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -63,14 +71,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -243,6 +254,186 @@ public class PlatformApiIntegrationTest {
         final JsonNode clientIds = unwrapCollectionNode(dashboard.get("clientIds"));
         assertThat(clientIds).anyMatch(node -> node.asText().equals(requestedClientName));
         assertThat(clientIds).noneMatch(node -> node.asText().equals(foreignClient.registeredClient().getClientId()));
+    }
+
+    @Test
+    void platformUserCanCreatePublicAuthorizationCodeClientAndNewUserCanSignUpAuthenticate() throws Exception {
+        final String platformEmail = uniqueEmail("platform-create-public");
+        savePlatformUser(platformEmail, "Password123!", "BASIC");
+        final String bearerToken = bearerToken(platformEmail,
+                                               PLATFORM_CLIENT_ID,
+                                               List.of("ROLE_PLATFORM_USER", "PLATFORM_TIER_PAID"));
+
+        final String requestedClientName = uniqueClientId("created-public");
+        final String redirectUri = "http://localhost:9601/callback";
+        final Set<String> scopes = Set.of("read");
+        final CreatedPlatformClient createdClient = createRegisteredClientViaPlatformApi(
+                bearerToken,
+                platformCreateRequest(
+                        requestedClientName,
+                        Set.of(ClientAuthenticationMethod.NONE),
+                        Set.of(AuthorizationGrantType.AUTHORIZATION_CODE),
+                        Set.of(redirectUri),
+                        scopes,
+                        true
+                )
+        );
+
+        assertThat(createdClient.clientId()).isNotBlank();
+        assertThat(createdClient.rawClientSecret()).isNull();
+        assertThat(createdClient.registeredClient().getClientName()).isEqualTo(requestedClientName);
+        assertThat(createdClient.registeredClient().getClientAuthenticationMethods())
+                .containsExactlyInAnyOrder(ClientAuthenticationMethod.NONE.getValue());
+        assertThat(createdClient.registeredClient().getAuthorizationGrantTypes())
+                .containsExactlyInAnyOrder(AuthorizationGrantType.AUTHORIZATION_CODE.getValue());
+        assertThat(createdClient.registeredClient().getRedirectUris()).containsExactlyInAnyOrder(redirectUri);
+
+        final String email = uniqueEmail("created-public-user");
+        final String password = "Password123!";
+        final String codeVerifier = "created-public-verifier-123456789012345678901234567890123456789012345";
+
+        final String authorizationCode = signUpAndAuthorizeClientUserAndCaptureCode(
+                createdClient,
+                redirectUri,
+                email,
+                password,
+                scopes,
+                codeVerifier
+        );
+
+        mockMvc.perform(post("/oauth2/token")
+                                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                .param(MetaDataKeys.GRANT_TYPE.getValue(), AuthorizationGrantType.AUTHORIZATION_CODE.getValue())
+                                .param(MetaDataKeys.CODE.getValue(), authorizationCode)
+                                .param(MetaDataKeys.REDIRECT_URI.getValue(), redirectUri)
+                                .param(MetaDataKeys.CLIENT_ID.getValue(), createdClient.clientId())
+                                .param(MetaDataKeys.CODE_VERIFIER.getValue(), codeVerifier))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.access_token").exists())
+               .andExpect(jsonPath("$.token_type").value("Bearer"));
+
+        final JsonNode ownedUsers = unwrapCollectionResponse(mockMvc.perform(post("/platform/api/users")
+                                                                                     .header("Authorization", bearerToken)
+                                                                                     .contentType(MediaType.APPLICATION_JSON)
+                                                                                     .content(typedRegisteredClientIdsJson(Set.of(createdClient.id()))))
+                                                                            .andExpect(status().isOk())
+                                                                            .andReturn());
+        assertThat(ownedUsers).hasSize(1);
+        assertThat(ownedUsers.get(0).get("clientId").asText()).isEqualTo(createdClient.clientId());
+        assertThat(ownedUsers.get(0).get("email").asText()).isEqualTo(email);
+    }
+
+    @Test
+    void platformUserCanCreateConfidentialAuthorizationCodeClientAndNewUserCanSignUpAuthenticate() throws Exception {
+        final String platformEmail = uniqueEmail("platform-create-confidential");
+        savePlatformUser(platformEmail, "Password123!", "BASIC");
+        final String bearerToken = bearerToken(platformEmail,
+                                               PLATFORM_CLIENT_ID,
+                                               List.of("ROLE_PLATFORM_USER", "PLATFORM_TIER_PAID"));
+
+        final String requestedClientName = uniqueClientId("created-confidential");
+        final String redirectUri = "http://localhost:9602/callback";
+        final Set<String> scopes = Set.of("payments.read");
+        final CreatedPlatformClient createdClient = createRegisteredClientViaPlatformApi(
+                bearerToken,
+                platformCreateRequest(
+                        requestedClientName,
+                        Set.of(ClientAuthenticationMethod.CLIENT_SECRET_BASIC),
+                        Set.of(AuthorizationGrantType.AUTHORIZATION_CODE),
+                        Set.of(redirectUri),
+                        scopes,
+                        false
+                )
+        );
+
+        assertThat(createdClient.clientId()).isNotBlank();
+        assertThat(createdClient.rawClientSecret()).isNotBlank();
+        assertThat(createdClient.registeredClient().getClientName()).isEqualTo(requestedClientName);
+        assertThat(createdClient.registeredClient().getClientAuthenticationMethods())
+                .containsExactlyInAnyOrder(ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue());
+        assertThat(createdClient.registeredClient().getAuthorizationGrantTypes())
+                .containsExactlyInAnyOrder(AuthorizationGrantType.AUTHORIZATION_CODE.getValue());
+
+        final String email = uniqueEmail("created-confidential-user");
+        final String password = "Password123!";
+
+        final String authorizationCode = signUpAndAuthorizeClientUserAndCaptureCode(
+                createdClient,
+                redirectUri,
+                email,
+                password,
+                scopes,
+                null
+        );
+
+        mockMvc.perform(post("/oauth2/token")
+                                .with(httpBasic(createdClient.clientId(), createdClient.rawClientSecret()))
+                                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                .param(MetaDataKeys.GRANT_TYPE.getValue(), AuthorizationGrantType.AUTHORIZATION_CODE.getValue())
+                                .param(MetaDataKeys.CODE.getValue(), authorizationCode)
+                                .param(MetaDataKeys.REDIRECT_URI.getValue(), redirectUri))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.access_token").exists())
+               .andExpect(jsonPath("$.token_type").value("Bearer"));
+
+        final JsonNode ownedUsers = unwrapCollectionResponse(mockMvc.perform(post("/platform/api/users")
+                                                                                     .header("Authorization", bearerToken)
+                                                                                     .contentType(MediaType.APPLICATION_JSON)
+                                                                                     .content(typedRegisteredClientIdsJson(Set.of(createdClient.id()))))
+                                                                            .andExpect(status().isOk())
+                                                                            .andReturn());
+        assertThat(ownedUsers).hasSize(1);
+        assertThat(ownedUsers.get(0).get("clientId").asText()).isEqualTo(createdClient.clientId());
+        assertThat(ownedUsers.get(0).get("email").asText()).isEqualTo(email);
+    }
+
+    @Test
+    void platformUserCanCreateConfidentialClientCredentialsClientAndAuthenticate() throws Exception {
+        final String platformEmail = uniqueEmail("platform-create-service");
+        savePlatformUser(platformEmail, "Password123!", "BASIC");
+        final String bearerToken = bearerToken(platformEmail,
+                                               PLATFORM_CLIENT_ID,
+                                               List.of("ROLE_PLATFORM_USER", "PLATFORM_TIER_PAID"));
+
+        final String requestedClientName = uniqueClientId("created-service");
+        final CreatedPlatformClient createdClient = createRegisteredClientViaPlatformApi(
+                bearerToken,
+                platformCreateRequest(
+                        requestedClientName,
+                        Set.of(ClientAuthenticationMethod.CLIENT_SECRET_BASIC),
+                        Set.of(AuthorizationGrantType.CLIENT_CREDENTIALS),
+                        Collections.emptySet(),
+                        Set.of("service.read"),
+                        false
+                )
+        );
+
+        assertThat(createdClient.clientId()).isNotBlank();
+        assertThat(createdClient.rawClientSecret()).isNotBlank();
+        assertThat(createdClient.registeredClient().getClientName()).isEqualTo(requestedClientName);
+        assertThat(createdClient.registeredClient().getRedirectUris()).isEmpty();
+        assertThat(createdClient.registeredClient().getClientAuthenticationMethods())
+                .containsExactlyInAnyOrder(ClientAuthenticationMethod.CLIENT_SECRET_BASIC.getValue());
+        assertThat(createdClient.registeredClient().getAuthorizationGrantTypes())
+                .containsExactlyInAnyOrder(AuthorizationGrantType.CLIENT_CREDENTIALS.getValue());
+
+        mockMvc.perform(post("/oauth2/token")
+                                .with(httpBasic(createdClient.clientId(), createdClient.rawClientSecret()))
+                                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                                .param(MetaDataKeys.GRANT_TYPE.getValue(), AuthorizationGrantType.CLIENT_CREDENTIALS.getValue())
+                                .param(MetaDataKeys.SCOPE.getValue(), "service.read"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.access_token").exists())
+               .andExpect(jsonPath("$.token_type").value("Bearer"));
+
+        final JsonNode issuedTokens = unwrapCollectionResponse(mockMvc.perform(post("/platform/api/tokens")
+                                                                                       .header("Authorization", bearerToken)
+                                                                                       .contentType(MediaType.APPLICATION_JSON)
+                                                                                       .content(typedRegisteredClientIdsJson(Set.of(createdClient.id()))))
+                                                                              .andExpect(status().isOk())
+                                                                              .andReturn());
+        assertThat(issuedTokens).hasSize(1);
+        assertThat(issuedTokens.get(0).get("subject").asText()).isEqualTo(createdClient.clientId());
     }
 
     @Test
@@ -549,6 +740,142 @@ public class PlatformApiIntegrationTest {
                .andExpect(status().isNotFound());
     }
 
+    private CreatedPlatformClient createRegisteredClientViaPlatformApi(final String bearerToken,
+                                                                       final RegisteredClientRequest request)
+            throws Exception {
+        final JsonNode response = objectMapper.readTree(mockMvc.perform(post("/platform/api/create")
+                                                                                .header("Authorization", bearerToken)
+                                                                                .contentType(MediaType.APPLICATION_JSON)
+                                                                                .content(sanitizedMvcJson(request)))
+                                                                       .andExpect(status().isOk())
+                                                                       .andReturn()
+                                                                       .getResponse()
+                                                                       .getContentAsString());
+        final UUID createdClientId = UUID.fromString(response.get("id").asText());
+        return new CreatedPlatformClient(
+                createdClientId,
+                response.get("clientId").asText(),
+                response.path("clientSecret").isNull() ? null : response.get("clientSecret").asText(),
+                registeredClientService.findRegisteredClientById(createdClientId)
+        );
+    }
+
+    private RegisteredClientRequest platformCreateRequest(final String clientName,
+                                                          final Set<ClientAuthenticationMethod> authenticationMethods,
+                                                          final Set<AuthorizationGrantType> grantTypes,
+                                                          final Set<String> redirectUris,
+                                                          final Set<String> scopes,
+                                                          final boolean requireProofKey) {
+        return registeredClientRequest(
+                uniqueClientId("seed"),
+                null,
+                authenticationMethods,
+                grantTypes,
+                redirectUris,
+                scopes,
+                requireProofKey
+        ).toBuilder()
+         .clientId(null)
+         .clientIdIssuedAt(null)
+         .clientSecret(null)
+         .clientSecretExpiresAt(null)
+         .clientName(clientName)
+         .build();
+    }
+
+    private String signUpAndAuthorizeClientUserAndCaptureCode(final CreatedPlatformClient createdClient,
+                                                              final String redirectUri,
+                                                              final String email,
+                                                              final String password,
+                                                              final Set<String> scopes,
+                                                              final String codeVerifier) throws Exception {
+        final MockHttpSession session = beginAuthorization(createdClient.clientId(),
+                                                           redirectUri,
+                                                           scopes,
+                                                           codeVerifier);
+
+        mockMvc.perform(post("/signUp")
+                                .session(session)
+                                .with(csrf())
+                                .param("email", email)
+                                .param("password", password))
+               .andExpect(status().is3xxRedirection())
+               .andExpect(header().string("Location", endsWith("/login")));
+
+        final List<ClientUser> createdUsers = userService.findClientUsersByRegisteredClientIds(Set.of(createdClient.id()));
+        assertThat(createdUsers).anySatisfy(clientUser -> {
+            assertThat(clientUser.getEmail()).isEqualTo(email);
+            assertThat(clientUser.getClientId()).isEqualTo(createdClient.clientId());
+        });
+
+        return completeAuthorizationAndCaptureCode(session,
+                                                   createdClient.clientId(),
+                                                   email,
+                                                   password);
+    }
+
+    private MockHttpSession beginAuthorization(final String clientId,
+                                               final String redirectUri,
+                                               final Set<String> scopes,
+                                               final String codeVerifier) throws Exception {
+        final MultiValueMap<String, String> authorizeParams = new LinkedMultiValueMap<>();
+        authorizeParams.add("response_type", "code");
+        authorizeParams.add("client_id", clientId);
+        authorizeParams.add("redirect_uri", redirectUri);
+        authorizeParams.add("scope", String.join(" ", scopes));
+        authorizeParams.add("state", UUID.randomUUID().toString());
+        if (codeVerifier != null) {
+            authorizeParams.add(MetaDataKeys.CODE_CHALLENGE.getValue(), sha256Base64Url(codeVerifier));
+            authorizeParams.add(MetaDataKeys.CODE_CHALLENGE_METHOD.getValue(), "S256");
+        }
+
+        final MvcResult authorizeRedirect = mockMvc.perform(get(
+                                                            UriComponentsBuilder.fromPath("/oauth2/authorize")
+                                                                                .queryParams(authorizeParams)
+                                                                                .build()
+                                                                                .encode()
+                                                                                .toUriString())
+                                                            .accept(MediaType.TEXT_HTML))
+                                                   .andExpect(status().is3xxRedirection())
+                                                   .andExpect(header().string("Location", endsWith("/login")))
+                                                   .andReturn();
+
+        return (MockHttpSession) authorizeRedirect.getRequest().getSession(false);
+    }
+
+    private String completeAuthorizationAndCaptureCode(final MockHttpSession session,
+                                                       final String clientId,
+                                                       final String email,
+                                                       final String password) throws Exception {
+        final MvcResult loginRedirect = mockMvc.perform(post("/login")
+                                                                .session(session)
+                                                                .with(csrf())
+                                                                .param("email", email)
+                                                                .param("password", password)
+                                                                .param("clientId", clientId))
+                                               .andExpect(status().is3xxRedirection())
+                                               .andReturn();
+
+        final UriComponents authorizeUri = UriComponentsBuilder.fromUriString(loginRedirect.getResponse().getHeader("Location"))
+                                                               .build();
+
+        final MvcResult callbackRedirect = mockMvc.perform(get(authorizeUri.getPath())
+                                                                   .session(session)
+                                                                   .queryParams(authorizeUri.getQueryParams()))
+                                                  .andExpect(status().is3xxRedirection())
+                                                  .andReturn();
+
+        final UriComponents callbackUri = UriComponentsBuilder.fromUriString(callbackRedirect.getResponse().getHeader("Location"))
+                                                             .build();
+        return callbackUri.getQueryParams().getFirst(MetaDataKeys.CODE.getValue());
+    }
+
+    private String sha256Base64Url(final String value) throws Exception {
+        final MessageDigest messageDigest = java.security.MessageDigest.getInstance("SHA-256");
+        final byte[] digest = messageDigest.digest(value.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+    }
+
     private MvcResult issueClientCredentialsToken(final String clientId,
                                                   final String clientSecret,
                                                   final String scope) throws Exception {
@@ -590,33 +917,74 @@ public class PlatformApiIntegrationTest {
 
     private void savePlatformUser(final String email,
                                   final String rawPassword) {
+        savePlatformUser(email, rawPassword, "BASIC");
+    }
+
+    private void savePlatformUser(final String email,
+                                  final String rawPassword,
+                                  final String tierName) {
         ensureFrontendClientExists();
-        final PlatformUser platformUser = PlatformUser.from(email)
-                                                      .email(email)
-                                                      .passwordHash(passwordEncoder.encode(rawPassword))
-                                                      .verified(true)
-                                                      .createdAt(LocalDateTime.now())
-                                                      .updatedAt(LocalDateTime.now())
-                                                      .registeredClientIds(ids -> ids.clear())
-                                                      .authorities(authorities -> authorities.add(Authority.from("ROLE_PLATFORM_USER")))
-                                                      .locked(false)
-                                                      .expired(false)
-                                                      .credentialsExpired(false)
-                                                      .build();
+        final PlatformUser.PlatformUserBuilder builder = PlatformUser.from(email)
+                                                                     .email(email)
+                                                                     .passwordHash(passwordEncoder.encode(rawPassword))
+                                                                     .verified(true)
+                                                                     .createdAt(LocalDateTime.now())
+                                                                     .updatedAt(LocalDateTime.now())
+                                                                     .registeredClientIds(ids -> ids.clear())
+                                                                     .authorities(authorities -> authorities.add(Authority.from("ROLE_PLATFORM_USER")))
+                                                                     .locked(false)
+                                                                     .expired(false)
+                                                                     .credentialsExpired(false);
+        if (tierName != null && !tierName.isBlank()) {
+            builder.tier(resolvePlatformUserTier(tierName));
+        }
+        final PlatformUser platformUser = builder.build();
         userService.savePlatformUser(platformUser);
     }
 
+    private PlatformUserTier resolvePlatformUserTier(final String tierName) {
+        final PlatformUserTierEntity tierEntity = platformUserTierJpaRepository.findByTierNameIgnoreCase(tierName)
+                                                                               .orElseThrow();
+        return PlatformUserTier.builder()
+                               .id(tierEntity.getTierId())
+                               .stripePriceId(tierEntity.getStripPriceId())
+                               .name(tierEntity.getTierName())
+                               .price(tierEntity.getTierPrice())
+                               .description(tierEntity.getTierDescription())
+                               .tierOrder(tierEntity.getTierOrder())
+                               .allowedNumberOfRegisteredClients(tierEntity.getAllowedNumberOfRegisteredClients())
+                               .allowedNumberOfGlobalUsers(tierEntity.getAllowedNumberOfGlobalUsers())
+                               .allowedNumberOfGlobalScopes(tierEntity.getAllowedNumberOfGlobalScopes())
+                               .allowedNumberOfGlobalAuthorities(tierEntity.getAllowedNumberOfGlobalAuthorities())
+                               .build();
+    }
+
     private void ensureFrontendClientExists() {
-        if (registerClientJpaRepository.findByClientId(FRONTEND_CLIENT_ID).isPresent()) {
+        ensureClientExists(
+                PLATFORM_CLIENT_ID,
+                "http://localhost:9001/callback",
+                Set.of("openid")
+        );
+        ensureClientExists(
+                FRONTEND_CLIENT_ID,
+                "http://localhost:9999/frontend/callback",
+                Set.of("openid")
+        );
+    }
+
+    private void ensureClientExists(final String clientId,
+                                    final String redirectUri,
+                                    final Set<String> scopes) {
+        if (registerClientJpaRepository.findByClientId(clientId).isPresent()) {
             return;
         }
         saveRegisteredClient(registeredClientRequest(
-                FRONTEND_CLIENT_ID,
+                clientId,
                 null,
                 Set.of(ClientAuthenticationMethod.NONE),
                 Set.of(AuthorizationGrantType.AUTHORIZATION_CODE),
-                Set.of("http://localhost:9999/frontend/callback"),
-                Set.of("openid"),
+                Set.of(redirectUri),
+                scopes,
                 true
         ), null);
     }
@@ -934,6 +1302,12 @@ public class PlatformApiIntegrationTest {
     }
 
     private record RegisteredClientFixture(RegisteredClientModel registeredClient, String rawClientSecret) {
+    }
+
+    private record CreatedPlatformClient(UUID id,
+                                         String clientId,
+                                         String rawClientSecret,
+                                         RegisteredClientModel registeredClient) {
     }
 
 }

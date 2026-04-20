@@ -62,12 +62,13 @@ function InfoLabel({ label, info }: { label: string; info: string }) {
       <span>{label}</span>
       <Tooltip
         label={info}
-        withArrow
         multiline
         w={320}
         position="top-start"
-        openDelay={120}
-        transitionProps={{ transition: "fade-up", duration: 120 }}
+        openDelay={90}
+        events={{ hover: true, focus: true, touch: true }}
+        offset={10}
+        transitionProps={{ transition: "fade", duration: 120 }}
         classNames={{
           tooltip: "client-info-tooltip",
           arrow: "client-info-tooltip-arrow",
@@ -78,7 +79,7 @@ function InfoLabel({ label, info }: { label: string; info: string }) {
           className="client-label-info-trigger"
           aria-label={`More info about ${label}`}
         >
-          ?
+          <span className="client-label-info-glyph" aria-hidden="true">i</span>
         </button>
       </Tooltip>
     </span>

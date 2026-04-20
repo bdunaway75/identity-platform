@@ -23,23 +23,34 @@ html, body {
     margin: 0;
     padding: 0;
     min-height: 100%;
+    width: 100%;
     background:
         radial-gradient(circle at top, var(--auth-bg-top), transparent 38%),
         radial-gradient(circle at bottom, var(--auth-bg-bottom), transparent 42%),
         linear-gradient(180deg, var(--auth-bg-0) 0%, var(--auth-bg-1) 52%, var(--auth-bg-2) 100%);
     color: var(--auth-text);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow-x: clip;
 }
 
 body.auth-page {
     position: relative;
     min-height: 100vh;
+    min-height: 100svh;
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem 1rem;
-    overflow: hidden;
+    width: 100%;
+    padding:
+        max(2rem, env(safe-area-inset-top))
+        max(1rem, env(safe-area-inset-right))
+        max(2rem, env(safe-area-inset-bottom))
+        max(1rem, env(safe-area-inset-left));
+    overflow-x: clip;
+    overflow-y: auto;
     isolation: isolate;
+    -webkit-overflow-scrolling: touch;
 }
 
 body.auth-page::before {
@@ -64,6 +75,7 @@ body.auth-page::before {
     position: relative;
     z-index: 1;
     width: min(27rem, 100%);
+    margin: auto;
 }
 
 .auth-card {
@@ -306,7 +318,12 @@ body.auth-page::before {
 
 @media (max-width: 640px) {
     body.auth-page {
-        padding: 1rem;
+        align-items: flex-start;
+        padding:
+            max(1rem, env(safe-area-inset-top))
+            max(0.9rem, env(safe-area-inset-right))
+            max(1rem, env(safe-area-inset-bottom))
+            max(0.9rem, env(safe-area-inset-left));
     }
 
     .auth-card {
@@ -315,6 +332,11 @@ body.auth-page::before {
 
     .auth-title {
         font-size: 1.65rem;
+    }
+
+    .auth-input {
+        min-height: 3rem;
+        font-size: 16px;
     }
 
     .auth-actions-inline {

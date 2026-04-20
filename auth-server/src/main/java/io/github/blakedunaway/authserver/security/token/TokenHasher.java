@@ -1,41 +1,32 @@
 package io.github.blakedunaway.authserver.security.token;
 
-import lombok.experimental.UtilityClass;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-@UtilityClass
-public class TokenHasher {
+@Component
+public final class TokenHasher {
 
-    private final SecretKeySpec key;
+    private static volatile SecretKeySpec key;
 
-    private final String b64 = "U6e3m3mW1qk_3vZl9a0Jpm3Eo2X7mK7JgC8bqvYFYKk";
+    @Value("${security.token.pepper-base64}")
+    private String pepperBase64;
 
-    static {
-        if (b64.isBlank()) {
-            throw new IllegalStateException("security.token.pepper-base64 missing");
-        }
-        final byte[] raw = decodeAnyBase64(b64.trim());
-        if (raw.length < 32) {
-            throw new IllegalStateException("pepper too short: " + raw.length + " bytes; need >= 32");
-        }
-        key = new SecretKeySpec(raw, "HmacSHA256");
-
+    @PostConstruct
+    void initialize() {
+        key = buildKey(pepperBase64);
     }
 
     private static byte[] decodeAnyBase64(final String s) {
         final String padded = pad4(s);
         try {
             return Base64.getUrlDecoder().decode(padded);
-        } catch (IllegalArgumentException ignore) { /* fall through */ }
-        // normalize to standard and try again
-        final String std = pad4(s.replace('-', '+').replace('_', '/'));
-        try {
-            return Base64.getDecoder().decode(std);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             throw new IllegalStateException("pepper not valid base64/base64url", e);
         }
     }
@@ -53,22 +44,42 @@ public class TokenHasher {
     }
 
     private static String pad4(final String s) {
-        int mod = s.length() % 4;
+        final int mod = s.length() % 4;
         return mod == 0 ? s : (s + "====".substring(mod));
     }
 
-    public String hmacCurrent(final String tokenValue) {
+    public static String hmacCurrent(final String tokenValue) {
         try {
             if (isHmacSha256Base64Url(tokenValue)) {
                 return tokenValue;
             }
             final Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(key);
+            mac.init(currentKey());
             final byte[] digest = mac.doFinal(tokenValue.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
         } catch (Exception e) {
             throw new IllegalStateException("HMAC failure", e);
         }
+    }
+
+    private static SecretKeySpec currentKey() {
+        final SecretKeySpec resolvedKey = key;
+        if (resolvedKey != null) {
+            return resolvedKey;
+        }
+        throw new IllegalStateException("TokenHasher is not configured. Ensure security.token.pepper-base64 is injected.");
+    }
+
+    private static SecretKeySpec buildKey(final String pepperBase64) {
+        if (pepperBase64 == null || pepperBase64.isBlank()) {
+            throw new IllegalStateException("security.token.pepper-base64 missing");
+        }
+
+        final byte[] raw = decodeAnyBase64(pepperBase64.trim());
+        if (raw.length < 32) {
+            throw new IllegalStateException("pepper too short: " + raw.length + " bytes; need >= 32");
+        }
+        return new SecretKeySpec(raw, "HmacSHA256");
     }
 
 }
