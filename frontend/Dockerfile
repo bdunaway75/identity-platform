@@ -1,9 +1,11 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:22-alpine AS build
 
 WORKDIR /app/frontend
 
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY frontend ./
 
@@ -15,7 +17,7 @@ ENV VITE_AUTH_SERVER_ORIGIN=${VITE_AUTH_SERVER_ORIGIN}
 ENV VITE_FRONTEND_ORIGIN=${VITE_FRONTEND_ORIGIN}
 ENV VITE_OIDC_CLIENT_ID=${VITE_OIDC_CLIENT_ID}
 
-RUN npm run build
+RUN --mount=type=cache,target=/root/.npm npm run build
 
 FROM nginx:1.27-alpine
 
