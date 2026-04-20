@@ -1,0 +1,51 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_AUTH_SERVER_ORIGIN: ${PUBLIC_ORIGIN}
+        VITE_FRONTEND_ORIGIN: ${PUBLIC_ORIGIN}
+        VITE_OIDC_CLIENT_ID: ${AUTH_SERVER_FRONTEND_CLIENT_ID}
+    depends_on:
+      - auth-server
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  auth-server:
+    build:
+      context: .
+      dockerfile: auth-server/Dockerfile
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      AUTH_SERVER_FRONTEND_CLIENT_ID: ${AUTH_SERVER_FRONTEND_CLIENT_ID}
+      AUTH_SERVER_FRONTEND_ORIGIN: ${PUBLIC_ORIGIN}
+      AUTH_SERVER_PLATFORM_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN}
+      AUTH_SERVER_ISSUER: ${PUBLIC_ORIGIN}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JPA_PROPERTIES_HIBERNATE_HBM2DDL_CREATE_NAMESPACES: "true"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SECURITY_TOKEN_PEPPER_BASE64: ${SECURITY_TOKEN_PEPPER_BASE64}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    restart: unless-stopped
+    volumes:
+      - auth-server-logs:/app/logs
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+volumes:
+  auth-server-logs:
+  redis-data:

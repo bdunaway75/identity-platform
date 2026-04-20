@@ -1,0 +1,7 @@
+.git
+auth-server/target
+auth-server/logs
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/test-results

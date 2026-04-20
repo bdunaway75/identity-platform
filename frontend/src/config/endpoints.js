@@ -1,25 +1,19 @@
-const runtimeOrigin = typeof window !== "undefined" && window.location?.origin
-  ? window.location.origin.replace(/\/+$/, "")
-  : "";
-
 const APP_ENDPOINT_DEFAULTS = {
-  authServerOrigin: runtimeOrigin || "https://identificationplatform.com",
-  frontendOrigin: runtimeOrigin || "https://identificationplatform.com",
+  authServerOrigin: "https://identificationplatform.com",
+  frontendOrigin: "https://identificationplatform.com",
   oidcClientId: "identity-platform",
 };
 
 function readEnvString(value) {
-  const normalized = String(value ?? "").trim();
-  return normalized || "";
+  return String(value ?? "").trim();
 }
 
-function normalizeBaseUrl(value, fallback) {
-  const resolved = readEnvString(value) || fallback;
-  return resolved.replace(/\/+$/, "");
+function normalizeBaseUrl(value) {
+  return readEnvString(value).replace(/\/+$/, "");
 }
 
-function normalizeUrl(value, fallback) {
-  return readEnvString(value) || fallback;
+function normalizeUrl(value) {
+  return readEnvString(value);
 }
 
 function firstEnvValue(...values) {
@@ -32,14 +26,10 @@ function resolveEndpointUrl(path, override) {
 }
 
 const authServerOrigin = normalizeBaseUrl(
-  import.meta.env.VITE_AUTH_SERVER_ORIGIN,
-  APP_ENDPOINT_DEFAULTS.authServerOrigin
+  import.meta.env.VITE_AUTH_SERVER_ORIGIN ?? APP_ENDPOINT_DEFAULTS.authServerOrigin,
 );
 const frontendOrigin = normalizeBaseUrl(
-  import.meta.env.VITE_FRONTEND_ORIGIN,
-  typeof window !== "undefined" && window.location?.origin
-    ? window.location.origin
-    : APP_ENDPOINT_DEFAULTS.frontendOrigin
+  import.meta.env.VITE_FRONTEND_ORIGIN ?? APP_ENDPOINT_DEFAULTS.frontendOrigin
 );
 const platformBaseEndpoint = `${authServerOrigin}/platform`;
 const registeredClientBaseEndpoint = resolveEndpointUrl(
@@ -57,19 +47,16 @@ export const APP_ENDPOINTS = {
   },
   oidc: {
     authority: normalizeBaseUrl(
-      import.meta.env.VITE_OIDC_AUTHORITY,
-      authServerOrigin
+      import.meta.env.VITE_OIDC_AUTHORITY ?? authServerOrigin
     ),
-    clientId:
-      readEnvString(import.meta.env.VITE_OIDC_CLIENT_ID) ||
-      APP_ENDPOINT_DEFAULTS.oidcClientId,
+    clientId: readEnvString(
+      import.meta.env.VITE_OIDC_CLIENT_ID ?? APP_ENDPOINT_DEFAULTS.oidcClientId
+    ),
     redirectUri: normalizeUrl(
-      import.meta.env.VITE_OIDC_REDIRECT_URI,
-      `${frontendOrigin}/callback`
+      import.meta.env.VITE_OIDC_REDIRECT_URI ?? `${frontendOrigin}/callback`
     ),
     postLogoutRedirectUri: normalizeUrl(
-      import.meta.env.VITE_OIDC_POST_LOGOUT_REDIRECT_URI,
-      `${frontendOrigin}/login`
+      import.meta.env.VITE_OIDC_POST_LOGOUT_REDIRECT_URI ?? `${frontendOrigin}/login`
     ),
   },
   platform: {
