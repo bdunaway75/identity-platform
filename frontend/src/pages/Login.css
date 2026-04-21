@@ -1,9 +1,18 @@
 .login-root {
+  --login-grid-size: 42px;
+  --login-grid-fine-size: 10px;
   position: relative;
   min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   display: flex;
   justify-content: center;
   place-items: center;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
   background:
     radial-gradient(circle at top, rgba(42, 71, 78, 0.22), transparent 38%),
     radial-gradient(circle at bottom, rgba(22, 40, 46, 0.42), transparent 42%),
@@ -17,46 +26,61 @@
 .login-root::before {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: calc(var(--login-grid-size) * -1);
   background-image:
     linear-gradient(rgba(176, 245, 255, 0.09) 1px, transparent 1px),
     linear-gradient(90deg, rgba(176, 245, 255, 0.09) 1px, transparent 1px),
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
     linear-gradient(135deg, rgba(132, 224, 255, 0.05), transparent 55%);
   background-size:
-    42px 42px,
-    42px 42px,
-    10px 10px,
-    10px 10px,
+    var(--login-grid-size) var(--login-grid-size),
+    var(--login-grid-size) var(--login-grid-size),
     100% 100%;
   background-position:
     0 0,
     0 0,
-    0 0,
-    0 0,
     0 0;
-  opacity: 0.75;
-  animation: grid-drift 16s linear infinite;
+  opacity: 0.72;
+  animation: login-grid-drift 18s linear infinite;
+  will-change: transform;
   pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes grid-drift {
+.login-root::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--login-grid-fine-size) * -2);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size:
+    var(--login-grid-fine-size) var(--login-grid-fine-size),
+    var(--login-grid-fine-size) var(--login-grid-fine-size);
+  background-position:
+    0 0,
+    0 0;
+  opacity: 0.56;
+  animation: login-grid-drift-fine 10s linear infinite;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes login-grid-drift {
   from {
-    background-position:
-      0 0,
-      0 0,
-      0 0,
-      0 0,
-      0 0;
+    transform: translate3d(0, 0, 0);
   }
   to {
-    background-position:
-      42px 42px,
-      42px 42px,
-      10px 10px,
-      10px 10px,
-      0 0;
+    transform: translate3d(var(--login-grid-size), var(--login-grid-size), 0);
+  }
+}
+
+@keyframes login-grid-drift-fine {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(var(--login-grid-fine-size) * -1), calc(var(--login-grid-fine-size) * -1), 0);
   }
 }
 
@@ -291,17 +315,18 @@
 }
 
 @media (max-width: 640px) {
+  .login-root {
+    --login-grid-size: 34px;
+    --login-grid-fine-size: 8px;
+  }
+
   .login-card {
-    width: min(360px, calc(100vw - 2rem));
+    width: min(360px, 100%);
     padding: 1.5rem;
   }
 
-  .login-root::before {
-    background-size:
-      34px 34px,
-      34px 34px,
-      8px 8px,
-      8px 8px,
-      100% 100%;
+  .login-input {
+    min-height: 3rem;
+    font-size: 16px;
   }
 }

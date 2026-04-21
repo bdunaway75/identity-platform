@@ -295,68 +295,66 @@
 }
 
 .client-label-info-trigger {
-    width: 1rem;
-    height: 1rem;
+    width: 0.82rem;
+    height: 0.82rem;
+    min-width: 0.82rem;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(229, 231, 235, 0.88);
-    font-size: 0.62rem;
+    border: 1px solid rgba(56, 189, 248, 0.24);
+    background: rgba(56, 189, 248, 0.06);
+    color: rgba(125, 211, 252, 0.88);
     line-height: 1;
-    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
     cursor: help;
-    transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+    transition:
+        border-color 140ms ease,
+        background-color 140ms ease,
+        color 140ms ease;
+}
+
+.client-label-info-glyph {
+    font-size: 0.56rem;
+    font-weight: 600;
+    font-family: "Inter", "SF Pro Text", "Segoe UI", sans-serif;
+    transform: translateY(-0.01rem);
 }
 
 .client-label-info-trigger:hover {
-    border-color: rgba(34, 211, 238, 0.48);
-    background: rgba(34, 211, 238, 0.15);
-    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.16);
+    border-color: rgba(56, 189, 248, 0.34);
+    background: rgba(56, 189, 248, 0.1);
+    color: rgba(186, 230, 253, 0.94);
 }
 
 .client-label-info-trigger:focus-visible {
     outline: none;
-    border-color: rgba(34, 211, 238, 0.66);
-    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+    border-color: rgba(56, 189, 248, 0.44);
+    background: rgba(56, 189, 248, 0.1);
+    color: rgba(224, 242, 254, 0.98);
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.12);
 }
 
 .client-info-tooltip {
     position: relative;
     max-width: 21rem;
-    padding: 0.78rem 0.9rem;
-    border-radius: 14px;
-    border: 1px solid rgba(56, 189, 248, 0.28);
+    padding: 0.86rem 0.96rem;
+    border-radius: 18px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
     background:
-        linear-gradient(160deg, rgba(16, 22, 38, 0.96), rgba(10, 14, 26, 0.98)),
-        radial-gradient(circle at 85% 15%, rgba(56, 189, 248, 0.2), transparent 42%),
-        radial-gradient(circle at 10% 100%, rgba(99, 102, 241, 0.18), transparent 45%);
-    color: rgba(231, 239, 254, 0.95);
+        linear-gradient(160deg, rgba(9, 17, 29, 0.97), rgba(7, 12, 22, 0.99)),
+        radial-gradient(circle at 88% 12%, rgba(56, 189, 248, 0.16), transparent 40%),
+        radial-gradient(circle at 12% 100%, rgba(34, 211, 238, 0.12), transparent 44%);
+    color: rgba(219, 234, 254, 0.94);
     font-family: "Inter", "SF Pro Text", "Segoe UI", sans-serif;
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    line-height: 1.5;
+    font-size: 0.73rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.58;
     box-shadow:
-        0 18px 34px rgba(2, 6, 23, 0.55),
-        0 0 0 1px rgba(255, 255, 255, 0.03) inset;
-    backdrop-filter: blur(8px) saturate(140%);
-}
-
-.client-info-tooltip::after {
-    content: "";
-    position: absolute;
-    left: 1.2rem;
-    bottom: -0.36rem;
-    width: 0.74rem;
-    height: 0.74rem;
-    transform: rotate(45deg);
-    background: rgba(12, 17, 30, 0.98);
-    border-right: 1px solid rgba(56, 189, 248, 0.28);
-    border-bottom: 1px solid rgba(56, 189, 248, 0.28);
+        0 18px 34px rgba(2, 6, 23, 0.48),
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    backdrop-filter: blur(14px) saturate(145%);
 }
 
 .client-info-tooltip-arrow {
@@ -968,6 +966,8 @@
     width: 100%;
     margin: 0;
     min-height: min(32rem, calc(100vh - 16rem));
+    min-height: min(32rem, calc(100svh - 16rem));
+    min-height: min(32rem, calc(100dvh - 16rem));
     border-radius: 22px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     background:
@@ -1110,6 +1110,35 @@
 }
 
 @media (max-width: 760px) {
+    .client-label-info-trigger {
+        width: 0.9rem;
+        height: 0.9rem;
+        min-width: 0.9rem;
+    }
+
+    .client-label-info-glyph {
+        font-size: 0.6rem;
+    }
+
+    .client-info-tooltip {
+        max-width: min(18rem, calc(100vw - 2rem));
+        padding: 0.9rem 0.98rem;
+        font-size: 0.75rem;
+        line-height: 1.6;
+    }
+
+    .clients-locked-page {
+        width: calc(100% + 2rem);
+        margin: -1rem;
+        padding: 1rem;
+    }
+
+    .clients-locked-page-embedded {
+        min-height: min(32rem, calc(100vh - 12rem));
+        min-height: min(32rem, calc(100svh - 12rem));
+        min-height: min(32rem, calc(100dvh - 12rem));
+    }
+
     .client-header {
         padding: 0.9rem 0.95rem;
         border-radius: 18px;
