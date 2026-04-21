@@ -6,10 +6,9 @@ WORKDIR /build/auth-server
 ENV MAVEN_OPTS="-Xmx2g"
 
 COPY auth-server/pom.xml pom.xml
-RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests dependency:go-offline
 COPY auth-server/src src
 
-RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package \
+RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests -Dmaven.wagon.http.retryHandler.count=5 package \
     && cp "$(ls target/*.war | grep -v '\.original$')" /tmp/auth-server.war
 
 FROM eclipse-temurin:21-jre-jammy
