@@ -5,6 +5,8 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta name="theme-color" content="#050809" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Authorization Error</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/auth-views.css"/>
 </head>

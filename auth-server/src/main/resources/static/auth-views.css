@@ -1,4 +1,5 @@
 :root {
+    color-scheme: dark;
     --auth-bg-top: rgba(42, 71, 78, 0.22);
     --auth-bg-bottom: rgba(22, 40, 46, 0.42);
     --auth-bg-0: #101819;
@@ -22,12 +23,10 @@
 html, body {
     margin: 0;
     padding: 0;
+    height: 100%;
     min-height: 100%;
     width: 100%;
-    background:
-        radial-gradient(circle at top, var(--auth-bg-top), transparent 38%),
-        radial-gradient(circle at bottom, var(--auth-bg-bottom), transparent 42%),
-        linear-gradient(180deg, var(--auth-bg-0) 0%, var(--auth-bg-1) 52%, var(--auth-bg-2) 100%);
+    background-color: var(--auth-bg-2);
     color: var(--auth-text);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     overflow-x: clip;
@@ -35,6 +34,7 @@ html, body {
 
 body.auth-page {
     position: relative;
+    box-sizing: border-box;
     min-height: 100vh;
     min-height: 100svh;
     min-height: 100dvh;
@@ -49,13 +49,26 @@ body.auth-page {
         max(1rem, env(safe-area-inset-left));
     overflow-x: clip;
     overflow-y: auto;
+    overscroll-behavior-y: none;
     isolation: isolate;
     -webkit-overflow-scrolling: touch;
+    background: transparent;
 }
 
 body.auth-page::before {
     content: "";
-    position: absolute;
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(circle at top, var(--auth-bg-top), transparent 38%),
+        radial-gradient(circle at bottom, var(--auth-bg-bottom), transparent 42%),
+        linear-gradient(180deg, var(--auth-bg-0) 0%, var(--auth-bg-1) 52%, var(--auth-bg-2) 100%);
+    pointer-events: none;
+}
+
+body.auth-page::after {
+    content: "";
+    position: fixed;
     inset: 0;
     background-image:
         linear-gradient(var(--auth-grid) 1px, transparent 1px),
@@ -74,13 +87,16 @@ body.auth-page::before {
 .auth-shell {
     position: relative;
     z-index: 1;
-    width: min(27rem, 100%);
+    width: 100%;
+    max-width: 27rem;
     margin: auto;
+    box-sizing: border-box;
 }
 
 .auth-card {
     position: relative;
     width: 100%;
+    box-sizing: border-box;
     padding: 2rem 2.1rem;
     border-radius: 20px;
     background: var(--auth-card);
@@ -318,25 +334,36 @@ body.auth-page::before {
 
 @media (max-width: 640px) {
     body.auth-page {
-        align-items: flex-start;
+        align-items: center;
         padding:
-            max(1rem, env(safe-area-inset-top))
-            max(0.9rem, env(safe-area-inset-right))
-            max(1rem, env(safe-area-inset-bottom))
-            max(0.9rem, env(safe-area-inset-left));
+            max(1.1rem, env(safe-area-inset-top))
+            max(1.15rem, env(safe-area-inset-right))
+            max(1.1rem, env(safe-area-inset-bottom))
+            max(1.15rem, env(safe-area-inset-left));
+    }
+
+    .auth-shell {
+        max-width: 23.5rem;
     }
 
     .auth-card {
-        padding: 1.6rem 1.2rem;
+        padding: 1.75rem 1.4rem;
+        border-radius: 18px;
     }
 
     .auth-title {
         font-size: 1.65rem;
     }
 
+    .auth-subtitle {
+        max-width: 19rem;
+        font-size: 0.92rem;
+    }
+
     .auth-input {
         min-height: 3rem;
         font-size: 16px;
+        padding-inline: 0.95rem;
     }
 
     .auth-actions-inline {

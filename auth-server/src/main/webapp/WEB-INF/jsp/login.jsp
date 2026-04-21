@@ -5,6 +5,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#050809" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Sign in</title>
     <link rel="stylesheet" href="/auth-views.css" />
 </head>

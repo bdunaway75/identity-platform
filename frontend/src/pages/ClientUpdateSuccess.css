@@ -1,8 +1,14 @@
 .client-update-success-page {
     min-height: calc(100vh - 4rem);
+    min-height: calc(100svh - 4rem);
+    min-height: calc(100dvh - 4rem);
     display: grid;
     place-items: center;
-    padding: 2rem 1.25rem;
+    padding:
+        max(2rem, env(safe-area-inset-top))
+        max(1.25rem, env(safe-area-inset-right))
+        max(2rem, env(safe-area-inset-bottom))
+        max(1.25rem, env(safe-area-inset-left));
     position: relative;
     overflow: hidden;
 }
@@ -232,7 +238,13 @@
 @media (max-width: 640px) {
     .client-update-success-page {
         min-height: calc(100vh - 2rem);
-        padding: 1rem 0.8rem;
+        min-height: calc(100svh - 2rem);
+        min-height: calc(100dvh - 2rem);
+        padding:
+            max(1rem, env(safe-area-inset-top))
+            max(0.8rem, env(safe-area-inset-right))
+            max(1rem, env(safe-area-inset-bottom))
+            max(0.8rem, env(safe-area-inset-left));
     }
 
     .client-update-success-card {
