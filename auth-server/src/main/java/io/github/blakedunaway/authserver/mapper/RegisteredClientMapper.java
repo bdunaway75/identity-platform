@@ -1,6 +1,6 @@
 package io.github.blakedunaway.authserver.mapper;
 
-import io.github.blakedunaway.authserver.business.api.dto.RegisteredClientRequest;
+import io.github.blakedunaway.authserver.business.api.dto.request.RegisteredClientRequest;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.enums.AuthorizationGrantTypeInternal;
 import io.github.blakedunaway.authserver.business.model.enums.ClientAuthenticationMethodResolver;
@@ -15,7 +15,6 @@ import io.github.blakedunaway.authserver.integration.entity.RegisteredClientScop
 import io.github.blakedunaway.authserver.util.AuthenticationUtility;
 import io.github.blakedunaway.authserver.util.AuthorityUtility;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;

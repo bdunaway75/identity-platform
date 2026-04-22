@@ -22,6 +22,8 @@ public class PlatformUser extends AbstractUser {
 
     private PlatformUserTier tier;
 
+    private boolean isDemoUser;
+
     public Set<UUID> filterOwnedRegisteredClientIds(final Set<UUID> requestedIds) {
         if (requestedIds == null || requestedIds.isEmpty()) {
             return Collections.emptySet();
@@ -91,6 +93,8 @@ public class PlatformUser extends AbstractUser {
 
         private PlatformUserTier tier;
 
+        private boolean isDemoUser;
+
         @Override
         protected PlatformUserBuilder self() {
             return this;
@@ -102,6 +106,7 @@ public class PlatformUser extends AbstractUser {
                                        ? new HashSet<>()
                                        : new HashSet<>(user.getRegisteredClientIds());
             this.tier = user.getTier();
+            this.isDemoUser = user.isDemoUser();
             return this;
         }
 
@@ -122,6 +127,11 @@ public class PlatformUser extends AbstractUser {
             return this;
         }
 
+        public PlatformUserBuilder isDemoUser(final boolean isDemoUser) {
+            this.isDemoUser = isDemoUser;
+            return this;
+        }
+
         public PlatformUserBuilder registeredClientIds(final java.util.function.Consumer<Set<UUID>> registeredClientIdsConsumer) {
             if (this.registeredClientIds == null) {
                 this.registeredClientIds = new HashSet<>();
@@ -138,6 +148,7 @@ public class PlatformUser extends AbstractUser {
                                                ? Collections.emptySet()
                                                : Set.copyOf(this.registeredClientIds);
             platformUser.tier = this.tier;
+            platformUser.isDemoUser = this.isDemoUser;
             return platformUser;
         }
 

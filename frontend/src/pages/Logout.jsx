@@ -14,7 +14,7 @@ function buildFallbackLogoutUrl() {
   const postLogoutRedirectUri = String(userManager.settings.post_logout_redirect_uri ?? "").trim();
 
   if (!authority) {
-    return "/login";
+    return "/app/login";
   }
 
   const logoutUrl = new URL("/connect/logout", authority);
@@ -59,7 +59,7 @@ export default function Logout() {
     clearPlatformApiCache();
 
     if (wasUsingDevBypass) {
-      window.location.replace("/login");
+      window.location.replace("/app/login");
       return;
     }
 

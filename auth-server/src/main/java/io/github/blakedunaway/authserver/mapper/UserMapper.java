@@ -29,7 +29,7 @@ public class UserMapper {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public ClientUser userEntityToUser(final ClientUserEntity clientUserEntity) {
+    public ClientUser clientUserEntityToClientUser(final ClientUserEntity clientUserEntity) {
         return ClientUser.from(clientUserEntity.getUserId())
                          .clientId(clientUserEntity.getClientId())
                          .expired(clientUserEntity.isExpired())
@@ -75,10 +75,11 @@ public class UserMapper {
                            .passwordHash(platformUserEntity.getPasswordHash())
                            .createdAt(platformUserEntity.getCreatedAt())
                            .updatedAt(platformUserEntity.getUpdatedAt())
+                           .isDemoUser(platformUserEntity.isDemoUser())
                            .build();
     }
 
-    public ClientUserEntity userToUserEntity(final ClientUser clientUser) {
+    public ClientUserEntity clientUserToClientUserEntity(final ClientUser clientUser) {
         if (clientUser == null) {
             return null;
         }
@@ -98,7 +99,7 @@ public class UserMapper {
                                     clientUser.isCredentialsExpired());
     }
 
-    public PlatformUserEntity userToPlatformUserEntity(final PlatformUser platformUser) {
+    public PlatformUserEntity platformUserToPlatformUserEntity(final PlatformUser platformUser) {
         if (platformUser == null) {
             return null;
         }
@@ -112,6 +113,7 @@ public class UserMapper {
 
         final PlatformUserEntity platformUserEntity = new PlatformUserEntity(platformUser.getId(),
                                                                              registeredClients,
+                                                                             platformUser.isDemoUser(),
                                                                              platformUser.getEmail(),
                                                                              platformUser.getPasswordHash(),
                                                                              platformUser.isVerified(),
@@ -197,6 +199,7 @@ public class UserMapper {
                            .updatedAt(LocalDateTime.now())
                            .createdAt(LocalDateTime.now())
                            .passwordHash(passwordEncoder.encode(platformRegisterDto.getPassword()))
+                           .isDemoUser(false)
                            .build();
     }
 

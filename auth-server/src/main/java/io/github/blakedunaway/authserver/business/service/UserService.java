@@ -1,6 +1,6 @@
 package io.github.blakedunaway.authserver.business.service;
 
-import io.github.blakedunaway.authserver.business.api.dto.ClientUserRequest;
+import io.github.blakedunaway.authserver.business.api.dto.request.ClientUserRequest;
 import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.user.ClientRegisterDto;

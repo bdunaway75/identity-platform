@@ -81,6 +81,16 @@
     font-size: 0.74rem;
 }
 
+.subscriptions-demo-note {
+    padding: 0.78rem 0.9rem;
+    border-radius: 14px;
+    border: 1px solid rgba(34, 211, 238, 0.16);
+    background: rgba(8, 145, 178, 0.12);
+    color: rgba(207, 250, 254, 0.94);
+    font-size: 0.74rem;
+    line-height: 1.45;
+}
+
 .subscriptions-tier-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(14.5rem, 1fr));

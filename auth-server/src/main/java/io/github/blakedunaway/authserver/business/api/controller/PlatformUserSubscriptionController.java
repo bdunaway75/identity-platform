@@ -63,8 +63,8 @@ public class PlatformUserSubscriptionController {
     public ResponseEntity<String> createCheckoutSession(@AuthenticationPrincipal final Jwt jwt,
                                                         @RequestBody final String stripePriceId) throws StripeException {
         final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Checkout session creation rejected because the platform user {} could not be resolved.", jwt.getSubject());
+        if (platformUser == null || platformUser.isDemoUser()) {
+            log.warn("Checkout session creation rejected because the platform user {} could not be resolved, or is a demo user.", jwt.getSubject());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         if (stripePriceId.isBlank()) {

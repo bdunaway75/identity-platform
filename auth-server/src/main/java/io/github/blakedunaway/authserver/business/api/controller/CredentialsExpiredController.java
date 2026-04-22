@@ -1,6 +1,6 @@
 package io.github.blakedunaway.authserver.business.api.controller;
 
-import io.github.blakedunaway.authserver.business.api.dto.CredentialsExpiredPasswordChangeRequest;
+import io.github.blakedunaway.authserver.business.api.dto.request.CredentialsExpiredPasswordChangeRequest;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

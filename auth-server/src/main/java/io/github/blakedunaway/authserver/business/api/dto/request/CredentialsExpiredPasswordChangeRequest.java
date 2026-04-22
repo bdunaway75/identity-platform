@@ -1,4 +1,4 @@
-package io.github.blakedunaway.authserver.business.api.dto;
+package io.github.blakedunaway.authserver.business.api.dto.request;
 
 import io.github.blakedunaway.authserver.business.validation.ValidEmail;
 import jakarta.validation.constraints.NotBlank;

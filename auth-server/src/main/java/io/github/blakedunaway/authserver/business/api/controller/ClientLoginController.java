@@ -1,6 +1,6 @@
 package io.github.blakedunaway.authserver.business.api.controller;
 
-import io.github.blakedunaway.authserver.business.api.dto.ClientUserActivity;
+import io.github.blakedunaway.authserver.business.api.dto.response.ClientUserActivity;
 import io.github.blakedunaway.authserver.business.model.user.ClientRegisterDto;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import io.github.blakedunaway.authserver.config.redis.RedisStore;

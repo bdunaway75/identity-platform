@@ -45,6 +45,7 @@ function buildLocalDevDashboardPayload() {
   const tierName = tierKey.charAt(0).toUpperCase() + tierKey.slice(1);
 
   return normalizeDashboardPayload({
+    isDemoUser: false,
     tier: {
       name: tierName,
       allowedNumberOfRegisteredClients: tierLimits.allowedNumberOfRegisteredClients,
@@ -386,6 +387,7 @@ function normalizeTier(tierValue) {
 function normalizeDashboardPayload(payload) {
   if (!payload || typeof payload !== "object") {
     return {
+      isDemoUser: false,
       tier: normalizeTier(null),
       clientIds: [],
       registeredClientResponses: [],
@@ -406,6 +408,7 @@ function normalizeDashboardPayload(payload) {
   const clientIds = normalizeStringArray(payload.clientIds);
 
   return {
+    isDemoUser: Boolean(payload.isDemoUser ?? payload.demoUser),
     tier: normalizeTier(payload.tier),
     clientIds,
     registeredClientResponses,

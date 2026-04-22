@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.github.blakedunaway.authserver.business.api.dto.ClientUserRequest;
-import io.github.blakedunaway.authserver.business.api.dto.RegisteredClientRequest;
+import io.github.blakedunaway.authserver.business.api.dto.request.ClientUserRequest;
+import io.github.blakedunaway.authserver.business.api.dto.request.RegisteredClientRequest;
 import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
@@ -251,6 +251,7 @@ public class PlatformApiIntegrationTest {
         assertThat(registeredClients.get(0).get("id").asText()).isEqualTo(ownedClient.registeredClient().getId().toString());
         assertThat(registeredClients.get(0).get("clientSecret").isNull()).isTrue();
         assertThat(dashboard.get("totalRegisteredClients").asInt()).isEqualTo(1);
+        assertThat(dashboard.get("demoUser").asBoolean()).isFalse();
         final JsonNode clientIds = unwrapCollectionNode(dashboard.get("clientIds"));
         assertThat(clientIds).anyMatch(node -> node.asText().equals(requestedClientName));
         assertThat(clientIds).noneMatch(node -> node.asText().equals(foreignClient.registeredClient().getClientId()));
@@ -581,6 +582,7 @@ public class PlatformApiIntegrationTest {
         mockMvc.perform(get("/platform/api/dashboard")
                                 .header("Authorization", bearerToken))
                .andExpect(status().isOk())
+               .andExpect(jsonPath("$.demoUser").value(false))
                .andExpect(jsonPath("$.totalRegisteredClients").value(2))
                .andExpect(jsonPath("$.totalUsers").value(2));
     }

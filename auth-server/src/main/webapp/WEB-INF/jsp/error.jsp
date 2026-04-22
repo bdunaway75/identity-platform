@@ -14,17 +14,13 @@
 <main class="auth-shell">
     <section class="auth-card">
         <div class="auth-content auth-error-state">
-            <div class="auth-badge">System Error</div>
-
             <header class="auth-header">
                 <h1 class="auth-title">${errorTitle}</h1>
                 <p class="auth-subtitle">${errorMessage}</p>
-                <div class="auth-meta">Status code: <strong>${statusCode}</strong></div>
             </header>
 
-            <div class="auth-actions auth-actions-inline">
-                <a class="auth-button" href="/login">Return to login</a>
-                <a class="auth-button auth-button-secondary" href="/">Back to home</a>
+            <div class="auth-actions">
+                <a class="auth-button" href="/app/login">Return to login</a>
             </div>
         </div>
     </section>

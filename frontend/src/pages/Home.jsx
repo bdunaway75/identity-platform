@@ -259,14 +259,13 @@ export default function Home() {
   ];
 
   return (
-    <div className="clients-page">
+    <div className="clients-page dashboard-page">
       <div className="client-shell">
         <div className="client-header">
           <div className="client-header-copy">
-            <div className="client-eyebrow">Dashboard</div>
-            <div className="client-title">Identity dashboard</div>
+            <div className="client-title">Identity Dashboard</div>
             <div className="client-subtitle">
-              See your plan limits, manage clients, and jump back into your account.
+              See your plan limits and manage clients.
             </div>
           </div>
         </div>
