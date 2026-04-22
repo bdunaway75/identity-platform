@@ -1,4 +1,4 @@
-package io.github.blakedunaway.authserver.business.api.dto;
+package io.github.blakedunaway.authserver.business.api.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;

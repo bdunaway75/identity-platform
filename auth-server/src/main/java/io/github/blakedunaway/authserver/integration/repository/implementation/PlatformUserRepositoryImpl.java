@@ -47,7 +47,7 @@ public class PlatformUserRepositoryImpl implements PlatformUserRepository {
     @Override
     @Transactional
     public PlatformUser save(final PlatformUser platformUser) {
-        final PlatformUserEntity platformUserEntity = userMapper.userToPlatformUserEntity(platformUser);
+        final PlatformUserEntity platformUserEntity = userMapper.platformUserToPlatformUserEntity(platformUser);
         final PlatformUserEntity existingPlatformUserEntity = platformUserJpaRepository.findByEmailIgnoreCase(platformUser.getEmail())
                                                                                        .orElse(null);
         if (existingPlatformUserEntity != null) {

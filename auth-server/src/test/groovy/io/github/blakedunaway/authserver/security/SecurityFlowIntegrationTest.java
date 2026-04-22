@@ -7,7 +7,7 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.SignedJWT;
 import com.stripe.StripeClient;
-import io.github.blakedunaway.authserver.business.api.dto.RegisteredClientRequest;
+import io.github.blakedunaway.authserver.business.api.dto.request.RegisteredClientRequest;
 import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
@@ -49,7 +49,6 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
-import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -197,7 +196,19 @@ public class SecurityFlowIntegrationTest {
         mockMvc.perform(get("/platform/api/dashboard")
                                 .header("Authorization", bearerToken(email, PLATFORM_CLIENT_ID, List.of("ROLE_PLATFORM_USER"))))
                 .andExpect(status().isOk())
-               .andExpect(jsonPath("$.tier.name").value("BASIC"));
+               .andExpect(jsonPath("$.tier.name").value("BASIC"))
+               .andExpect(jsonPath("$.demoUser").value(false));
+    }
+
+    @Test
+    void platformDashboardMarksDemoUsers() throws Exception {
+        final String email = uniqueEmail("platform-demo-dashboard");
+        savePlatformUser(email, "Password123!", true);
+
+        mockMvc.perform(get("/platform/api/dashboard")
+                                .header("Authorization", bearerToken(email, PLATFORM_CLIENT_ID, List.of("ROLE_PLATFORM_USER"))))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.demoUser").value(true));
     }
 
     @Test
@@ -429,7 +440,7 @@ public class SecurityFlowIntegrationTest {
         final String demoCode = "DEMO" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
         final String redirectUri = "http://localhost:9999/frontend/callback";
         final String codeVerifier = "demo-verifier-12345678901234567890123456789012345678901234567890";
-        savePlatformUser(email, "Password123!");
+        savePlatformUser(email, "Password123!", true);
         final PlatformUserEntity platformUserEntity = platformUserJpaRepository.findByEmailIgnoreCase(email).orElseThrow();
         demoAccessCodeJpaRepository.save(new DemoAccessCodeEntity(
                 null,
@@ -765,6 +776,12 @@ public class SecurityFlowIntegrationTest {
 
     private void savePlatformUser(final String email,
                                   final String rawPassword) {
+        savePlatformUser(email, rawPassword, false);
+    }
+
+    private void savePlatformUser(final String email,
+                                  final String rawPassword,
+                                  final boolean isDemoUser) {
         ensureFrontendClientExists();
         final PlatformUser platformUser = PlatformUser.from(email)
                                                       .email(email)
@@ -778,6 +795,7 @@ public class SecurityFlowIntegrationTest {
                                                       .locked(false)
                                                       .expired(false)
                                                       .credentialsExpired(false)
+                                                      .isDemoUser(isDemoUser)
                                                       .build();
         userService.savePlatformUser(platformUser);
     }

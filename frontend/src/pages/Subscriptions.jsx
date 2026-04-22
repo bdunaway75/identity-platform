@@ -18,7 +18,7 @@ function normalizeTierKey(value) {
 
 function formatPrice(price) {
   const numericPrice = Number(price || 0);
-  return numericPrice <= 0 ? "Free" : `$${numericPrice}/mo`;
+  return numericPrice <= 0 ? "$0/mo" : `$${numericPrice}/mo`;
 }
 
 function formatLimitValue(value) {
@@ -100,6 +100,7 @@ export default function Subscriptions() {
   const {
     tierName,
     tiers,
+    isDemoUser,
     limits,
     usage,
     status,
@@ -123,6 +124,7 @@ export default function Subscriptions() {
     Number(left?.tierOrder ?? left?.price ?? 0) - Number(right?.tierOrder ?? right?.price ?? 0)
   );
   const currentTier = sortedTiers.find((tier) => normalizeTierKey(tier?.name) === currentTierKey) ?? null;
+  const visibleTiers = isDemoUser && currentTier ? [currentTier] : sortedTiers;
   const currentTierOrder = Number(
     currentTier?.tierOrder ?? currentTier?.price ?? 0
   );
@@ -223,16 +225,22 @@ export default function Subscriptions() {
     <div className="subscriptions-page">
       <section className="subscriptions-intro-card">
         <div className="subscriptions-kicker">Plans</div>
-        <h1>Plans</h1>
         <p>
-          Each plan below shows the client, user, scope, and authority limits.
+          {isDemoUser
+            ? "Demo accounts stay on their assigned plan. Subscription changes are disabled."
+            : "Each plan below shows the client, user, scope, and authority limits."}
         </p>
         {error ? <div className="subscriptions-error">{error}</div> : null}
         {checkoutError ? <div className="subscriptions-error">{checkoutError}</div> : null}
+        {isDemoUser ? (
+          <div className="subscriptions-demo-note">
+            This demo account is locked to its current tier for now.
+          </div>
+        ) : null}
       </section>
 
       <section className="subscriptions-tier-grid">
-        {sortedTiers.map((plan) => {
+        {visibleTiers.map((plan) => {
           const planId = String(plan?.id ?? plan?.name ?? "").trim();
           const isPendingPlan = planId.length > 0 && planId === pendingPlanId;
           const isCurrentPlan = shouldHighlightCurrentPlan && normalizeTierKey(plan?.name) === currentTierKey;
@@ -241,8 +249,8 @@ export default function Subscriptions() {
           const isHigherTier = planTierOrder > currentTierOrder;
           const isLowerTier = planTierOrder < currentTierOrder;
           const canCheckoutPlan = !isSelectedPlan && String(plan?.stripePriceId ?? "").trim().length > 0;
-          const cardHoverable = !isSelectedPlan;
-          const cardClickable = canCheckoutPlan;
+          const cardHoverable = !isSelectedPlan && !isDemoUser;
+          const cardClickable = canCheckoutPlan && !isDemoUser;
           const cardActionLabel = isHigherTier ? "Upgrade plan" : isLowerTier ? "Downgrade plan" : "Select plan";
           const downgradeConsequences = isLowerTier ? buildDowngradeConsequences(plan, usage) : [];
           return (

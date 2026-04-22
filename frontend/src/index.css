@@ -2,10 +2,10 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  color-scheme: dark;
 
-  color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #050809;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -30,7 +30,8 @@ a:hover {
 
 html {
   min-height: 100%;
-  background: #050809;
+  background-color: #050809;
+  background-image: radial-gradient(circle at top, #111122, #0a0a0f 56%, #050809 100%);
   overflow-x: clip;
 }
 
@@ -40,14 +41,30 @@ body,
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
+  background: transparent;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   display: block;
-  background: #050809;
+  position: relative;
   overflow-x: clip;
+  overscroll-behavior-y: none;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #111122, #0a0a0f 56%, #050809 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
 }
 
 h1 {
@@ -74,15 +91,6 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+a:hover {
+  color: #747bff;
 }

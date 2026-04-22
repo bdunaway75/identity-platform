@@ -27,7 +27,7 @@ export default function RequireAuth() {
   }
 
   if (status === "unauth") {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/app/login" replace />;
   }
 
   return <Outlet />;

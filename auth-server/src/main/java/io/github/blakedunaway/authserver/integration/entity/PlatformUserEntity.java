@@ -2,6 +2,7 @@ package io.github.blakedunaway.authserver.integration.entity;
 
 import jakarta.persistence.AssociationOverride;
 import jakarta.persistence.AssociationOverrides;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -32,6 +33,7 @@ import java.util.UUID;
         )
 })
 @Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class PlatformUserEntity extends AbstractUserEntity {
@@ -39,6 +41,7 @@ public class PlatformUserEntity extends AbstractUserEntity {
     public PlatformUserEntity(
             final UUID userId,
             final Set<RegisteredClientEntity> registeredClients,
+            final boolean isDemoUser,
             final String email,
             final String passwordHash,
             final boolean isVerified,
@@ -64,9 +67,9 @@ public class PlatformUserEntity extends AbstractUserEntity {
                 credentialsExpired
         );
         this.registeredClients = registeredClients;
+        this.isDemoUser = isDemoUser;
     }
 
-    @Setter
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_clients",
@@ -75,9 +78,11 @@ public class PlatformUserEntity extends AbstractUserEntity {
     )
     private Set<RegisteredClientEntity> registeredClients;
 
-    @Setter
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tier_id")
     private PlatformUserTierEntity tier;
+
+    @Column(name = "is_demo_user")
+    private boolean isDemoUser = false;
 
 }

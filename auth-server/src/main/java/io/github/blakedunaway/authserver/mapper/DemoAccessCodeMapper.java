@@ -31,7 +31,7 @@ public abstract class DemoAccessCodeMapper {
         }
 
         final PlatformUserEntity platformUserEntity =
-                demoAccessCode.getUser() == null ? null : userMapper.userToPlatformUserEntity(demoAccessCode.getUser());
+                demoAccessCode.getUser() == null ? null : userMapper.platformUserToPlatformUserEntity(demoAccessCode.getUser());
 
         return new DemoAccessCodeEntity(
                 demoAccessCode.getId(),

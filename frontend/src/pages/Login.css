@@ -1,31 +1,27 @@
+:root,
+html.login-page-theme,
+body.login-page-theme,
 .login-root {
   --login-grid-size: 42px;
   --login-grid-fine-size: 10px;
-  position: relative;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
-  display: flex;
-  justify-content: center;
-  place-items: center;
-  padding:
-    max(1rem, env(safe-area-inset-top))
-    max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom))
-    max(1rem, env(safe-area-inset-left));
+}
+
+html.login-page-theme,
+body.login-page-theme {
   background:
     radial-gradient(circle at top, rgba(42, 71, 78, 0.22), transparent 38%),
     radial-gradient(circle at bottom, rgba(22, 40, 46, 0.42), transparent 42%),
     linear-gradient(180deg, #101819 0%, #091112 52%, #050809 100%);
-  color: #e5e7eb;
-  font-family: system-ui, sans-serif;
-  overflow: hidden;
-  isolation: isolate;
+  background-color: #050809;
 }
 
-.login-root::before {
+body.login-page-theme {
+  position: relative;
+}
+
+body.login-page-theme::before {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: calc(var(--login-grid-size) * -1);
   background-image:
     linear-gradient(rgba(176, 245, 255, 0.09) 1px, transparent 1px),
@@ -46,9 +42,9 @@
   z-index: 0;
 }
 
-.login-root::after {
+body.login-page-theme::after {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: calc(var(--login-grid-fine-size) * -2);
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
@@ -64,6 +60,30 @@
   will-change: transform;
   pointer-events: none;
   z-index: 0;
+}
+
+body.login-page-theme #root {
+  position: relative;
+  z-index: 1;
+}
+
+.login-root {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
+  isolation: isolate;
 }
 
 @keyframes login-grid-drift {
@@ -87,6 +107,11 @@
 .login-root > div {
   position: relative;
   z-index: 1;
+}
+
+.login-shell {
+  width: min(360px, 100%);
+  margin: auto;
 }
 
 .login-card {
@@ -315,6 +340,8 @@
 }
 
 @media (max-width: 640px) {
+  html.login-page-theme,
+  body.login-page-theme,
   .login-root {
     --login-grid-size: 34px;
     --login-grid-fine-size: 8px;

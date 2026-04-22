@@ -54,7 +54,7 @@ function ClientsRouteGate() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
+      <Route path="/app/login" element={<Login />} />
       <Route path="/demo-access" element={<DemoAccess />} />
       <Route path="/callback" element={<Callback />} />
       <Route path="/logout" element={<Logout />} />

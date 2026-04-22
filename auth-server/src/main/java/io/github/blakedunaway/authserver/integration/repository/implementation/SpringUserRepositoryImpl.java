@@ -38,10 +38,10 @@ public class SpringUserRepositoryImpl implements UserRepository {
     @Override
     @Transactional
     public ClientUser save(final ClientUser clientUser) {
-        final ClientUserEntity clientUserEntity = userMapper.userToUserEntity(clientUser);
+        final ClientUserEntity clientUserEntity = userMapper.clientUserToClientUserEntity(clientUser);
         clientUserJpaRepository.findByEmailAndClientId(clientUser.getEmail(), clientUser.getClientId()).ifPresent(found -> clientUserEntity.setUserId(found.getUserId()));
         clientUserEntity.setAuthorities(resolveManagedAuthorities(clientUser));
-        return userMapper.userEntityToUser(clientUserJpaRepository.save(clientUserEntity));
+        return userMapper.clientUserEntityToClientUser(clientUserJpaRepository.save(clientUserEntity));
     }
 
     private Set<AuthorityEntity> resolveManagedAuthorities(final ClientUser clientUser) {
@@ -73,7 +73,7 @@ public class SpringUserRepositoryImpl implements UserRepository {
 
     @Override
     public Optional<ClientUser> findByClient_IdAndEmail(final String clientId, final String email) {
-        return clientUserJpaRepository.findByEmailAndClientId(email, clientId).map(userMapper::userEntityToUser);
+        return clientUserJpaRepository.findByEmailAndClientId(email, clientId).map(userMapper::clientUserEntityToClientUser);
     }
 
     @Override
@@ -89,7 +89,7 @@ public class SpringUserRepositoryImpl implements UserRepository {
 
         return clientUserJpaRepository.findAllByRegisteredClientIds(registeredClientIds)
                                       .stream()
-                                      .map(userMapper::userEntityToUser)
+                                      .map(userMapper::clientUserEntityToClientUser)
                                       .toList();
     }
 
@@ -100,7 +100,7 @@ public class SpringUserRepositoryImpl implements UserRepository {
         }
 
         return clientUserJpaRepository.findByIdAndRegisteredClientIds(clientUserId, registeredClientIds)
-                                      .map(userMapper::userEntityToUser);
+                                      .map(userMapper::clientUserEntityToClientUser);
     }
 
 }

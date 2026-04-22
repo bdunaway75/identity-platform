@@ -6,7 +6,7 @@ const SESSION_PLATFORM_CACHE_KEY = "platform-api-cache";
 const PENDING_SUBSCRIPTION_CHECKOUT_KEY = "pending-subscription-checkout";
 
 function isAuthRoute(pathname) {
-  return pathname === "/login" || pathname === "/logout" || pathname === "/callback";
+  return pathname === "/app/login" || pathname === "/logout" || pathname === "/callback";
 }
 
 function clearExpiredSessionArtifacts() {
@@ -28,7 +28,7 @@ function redirectToLogin() {
   }
 
   isRedirectingToLogout = true;
-  window.location.replace(isAuthRoute(window.location.pathname) ? "/login" : "/login?expired=1");
+  window.location.replace(isAuthRoute(window.location.pathname) ? "/app/login" : "/app/login?expired=1");
 }
 
 export async function forceLogoutForExpiredSession() {

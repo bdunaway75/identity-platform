@@ -49,7 +49,7 @@ public class PlatformLoginController {
                                         @RequestParam final Map<String, String> requestParams) throws IOException, ServletException {
         final String code = requestParams.get("code");
         final DemoAccessCode demoAccessCode = demoAccessCodeService.findByAccessCode(code);
-        if (demoAccessCode == null || demoAccessCode.isDispensed() || demoAccessCode.getUser() == null) {
+        if (demoAccessCode == null || demoAccessCode.isDispensed() || demoAccessCode.getUser() == null || !demoAccessCode.getUser().isDemoUser()) {
             log.warn("Demo access code login failed for code {}.", code);
             response.sendRedirect(frontendOrigin + "/demo-access?error=invalid_code");
             return;

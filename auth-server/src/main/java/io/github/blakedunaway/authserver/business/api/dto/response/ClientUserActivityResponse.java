@@ -1,4 +1,4 @@
-package io.github.blakedunaway.authserver.business.api.dto;
+package io.github.blakedunaway.authserver.business.api.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;

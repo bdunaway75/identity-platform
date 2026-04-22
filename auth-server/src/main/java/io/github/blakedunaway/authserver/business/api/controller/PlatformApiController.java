@@ -1,22 +1,17 @@
 package io.github.blakedunaway.authserver.business.api.controller;
 
-import com.stripe.StripeClient;
-import com.stripe.exception.StripeException;
-import com.stripe.model.checkout.Session;
-import com.stripe.param.checkout.SessionCreateParams;
-import io.github.blakedunaway.authserver.business.api.dto.AuthTokenResponse;
-import io.github.blakedunaway.authserver.business.api.dto.ClientUserActivity;
-import io.github.blakedunaway.authserver.business.api.dto.ClientUserActivityResponse;
-import io.github.blakedunaway.authserver.business.api.dto.ClientUserRequest;
-import io.github.blakedunaway.authserver.business.api.dto.ClientUserResponse;
-import io.github.blakedunaway.authserver.business.api.dto.PlatformUserDetailsReponse;
-import io.github.blakedunaway.authserver.business.api.dto.PlatformUserTierResponse;
-import io.github.blakedunaway.authserver.business.api.dto.RegisteredClientRequest;
-import io.github.blakedunaway.authserver.business.api.dto.RegisteredClientResponse;
+import io.github.blakedunaway.authserver.business.api.dto.response.AuthTokenResponse;
+import io.github.blakedunaway.authserver.business.api.dto.response.ClientUserActivity;
+import io.github.blakedunaway.authserver.business.api.dto.response.ClientUserActivityResponse;
+import io.github.blakedunaway.authserver.business.api.dto.request.ClientUserRequest;
+import io.github.blakedunaway.authserver.business.api.dto.response.ClientUserResponse;
+import io.github.blakedunaway.authserver.business.api.dto.response.PlatformUserDetailsReponse;
+import io.github.blakedunaway.authserver.business.api.dto.response.PlatformUserTierResponse;
+import io.github.blakedunaway.authserver.business.api.dto.request.RegisteredClientRequest;
+import io.github.blakedunaway.authserver.business.api.dto.response.RegisteredClientResponse;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
-import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
 import io.github.blakedunaway.authserver.business.service.AuthTokenService;
 import io.github.blakedunaway.authserver.business.service.PlatformUserTierService;
 import io.github.blakedunaway.authserver.business.service.RegisteredClientService;
@@ -69,8 +64,6 @@ public class PlatformApiController {
 
     private final RegisteredClientMapper registeredClientMapper;
 
-    private final StripeClient stripeClient;
-
     private <T> ResponseEntity<T> unauthorized() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
@@ -120,15 +113,16 @@ public class PlatformApiController {
                                               ? Collections.emptySet()
                                               : platformUser.getRegisteredClientIds();
 
-        final Set<RegisteredClientResponse> registeredClients = registeredClientService.findRegisteredClientsByIds(
-                                                                                               registeredClientIds)
-                                                                                       .stream()
-                                                                                       .map(RegisteredClientResponse::fromModel)
-                                                                                       .collect(Collectors.toCollection(HashSet::new));
+        final Set<RegisteredClientResponse> registeredClients =
+                registeredClientService.findRegisteredClientsByIds(registeredClientIds)
+                                       .stream()
+                                       .map(RegisteredClientResponse::fromModel)
+                                       .collect(Collectors.toCollection(HashSet::new));
 
         final PlatformUserDetailsReponse platformUserDetailsReponse =
                 PlatformUserDetailsReponse.from(registeredClients, platformUser.getTier())
                                           .totalUsers(userService.getTotalUserCount(platformUser.getEmail()))
+                                          .isDemoUser(platformUser.isDemoUser())
                                           .build();
         return ResponseEntity.ok(platformUserDetailsReponse);
     }

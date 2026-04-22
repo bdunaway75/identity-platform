@@ -1,4 +1,4 @@
-package io.github.blakedunaway.authserver.business.api.dto;
+package io.github.blakedunaway.authserver.business.api.dto.response;
 
 import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
 import lombok.Builder;
@@ -25,6 +25,8 @@ public class PlatformUserDetailsReponse {
     private final int totalRoles;
 
     private final PlatformUserTier tier;
+
+    private final boolean isDemoUser;
 
     public static PlatformUserDetailsReponseBuilder from(final Set<RegisteredClientResponse> registeredClients,
                                                          final PlatformUserTier tier) {

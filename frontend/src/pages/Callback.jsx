@@ -11,7 +11,7 @@ export default function Callback() {
       })
       .catch(err => {
         console.error("OIDC callback error", err);
-        window.location.replace("/login");
+        window.location.replace("/app/login");
       });
   }, []);
 

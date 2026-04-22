@@ -117,7 +117,7 @@ export default function DemoAccess() {
           </form>
 
           <div className="login-secondary-actions">
-            <Link className="login-secondary-link" to="/login">
+            <Link className="login-secondary-link" to="/app/login">
               Back to normal login
             </Link>
           </div>

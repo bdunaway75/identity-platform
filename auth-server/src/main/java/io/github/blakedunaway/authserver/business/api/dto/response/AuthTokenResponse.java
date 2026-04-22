@@ -1,4 +1,4 @@
-package io.github.blakedunaway.authserver.business.api.dto;
+package io.github.blakedunaway.authserver.business.api.dto.response;
 
 import io.github.blakedunaway.authserver.business.model.AuthToken;
 import io.github.blakedunaway.authserver.business.model.enums.TokenType;

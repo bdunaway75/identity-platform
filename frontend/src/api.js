@@ -4,7 +4,7 @@ export async function apiFetch(url, options = {}) {
   const user = await userManager.getUser();
 
   const onAuthRoute =
-      window.location.pathname.startsWith("/login") ||
+      window.location.pathname.startsWith("/app/login") ||
       window.location.pathname.startsWith("/callback");
 
   if (!user || user.expired) {

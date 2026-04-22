@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /build/auth-server
@@ -6,7 +8,7 @@ ENV MAVEN_OPTS="-Xmx2g"
 COPY auth-server/pom.xml pom.xml
 COPY auth-server/src src
 
-RUN mvn -q -DskipTests clean package \
+RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests -Dmaven.wagon.http.retryHandler.count=5 package \
     && cp "$(ls target/*.war | grep -v '\.original$')" /tmp/auth-server.war
 
 FROM eclipse-temurin:21-jre-jammy

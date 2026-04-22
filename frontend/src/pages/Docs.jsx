@@ -6,7 +6,7 @@ const docSections = [
     id: "overview",
     number: "1.",
     kicker: "Overview",
-    title: "What the auth server does",
+    title: "What Identity Platform does",
     paragraphs: [
       "Identity Platform is a hosted OAuth 2.0 and OpenID Connect auth server for teams that need to register apps, manage users, and work with tokens in one place.",
       "It keeps platform users separate from client users, so the people who manage apps are not mixed with the people who sign in to them.",
@@ -153,13 +153,48 @@ const docSections = [
 
 export default function Docs() {
   const [activeSectionId, setActiveSectionId] = useState(docSections[0].id);
+  const [mobileOpenSectionId, setMobileOpenSectionId] = useState(docSections[0].id);
   const activeSection = docSections.find((section) => section.id === activeSectionId) ?? docSections[0];
+  const renderSectionContent = (section, inline = false) => (
+    <article
+      key={section.id}
+      className={`docs-article-section${section.id === "onboarding" ? " docs-article-section-emphasis" : ""}${inline ? " docs-article-section-inline" : ""}`}
+    >
+      <div className="docs-article-heading">
+        {!inline ? <span className="docs-article-number">{section.number}</span> : null}
+        <div className="docs-article-heading-copy">
+          <div className="docs-kicker">{section.kicker}</div>
+          <h2>{section.title}</h2>
+        </div>
+      </div>
+
+      {section.paragraphs?.map((paragraph) => (
+        <p key={paragraph}>{paragraph}</p>
+      ))}
+
+      {section.highlights ? (
+        <ul className="docs-highlight-list">
+          {section.highlights.map((highlight) => (
+            <li key={highlight}>{highlight}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {section.steps ? (
+        <ol className="docs-step-list">
+          {section.steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+      ) : null}
+    </article>
+  );
 
   return (
     <div className="docs-page">
       <section className="docs-hero">
         <div className="docs-kicker">Security Docs</div>
-        <h1>How the auth server works</h1>
+        <h1>How Identity Platform works</h1>
         <p>
           Identity Platform uses OAuth 2.0 and OpenID Connect, rotates JWT signing keys, and keeps client rules on
           the backend so apps can integrate with it and admins can manage clients and users in one place.
@@ -168,22 +203,39 @@ export default function Docs() {
 
       <div className="docs-layout">
         <aside className="docs-outline" aria-label="Documentation sections">
-          <div className="docs-outline-label">Sections</div>
+          <div className="docs-outline-label">Docs</div>
           <ol className="docs-outline-list">
             {docSections.map((section) => {
               const isActive = activeSectionId === section.id;
+              const isOpen = mobileOpenSectionId === section.id;
 
               return (
                 <li className="docs-outline-item" key={section.id}>
                   <button
                     type="button"
-                    className={`docs-outline-button${isActive ? " is-active" : ""}`}
-                    onClick={() => setActiveSectionId(section.id)}
+                    className={`docs-outline-button${isActive ? " is-selected" : ""}${isOpen ? " is-open" : ""}`}
+                    onClick={() => {
+                      setActiveSectionId(section.id);
+                      setMobileOpenSectionId((currentId) => (currentId === section.id ? null : section.id));
+                    }}
                     aria-pressed={isActive}
+                    aria-expanded={isOpen}
                   >
                     <span className="docs-outline-number">{section.number}</span>
-                    <span className="docs-outline-text">{section.title}</span>
+                    <span className="docs-outline-text-wrap">
+                      <span className="docs-outline-text">{section.title}</span>
+                      <span className={`docs-outline-caret${isOpen ? " is-open" : ""}`} aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none">
+                          <path d="M5 7.5 10 12.5l5-5" />
+                        </svg>
+                      </span>
+                    </span>
                   </button>
+                  {isOpen ? (
+                    <div className="docs-outline-mobile-content">
+                      {renderSectionContent(section, true)}
+                    </div>
+                  ) : null}
                 </li>
               );
             })}
@@ -191,38 +243,7 @@ export default function Docs() {
         </aside>
 
         <section className="docs-content" aria-label="Documentation content">
-          <article
-            key={activeSection.id}
-            className={`docs-article-section${activeSection.id === "onboarding" ? " docs-article-section-emphasis" : ""}`}
-          >
-            <div className="docs-article-heading">
-              <span className="docs-article-number">{activeSection.number}</span>
-              <div className="docs-article-heading-copy">
-                <div className="docs-kicker">{activeSection.kicker}</div>
-                <h2>{activeSection.title}</h2>
-              </div>
-            </div>
-
-            {activeSection.paragraphs?.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-
-            {activeSection.highlights ? (
-              <ul className="docs-highlight-list">
-                {activeSection.highlights.map((highlight) => (
-                  <li key={highlight}>{highlight}</li>
-                ))}
-              </ul>
-            ) : null}
-
-            {activeSection.steps ? (
-              <ol className="docs-step-list">
-                {activeSection.steps.map((step) => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-            ) : null}
-          </article>
+          {renderSectionContent(activeSection)}
         </section>
       </div>
     </div>

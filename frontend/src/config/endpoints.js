@@ -56,7 +56,7 @@ export const APP_ENDPOINTS = {
       import.meta.env.VITE_OIDC_REDIRECT_URI ?? `${frontendOrigin}/callback`
     ),
     postLogoutRedirectUri: normalizeUrl(
-      import.meta.env.VITE_OIDC_POST_LOGOUT_REDIRECT_URI ?? `${frontendOrigin}/login`
+      import.meta.env.VITE_OIDC_POST_LOGOUT_REDIRECT_URI ?? `${frontendOrigin}/app/login`
     ),
   },
   platform: {
