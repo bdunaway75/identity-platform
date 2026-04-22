@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.integration.repository.implementation;
 
 import io.github.blakedunaway.authserver.business.model.DemoAccessCode;
+import io.github.blakedunaway.authserver.integration.entity.DemoAccessCodeEntity;
 import io.github.blakedunaway.authserver.integration.repository.gateway.DemoAccessCodeRepository;
 import io.github.blakedunaway.authserver.integration.repository.jpa.DemoAccessCodeJpaRepository;
 import io.github.blakedunaway.authserver.mapper.DemoAccessCodeMapper;
@@ -28,6 +29,22 @@ public class DemoAccessCodeRepositoryImpl implements DemoAccessCodeRepository {
         Assert.hasText(demoAccessCode.getAccessCode(), "Access code cannot be blank");
         Assert.notNull(demoAccessCode.getUser(), "Platform user cannot be null");
         Assert.notNull(demoAccessCode.getUser().getId(), "Platform user id cannot be null");
+
+        if (demoAccessCode.getId() != null) {
+            final DemoAccessCodeEntity existingEntity = demoAccessCodeJpaRepository.findById(demoAccessCode.getId())
+                                                                                   .orElse(null);
+            if (existingEntity != null) {
+                final DemoAccessCodeEntity updatedEntity = new DemoAccessCodeEntity(
+                        existingEntity.getAccessCodeId(),
+                        existingEntity.getAccessCode(),
+                        existingEntity.getUser(),
+                        demoAccessCode.isDispensed()
+                );
+                return demoAccessCodeMapper.demoAccessCodeEntityToDemoAccessCode(
+                        demoAccessCodeJpaRepository.save(updatedEntity)
+                );
+            }
+        }
 
         return demoAccessCodeMapper.demoAccessCodeEntityToDemoAccessCode(
                 demoAccessCodeJpaRepository.save(demoAccessCodeMapper.demoAccessCodeToDemoAccessCodeEntity(demoAccessCode))
