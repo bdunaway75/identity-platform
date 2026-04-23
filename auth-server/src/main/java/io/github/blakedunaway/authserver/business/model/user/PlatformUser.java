@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Getter
@@ -23,6 +24,18 @@ public class PlatformUser extends AbstractUser {
     private PlatformUserTier tier;
 
     private boolean isDemoUser;
+
+    public static PlatformUserBuilder from(final PlatformUser platformUser) {
+        return new PlatformUserBuilder().from(platformUser);
+    }
+
+    public static PlatformUserBuilder from(final UUID id) {
+        return new PlatformUserBuilder().from(id);
+    }
+
+    public static PlatformUserBuilder from(final String email) {
+        return new PlatformUserBuilder().from(email);
+    }
 
     public Set<UUID> filterOwnedRegisteredClientIds(final Set<UUID> requestedIds) {
         if (requestedIds == null || requestedIds.isEmpty()) {
@@ -76,18 +89,6 @@ public class PlatformUser extends AbstractUser {
         }
     }
 
-    public static PlatformUserBuilder from(final PlatformUser platformUser) {
-        return new PlatformUserBuilder().from(platformUser);
-    }
-
-    public static PlatformUserBuilder from(final UUID id) {
-        return new PlatformUserBuilder().from(id);
-    }
-
-    public static PlatformUserBuilder from(final String email) {
-        return new PlatformUserBuilder().from(email);
-    }
-
     @Getter
     public static class PlatformUserBuilder extends AbstractUser.AbstractUserBuilder<PlatformUserBuilder> {
 
@@ -132,7 +133,7 @@ public class PlatformUser extends AbstractUser {
             return this;
         }
 
-        public PlatformUserBuilder registeredClientIds(final java.util.function.Consumer<Set<UUID>> registeredClientIdsConsumer) {
+        public PlatformUserBuilder registeredClientIds(final Consumer<Set<UUID>> registeredClientIdsConsumer) {
             if (this.registeredClientIds == null) {
                 this.registeredClientIds = new HashSet<>();
             }

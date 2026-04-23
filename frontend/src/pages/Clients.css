@@ -1110,26 +1110,6 @@
 }
 
 @media (max-width: 760px) {
-    .mantine-PillsInput-input {
-        min-height: auto !important;
-        flex-wrap: wrap !important;
-        align-items: flex-start !important;
-        overflow-x: visible !important;
-        overflow-y: visible !important;
-        padding-top: 0.45rem !important;
-        padding-bottom: 0.45rem !important;
-        row-gap: 0.45rem !important;
-    }
-
-    .mantine-PillsInput-field {
-        min-width: 100% !important;
-        flex: 1 1 100% !important;
-    }
-
-    .mantine-Pill-root {
-        max-width: 100% !important;
-    }
-
     .client-label-info-trigger {
         width: 0.9rem;
         height: 0.9rem;
