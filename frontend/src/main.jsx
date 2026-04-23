@@ -6,7 +6,6 @@ import "@mantine/core/styles.css";
 import "./index.css";
 import "./theme.css";
 import App from "./App";
-import MobileViewportDebugOverlay from "./mobileViewportDebug";
 
 function readSafeAreaInsets() {
     if (typeof window === "undefined" || typeof document === "undefined") {
@@ -124,7 +123,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <MantineProvider>
         <BrowserRouter>
             <ViewportMetricsBridge />
-            <MobileViewportDebugOverlay />
             <App />
         </BrowserRouter>
     </MantineProvider>

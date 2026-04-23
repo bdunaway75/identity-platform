@@ -1,16 +1,24 @@
 # Identity Platform
 
-Identity Platform is a multi-tenant OAuth 2.0 and OpenID Connect platform built around a clean split:
+Identity Platform is a multi-tenant OAuth 2.0 and OpenID Connect platform built around a simple split:
 
 - platform users own and operate the identity layer
 - client users sign in to the apps those platform users register
 
 This repo contains the full system: a Spring Authorization Server backend, a React control panel frontend, Nginx routing, and Docker deployment wiring. The project handles registered-client lifecycle, tenant-aware user management, JWT issuance, token auditing, subscription-aware limits, Stripe billing, and signing-key rotation in one codebase.
 
+## Why This Exists
+
+Identity Platform was built around a problem that feels more important now than it did even a few years ago: identity is not just a login screen anymore.
+
+As more systems get built and touched by automation, weak ownership boundaries, poor token traceability, and shallow audit visibility become real security problems. This project was built with those concerns in mind from the start.
+
+The goal was not just to support OAuth 2.0 and OpenID Connect, but to build a system where you can tell who owns what, which client a user belongs to, what key signed a token, and what happened when something starts to look wrong.
+
 ## What It Does
 
 - registers OAuth and OIDC clients at runtime instead of hardcoding them
-- keeps platform operators separate from end users
+- keeps platform admins separate from end users
 - scopes admin actions to the registered clients a platform user actually owns
 - issues JWTs and tracks the signing key used for each token
 - stores token values as hashes instead of raw secrets
@@ -61,48 +69,26 @@ Business logic lives on business models and services. Persistence has its own en
 - `mapper` classes to translate between the two
 - repository gateways and implementations to keep Hibernate details from leaking into the rest of the app
 
-That separation was deliberate. Hibernate is useful, but it can have a mind of its own when application behavior starts depending on session state, lazy loading, or whether code happens to be inside a transaction.
+That separation was deliberate. Hibernate is useful, but it can start driving behavior in ways I did not want once too much depends on session state, lazy loading, or whether code happens to be inside a transaction.
+It keeps the business model separate from ORM behavior, but it also means the mapping layer has to stay disciplined or it can start loading more than a caller actually needs.
 
-Pros:
+## Best Fit
 
-- keeps the business model independent of ORM behavior
-- makes core logic easier to reason about outside transaction boundaries
-- reduces the chance that lazy-loading quirks or entity state accidentally define application behavior
-- gives the backend a cleaner place for business rules than "whatever the entity graph currently looks like"
+Identity Platform is a better fit for applications that keep a real user base in a database and need visibility into user activity, token lifecycle, tenant boundaries, and system behavior.
 
-Tradeoffs:
-
-- if the mapper layer is not split by actual data needs, it can become a generic "load and map everything" layer
-- once that happens, the mapper may eagerly walk associations the caller does not actually need
-- that means you lose some of the optimization Hibernate can give you through proxies and lazy loading
-- the architecture gets cleaner conceptually, but it can get less efficient at runtime if the mapping layer is not kept disciplined
+It makes more sense for systems where identity is part of how the app works and part of how it is secured, not just something added at the edge.
 
 ### Frontend Modeling
 
 The frontend follows the same general idea: shape and rules are modeled explicitly instead of being scattered across components.
 
-It is not a fully TypeScript-only frontend, but the flows with the most structure, especially registered-client management, are modeled deliberately. In practice that shows up as:
-
-- `src/types` for client DTOs, form shapes, response-like models, and API payloads
-- centralized field metadata in `src/constants/RegisteredClientFields.ts`
-- centralized validation messages in `src/constants/ClientValidationMessages.ts`
-- serializer and normalizer functions in the service layer so pages do not need to understand backend payload quirks directly
-- centralized endpoint configuration in `src/config/endpoints.js`
-- dedicated auth and subscription modules so session and tier state are not reimplemented page by page
-
-The goal was to keep components focused on rendering and interaction while keeping models, API contracts, validation rules, and state boundaries explicit. That makes the client-registration and user-management flows easier to change without turning every page into its own source of truth.
+It is not a fully TypeScript-only frontend, but the flows with the most structure, especially registered-client management, are modeled deliberately. Field definitions, validation messages, endpoint configuration, and auth or subscription state are kept centralized so those flows do not turn into page-by-page logic.
 
 ### Token Hashing
 
 Raw token values are not stored in the database.
 
 Before token values are persisted, they are HMAC-SHA256 hashed with a configured pepper. When the system needs to look up a token again, it hashes the presented value and searches by that hash.
-
-That gives you a few useful properties:
-
-- the auth database is not holding raw bearer tokens
-- token audit records can still be matched and invalidated
-- the frontend only needs token metadata like subject, type, issue time, expiry, revocation time, and `kid`
 
 ### Signing Key Rotation and Token-to-Key Traceability
 
@@ -113,21 +99,13 @@ Each stored token record also keeps the `kid` that signed it. That means the pla
 - which key is currently signing new tokens
 - which key signed a token you are looking at in the audit UI
 
-The result is a cleaner key lifecycle than "generate one key and forget it."
+The result is a better key lifecycle than "generate one key and forget it."
 
 ### Token Auditing in the Frontend
 
-The frontend is basically a command panel for the auth system.
+The frontend is basically the control panel for the auth system.
 
-The registry and user-detail flows let a platform user:
-
-- inspect attached client users
-- open a user record from the dashboard or registry
-- see issued tokens for that user
-- invalidate one token directly
-- invalidate all tokens for a client from the platform API
-
-Recent login and signup activity is pushed into Redis and exposed back to the dashboard so the frontend can show short-lived operational activity without treating the browser as the source of truth.
+The registry and user-detail flows let a platform user inspect attached client users, open a user record, see issued tokens, and invalidate one token or all tokens for a client. Recent login and signup activity is pushed into Redis and exposed back to the dashboard so the frontend can show short-lived activity without treating the browser as the source of truth.
 
 ### Subscription Tiers
 
@@ -140,86 +118,26 @@ Platform users carry a tier model with allowances for:
 
 The frontend surfaces those limits as usage cards and plan screens. The backend validates them before client creation or client updates are allowed to go through, so plan enforcement does not depend on browser-side checks.
 
-Billing flows are Stripe-backed:
+Billing is Stripe-backed, with checkout, plan changes, webhook sync, and pinned demo tiers handled in the same flow.
 
-- checkout sessions are created from the platform UI
-- upgrade and downgrade requests map to Stripe price ids
-- webhooks sync the resolved tier back onto the platform user
-- demo accounts can be pinned to a non-changeable tier
+## Current Direction
 
-## OAuth and OIDC Surface Area
+The core platform is usable now. The current rollout is less about basic app completion and more about pushing further into security and control features before a full release.
 
-Identity Platform is built around standard OAuth 2.0 and OpenID Connect behavior:
-
-- authorization code flow
-- PKCE support for public clients
-- JWT access tokens
-- OIDC login for the frontend itself
-- client-level redirect and post-logout redirect URI validation
-- client-level token TTL settings
-- optional refresh-token rotation
-- consent toggles
-- `azp` claim set to the requesting client
-- normalized `authorities` claim added to access tokens
-
-The platform API also checks that bearer tokens were minted for the frontend client before allowing access to `/platform/**`.
+That includes deeper work around suspicious-user tracing, stronger token and signing-key lifecycle controls, IP and device activity visibility, broader admin workflows, and better response paths for things like compromised keys or malicious behavior.
 
 ## Frontend
 
-The frontend is an operator UI, not a marketing shell. It is designed around day-to-day identity management:
+The frontend is an admin UI, not a marketing shell. It is designed around day-to-day identity management:
+dashboard view for tier usage and recent activity, registry page for registered clients and attached users, client editor for auth and token settings, client user detail for state changes and token inspection, subscription view for billing changes, and docs inside the app that explain the platform model.
 
-- dashboard view for tier usage, recent signups, and recent logins
-- registry page for registered clients and attached users
-- client editor for auth methods, grant types, scopes, authorities, roles, redirect URIs, and token settings
-- client user detail page for user state changes and token inspection
-- subscription view for checkout, upgrades, downgrades, and plan comparison
-- docs page that explains the platform model inside the app
-
-From a product point of view, the React app is the control surface for the auth server.
+From a product point of view, the React app is how you manage the auth server.
 
 ## Security Notes
 
 A few security decisions are worth calling out directly:
-
-- passwords are Argon2-hashed
-- tokens are stored as HMACed values, not raw secrets
-- JWT signing keys rotate and remain traceable by `kid`
-- ownership checks live on the backend
-- paid-only actions are protected by server-side authorization rules
-- inactive keys stay available for verification during rollover, but do not keep signing new tokens
-- session expiry in the frontend forces logout and clears cached session artifacts
-
-## Stack
-
-### Backend
-
-- Java 21
-- Spring Boot 3.5
-- Spring Authorization Server
-- Spring Security
-- Spring Data JPA
-- PostgreSQL
-- Redis
-- Stripe
-- MapStruct
-- Querydsl
-- JSP-based hosted auth views
-
-### Frontend
-
-- React 18
-- Vite
-- React Router
-- Mantine
-- Bootstrap
-- `oidc-client-ts`
-
-### Infra
-
-- Nginx
-- Docker
-- Docker Compose
+passwords are Argon2-hashed, tokens are stored as HMACed values instead of raw secrets, JWT signing keys rotate and stay traceable by `kid`, ownership checks live on the backend, paid-only actions are protected by server-side authorization rules, inactive keys stay available for verification during rollover, and frontend session expiry forces logout and clears cached session artifacts.
 
 ## Testing
 
-The backend test suite covers the parts of the system that matter operationally, not just controller happy paths. That includes security flow integration, platform API ownership rules, token invalidation behavior, refresh-token rotation, client registration validation, authorization persistence, and signing-key rotation.
+The backend test suite covers the parts of the system that matter, not just controller happy paths. That includes security flow integration, platform API ownership rules, token invalidation behavior, refresh-token rotation, client registration validation, authorization persistence, and signing-key rotation.
