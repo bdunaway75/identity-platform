@@ -153,6 +153,19 @@ body.login-page-theme #root {
   text-transform: uppercase;
 }
 
+.auth-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.auth-brand-logo {
+  width: 4.2rem;
+  height: 4.2rem;
+  display: block;
+  filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.24));
+}
+
 .login-copy {
   text-align: center;
 }

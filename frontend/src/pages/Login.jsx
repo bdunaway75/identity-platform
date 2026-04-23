@@ -56,7 +56,10 @@ export default function Login() {
         {isBetaMode ? <ErrorContainer errors={betaModeMessage} /> : null}
         {!isBetaMode && errorMsg ? <ErrorContainer errors={errorMsg} /> : null}
         <div className="login-card">
-          <div className="login-kicker">Platform Login</div>
+          <div className="auth-brand">
+            <img className="auth-brand-logo" src="/ip-favicon.png" alt="Identity Platform logo" />
+          </div>
+          <div className="login-kicker">Identity Platform</div>
           <h1>Please sign in.</h1>
           <p className="login-copy">
             Sign in with your platform account, or use a demo access code if you were given one.

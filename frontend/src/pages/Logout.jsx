@@ -52,7 +52,16 @@ function buildSignoutRequest(user) {
 
 export default function Logout() {
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    const previousThemeColor = themeColorMeta?.getAttribute("content") ?? null;
     const wasUsingDevBypass = isDevAuthBypassed();
+
+    html.classList.add("login-page-theme");
+    body.classList.add("login-page-theme");
+    themeColorMeta?.setAttribute("content", "#091112");
+
     disableDevAuthBypass();
     clearDevSubscriptionOverrideTier();
     clearSubscriptionTierCache();
@@ -70,6 +79,15 @@ export default function Logout() {
         console.error("Logout failed", error);
         window.location.replace(buildFallbackLogoutUrl());
       });
+
+    return () => {
+      html.classList.remove("login-page-theme");
+      body.classList.remove("login-page-theme");
+
+      if (previousThemeColor) {
+        themeColorMeta?.setAttribute("content", previousThemeColor);
+      }
+    };
   }, []);
 
   return (
@@ -77,14 +95,14 @@ export default function Logout() {
       <div className="login-shell">
         <div className="login-card">
           <div className="logout-badge">Signing Out</div>
-        <h1>Wrapping things up</h1>
-        <p className="logout-copy">
-          We are securely signing you out and returning you to the login screen.
-        </p>
-        <div className="logout-status" aria-live="polite">
-          <span className="logout-spinner" aria-hidden="true" />
-          <span>Ending your session...</span>
-        </div>
+          <h1>Wrapping things up</h1>
+          <p className="logout-copy">
+            We are securely signing you out and returning you to the login screen.
+          </p>
+          <div className="logout-status" aria-live="polite">
+            <span className="logout-spinner" aria-hidden="true" />
+            <span>Ending your session...</span>
+          </div>
           <div className="login-footer">You will be redirected automatically.</div>
         </div>
       </div>
