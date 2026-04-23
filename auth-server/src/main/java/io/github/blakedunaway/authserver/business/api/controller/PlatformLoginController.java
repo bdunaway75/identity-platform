@@ -30,8 +30,6 @@ import java.util.Map;
 @Slf4j
 public class PlatformLoginController {
 
-    private static final String DEMO_ACCESS_CODE_ERROR_QUERY = "error=true";
-
     private final UserService userService;
 
     private final AuthenticationManager authenticationManager;
@@ -42,6 +40,9 @@ public class PlatformLoginController {
 
     @Value("${auth-server.frontend.origin}")
     private String frontendOrigin;
+
+    @Value("${auth-server.beta-mode:false}")
+    private boolean betaMode;
 
     @PostMapping("/demo-access-code")
     public void loginWithDemoAccessCode(final HttpServletRequest request,
@@ -68,6 +69,10 @@ public class PlatformLoginController {
 
     @GetMapping("/login")
     public String login(final Model model) {
+        if (betaMode) {
+            return buildFrontendBetaRedirect();
+        }
+
         model.addAttribute("platformRegisterDto", new PlatformRegisterDto());
         return "login";
     }
@@ -76,6 +81,11 @@ public class PlatformLoginController {
     public void login(final HttpServletRequest request,
                       final HttpServletResponse response,
                       @ModelAttribute("platformRegisterDto") final PlatformRegisterDto platformRegisterDto) throws IOException, ServletException {
+        if (betaMode) {
+            response.sendRedirect(buildFrontendBetaRedirectUrl());
+            return;
+        }
+
         try {
             final Authentication result = authenticationManager.authenticate(platformRegisterDto.toAuthenticationToken());
             authSessionHandler.successfulAuthentication(request, response, result);
@@ -87,6 +97,10 @@ public class PlatformLoginController {
 
     @GetMapping("/signUp")
     public String signUp(final Model model) {
+        if (betaMode) {
+            return buildFrontendBetaRedirect();
+        }
+
         model.addAttribute("platformRegisterDto", new PlatformRegisterDto());
         return "signUp";
     }
@@ -94,12 +108,24 @@ public class PlatformLoginController {
     @PostMapping("/signUp")
     public String signUp(@ModelAttribute("platformRegisterDto") @Valid final PlatformRegisterDto platformRegisterDto,
                          final BindingResult bindingResult) {
+        if (betaMode) {
+            return buildFrontendBetaRedirect();
+        }
+
         if (bindingResult.hasErrors()) {
             log.warn("Platform sign up validation failed for {}.", platformRegisterDto.getEmail());
             return "signUp";
         }
         userService.signUpPlatformUser(platformRegisterDto);
         return "redirect:/platform/login";
+    }
+
+    private String buildFrontendBetaRedirect() {
+        return "redirect:" + buildFrontendBetaRedirectUrl();
+    }
+
+    private String buildFrontendBetaRedirectUrl() {
+        return frontendOrigin + "/app/login?beta=1";
     }
 
     private String buildFrontendAuthorizeUrl(final Map<String, String> requestParams) {

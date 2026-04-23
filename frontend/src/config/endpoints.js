@@ -8,6 +8,11 @@ function readEnvString(value) {
   return String(value ?? "").trim();
 }
 
+function readEnvFlag(value) {
+  const normalizedValue = readEnvString(value).toLowerCase();
+  return normalizedValue === "true" || normalizedValue === "1" || normalizedValue === "on";
+}
+
 function normalizeBaseUrl(value) {
   return readEnvString(value).replace(/\/+$/, "");
 }
@@ -126,4 +131,8 @@ export const APP_ENDPOINTS = {
       ),
     },
   },
+};
+
+export const APP_FLAGS = {
+  betaMode: readEnvFlag(import.meta.env.VITE_BETA_MODE),
 };

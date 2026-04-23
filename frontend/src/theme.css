@@ -1,7 +1,11 @@
 :root {
-    --bg: #0a0a0f;
-    --bg-panel: #111118;
-    --bg-elevated: #151520;
+    --app-layout-viewport-height: 100vh;
+    --app-visible-viewport-height: 100vh;
+    --app-bottom-browser-offset: 0px;
+    --app-safe-area-top: 0px;
+    --app-safe-area-right: 0px;
+    --app-safe-area-bottom: 0px;
+    --app-safe-area-left: 0px;
 
     --border-subtle: rgba(255, 255, 255, 0.08);
     --border-glow: rgba(99, 102, 241, 0.5);
@@ -13,8 +17,6 @@
     --accent-alt: #22d3ee; /* cyan */
 
     --glow-soft: 0 0 20px rgba(99, 102, 241, 0.25);
-    --glow-strong: 0 0 40px rgba(99, 102, 241, 0.45);
-
 }
 
 .app-root {
@@ -25,6 +27,8 @@
     min-height: 100dvh;
     position: relative;
     overflow-x: clip;
+    background:
+        radial-gradient(circle at top, #111122, #0a0a0f 56%, #050809 100%);
 }
 
 .app-shell {
@@ -33,6 +37,9 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    background:
+        linear-gradient(180deg, rgba(7, 9, 16, 0.98), rgba(5, 8, 9, 0.98)),
+        radial-gradient(circle at top right, rgba(34, 211, 238, 0.06), transparent 28%);
 }
 
 .sidebar {
@@ -232,19 +239,19 @@
     flex-direction: column;
     min-width: 0;
     transition: padding 220ms ease;
+    background: transparent;
 }
 
 .content > * {
     width: 100%;
 }
 
-.content.is-sidebar-collapsed {
-    padding-left: 2rem;
+.mobile-bottom-spacer {
+    display: none;
 }
 
 html, body {
-    margin: 0;
-    background: transparent;
+    background: #050809;
     color: var(--text-main) !important;
     font-family: Inter, system-ui, sans-serif;
     overflow-x: clip;
@@ -264,7 +271,7 @@ html, body {
         top: 0;
         z-index: 30;
         display: block;
-        padding: max(0.6rem, env(safe-area-inset-top)) 1rem 0;
+        padding: max(0.6rem, var(--app-safe-area-top, 0px)) 1rem 0;
         background:
             linear-gradient(180deg, rgba(10, 10, 15, 0.98), rgba(10, 10, 15, 0.9) 78%, rgba(10, 10, 15, 0)),
             radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 36%);
@@ -312,8 +319,8 @@ html, body {
         width: calc(100% + 2rem);
         margin-inline: -1rem;
         padding: 0.82rem 0.92rem;
-        padding-left: calc(1rem + env(safe-area-inset-left));
-        padding-right: calc(1rem + env(safe-area-inset-right));
+        padding-left: calc(1rem + var(--app-safe-area-left, 0px));
+        padding-right: calc(1rem + var(--app-safe-area-right, 0px));
         border-radius: 0;
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-left: 0;
@@ -480,26 +487,26 @@ html, body {
         transform: translateY(-1px);
     }
 
-    .mobile-nav-item.active {
+.mobile-nav-item.active {
         box-shadow: 0 12px 28px rgba(4, 47, 46, 0.18);
     }
 
-.mobile-nav-footer {
-    padding-top: 0.35rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-}
+    .mobile-nav-footer {
+        padding-top: 0.35rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
 
-.mobile-nav-socials {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.55rem;
-}
+    .mobile-nav-socials {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 0.55rem;
+    }
 
     .mobile-nav-logout {
         appearance: none;
@@ -530,11 +537,14 @@ html, body {
 
     .content {
         padding: 1rem;
-        padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+        min-height: calc(var(--app-visible-viewport-height, 100vh) - var(--app-safe-area-top, 0px));
     }
 
-    .content.is-sidebar-collapsed {
-        padding-left: 1rem;
+    .mobile-bottom-spacer {
+        display: block;
+        flex: 0 0 auto;
+        width: 100%;
+        height: calc(9rem + var(--app-safe-area-bottom, 0px) + var(--app-bottom-browser-offset, 0px));
     }
 }
 
@@ -598,45 +608,6 @@ html, body {
     stroke-width: 1.75;
     stroke-linecap: round;
     stroke-linejoin: round;
-}
-
-.card {
-    background: linear-gradient(180deg, var(--bg-panel), var(--bg-elevated));
-    border: 1px solid var(--border-subtle);
-    color: #efebeb !important;
-    border-radius: 10px;
-    padding: 1.25rem;
-    position: relative;
-    overflow: hidden;
-    transition: transform 300ms ease, box-shadow 300ms ease;
-    --x: 50%;
-    --y: 50%;
-}
-
-.card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-            600px circle,
-            rgba(99, 102, 241, 0.15),
-            transparent 40%
-    );
-    opacity: 0;
-    transition: opacity 300ms ease;
-    pointer-events: none;
-}
-
-.card:hover {
-    transform: translateY(-0px);
-    box-shadow: var(--glow-soft);
-}
-
-
-.card-title {
-    font-size: 0.9rem;
-    color: var(--accent-alt) !important;
-    margin-bottom: 0.75rem;
 }
 
 /* =====================

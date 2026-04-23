@@ -3,11 +3,11 @@ import { userManager } from "../auth/oidc";
 import Spinner from 'react-bootstrap/Spinner';
 import { disableDevAuthBypass } from "../auth/devAuth";
 
-export default function LoginButton({onError, ...props }) {
+export default function LoginButton({ onError, disabledLabel = "Login", disabled = false, ...props }) {
   const [redirecting, setRedirecting] = useState(false);
 
   const handleClick = async () => {
-    if (redirecting) return;
+    if (redirecting || disabled) return;
 
     setRedirecting(true);
     disableDevAuthBypass();
@@ -25,10 +25,10 @@ export default function LoginButton({onError, ...props }) {
     <button
       className="login-button"
       onClick={handleClick}
-      disabled={redirecting}
+      disabled={disabled || redirecting}
       {...props}
     >
-      {redirecting ? <Spinner animation="grow" size="sm" /> : "Login"}
+      {redirecting ? <Spinner animation="grow" size="sm" /> : disabled ? disabledLabel : "Login"}
     </button>
   );
 }

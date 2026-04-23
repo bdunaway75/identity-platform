@@ -5,6 +5,13 @@
     display: flex;
     flex-direction: column;
     position: relative;
+    background:
+        linear-gradient(180deg, rgba(9, 12, 21, 0.98), rgba(14, 17, 29, 0.96)),
+        radial-gradient(circle at top center, rgba(34, 211, 238, 0.06), transparent 36%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 28px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    overflow: hidden;
 }
 
 .clients-page::before {
@@ -90,57 +97,6 @@
     line-height: 1.4;
 }
 
-.clients-layout {
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
-}
-
-.client-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    align-items: center;
-}
-
-.client-tab {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 2.5rem;
-    padding: 0.68rem 1rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(229, 231, 235, 0.72);
-    font-size: 0.76rem;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    text-decoration: none;
-    transition:
-        border-color 140ms ease,
-        background-color 140ms ease,
-        color 140ms ease,
-        transform 140ms ease;
-}
-
-.client-tab:hover {
-    border-color: rgba(34, 211, 238, 0.22);
-    background: rgba(34, 211, 238, 0.08);
-    color: rgba(255, 255, 255, 0.92);
-    transform: translateY(-1px);
-}
-
-.client-tab.is-active {
-    border-color: rgba(34, 211, 238, 0.34);
-    background:
-        linear-gradient(180deg, rgba(34, 211, 238, 0.16), rgba(34, 211, 238, 0.08)),
-        rgba(255, 255, 255, 0.03);
-    color: rgba(236, 254, 255, 0.96);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
-}
-
 .clients-form-layout {
     min-height: 0;
     display: flex;
@@ -215,8 +171,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.client-card-secondary .client-card-contents,
-.client-card-output .client-card-contents {
+.client-card-secondary .client-card-contents {
     grid-template-columns: 1fr;
 }
 
@@ -390,6 +345,58 @@
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.03)) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02) !important;
+    padding-right: 2.85rem !important;
+}
+
+.client-select-pills-list {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.client-select-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    max-width: calc(100% - 0.35rem) !important;
+    height: 2rem !important;
+    min-height: 2rem !important;
+    padding-inline: 0.85rem !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(233, 236, 242, 0.92)),
+        rgba(255, 255, 255, 0.92) !important;
+    color: rgba(9, 14, 24, 0.94) !important;
+}
+
+.client-select-pill .mantine-Pill-label {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.client-select-pill .mantine-Pill-remove {
+    display: inline-flex;
+    align-items: center;
+    align-self: center;
+    color: rgba(9, 14, 24, 0.72) !important;
+}
+
+.client-select-input-field {
+    flex: 1 1 8rem !important;
+    min-width: 0 !important;
+    color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.client-select-input-field::placeholder {
+    color: rgba(156, 163, 175, 0.66) !important;
 }
 
 .client-select-section {
@@ -397,6 +404,7 @@
 }
 
 .client-select-section {
+    width: 2.85rem !important;
     top: 1px !important;
     bottom: 1px !important;
     right: 1px !important;
@@ -429,27 +437,8 @@
 
 .mantine-PillsInput-input {
     min-height: 2.55rem !important;
-    flex-wrap: nowrap !important;
     align-items: center !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
     scrollbar-width: thin;
-}
-
-.mantine-PillsInput-field {
-    min-width: 6rem !important;
-    flex: 0 0 6rem !important;
-}
-
-.mantine-Pill-root {
-    flex: 0 0 auto !important;
-    max-width: 10rem !important;
-}
-
-.mantine-Pill-label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .client-select-dropdown {
@@ -582,20 +571,6 @@
     word-break: break-word;
 }
 
-.client-summary-status.is-ready {
-    border-color: rgba(34, 197, 94, 0.35);
-    background:
-        linear-gradient(180deg, rgba(34, 197, 94, 0.12), rgba(255, 255, 255, 0.025)),
-        radial-gradient(circle at top right, rgba(74, 222, 128, 0.1), transparent 40%);
-}
-
-.client-summary-status.is-pending {
-    border-color: rgba(250, 204, 21, 0.22);
-    background:
-        linear-gradient(180deg, rgba(250, 204, 21, 0.08), rgba(255, 255, 255, 0.025)),
-        radial-gradient(circle at top right, rgba(250, 204, 21, 0.08), transparent 40%);
-}
-
 .client-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(9rem, 11rem));
@@ -643,45 +618,6 @@
         linear-gradient(180deg, rgba(250, 204, 21, 0.1), rgba(161, 98, 7, 0.08)),
         rgba(255, 255, 255, 0.03);
     color: rgba(254, 240, 138, 0.96);
-}
-
-.client-success-card {
-    margin: 0.1rem auto 0;
-    width: min(100%, 44rem);
-    padding: 0.9rem 1rem 1rem;
-    border-radius: 16px;
-    border: 1px solid rgba(74, 222, 128, 0.32);
-    background:
-        linear-gradient(180deg, rgba(34, 197, 94, 0.14), rgba(22, 101, 52, 0.08)),
-        radial-gradient(circle at top right, rgba(74, 222, 128, 0.14), transparent 42%);
-    box-shadow:
-        0 16px 34px rgba(0, 0, 0, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    text-align: center;
-}
-
-.client-success-kicker {
-    color: rgba(187, 247, 208, 0.88);
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.client-success-id {
-    margin-top: 0.55rem;
-    color: rgba(240, 253, 244, 0.98);
-    font-size: 0.95rem;
-    font-weight: 700;
-    line-height: 1.35;
-    word-break: break-word;
-}
-
-.client-success-note {
-    margin-top: 0.65rem;
-    color: rgba(220, 252, 231, 0.86);
-    font-size: 0.72rem;
-    line-height: 1.45;
 }
 
 .client-registry-contents {
@@ -823,56 +759,6 @@
 
 .client-users-panel {
     padding: 0 1rem 1rem;
-}
-
-.client-access-panel {
-    margin-bottom: 0.8rem;
-    padding: 0.85rem 0.9rem;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
-        radial-gradient(circle at top right, rgba(34, 211, 238, 0.06), transparent 46%);
-}
-
-.client-access-header {
-    display: grid;
-    gap: 0.2rem;
-    margin-bottom: 0.65rem;
-}
-
-.client-access-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.92);
-}
-
-.client-access-caption {
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 0.68rem;
-    line-height: 1.4;
-}
-
-.client-access-grid {
-    display: grid;
-    gap: 0.75rem;
-}
-
-.client-access-actions {
-    margin-top: 0.65rem;
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-}
-
-.client-access-status {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.68rem;
-}
-
-.client-access-status.is-success {
-    color: rgba(134, 239, 172, 0.92);
-    font-weight: 600;
 }
 
 .client-users-list {
@@ -1072,27 +958,6 @@
         0 0 15px rgba(99, 102, 241, 0.4);
 }
 
-.clients-lock-secondary-button {
-    position: relative;
-    z-index: 1;
-    appearance: none;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    width: 100%;
-    padding: 0.75rem;
-    margin-top: 0.7rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.03);
-    color: #d1d5db;
-    font-size: 0.88rem;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.clients-lock-secondary-button:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.06);
-}
-
 @keyframes grid-drift {
     from {
         background-position: 0 0, 0 0;
@@ -1110,6 +975,23 @@
 }
 
 @media (max-width: 760px) {
+    .client-select-pills-list {
+        align-items: center !important;
+        row-gap: 0.35rem !important;
+    }
+
+    .client-select-input-field {
+        flex: 1 1 6.5rem !important;
+        min-width: 4.5rem !important;
+    }
+
+    .client-select-pill {
+        max-width: calc(100% - 3.6rem) !important;
+    }
+
+    .client-select-section {
+        width: 2.7rem !important;
+    }
     .client-label-info-trigger {
         width: 0.9rem;
         height: 0.9rem;
@@ -1142,10 +1024,6 @@
     .client-header {
         padding: 0.9rem 0.95rem;
         border-radius: 18px;
-    }
-
-    .client-header-summary {
-        grid-template-columns: 1fr;
     }
 
     .client-card-primary .client-card-contents,

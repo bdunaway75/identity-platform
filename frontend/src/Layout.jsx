@@ -167,7 +167,7 @@ export default function Layout() {
     ));
 
   return (
-    <div className={`app-root${isSidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
+    <div className="app-root">
       <aside className={`sidebar${isSidebarCollapsed ? " is-collapsed" : ""}`}>
         <div className="sidebar-topbar">
           <div className="brand">Identity Platform</div>
@@ -271,8 +271,9 @@ export default function Layout() {
           </div>
         </div>
 
-        <main className={`content${isSidebarCollapsed ? " is-sidebar-collapsed" : ""}`}>
+        <main className="content">
           <Outlet />
+          <div className="mobile-bottom-spacer" aria-hidden="true" />
         </main>
       </div>
     </div>

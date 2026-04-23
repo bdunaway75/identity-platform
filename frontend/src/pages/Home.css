@@ -6,10 +6,6 @@
   align-items: start;
 }
 
-.dashboard-overview-card {
-  width: 100%;
-}
-
 .dashboard-secondary-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -131,9 +127,7 @@
 
 .dashboard-activity-panel {
   grid-template-columns: 1fr;
-}
-
-.dashboard-activity-panel {
+  min-height: 0;
   align-content: start;
   gap: 1rem;
 }
@@ -290,6 +284,28 @@
 }
 
 @media (max-width: 760px) {
+  .dashboard-page {
+    overflow: visible;
+  }
+
+  .dashboard-layout {
+    height: auto;
+    grid-template-rows: none;
+  }
+
+  .dashboard-secondary-grid,
+  .dashboard-secondary-grid > .client-card,
+  .dashboard-activity-panel,
+  .dashboard-activity-grid,
+  .dashboard-activity-section,
+  .dashboard-activity-table-shell {
+    min-height: auto;
+  }
+
+  .dashboard-activity-table-scroll {
+    max-height: none;
+  }
+
   .dashboard-secondary-grid,
   .dashboard-activity-grid,
   .dashboard-summary-grid {

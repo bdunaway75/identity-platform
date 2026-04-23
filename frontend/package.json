@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:iphone-dashboard": "playwright test tests/iphone-dashboard.spec.js --project=iphone-15-pro-safari",
+    "test:iphone-dashboard:chromium": "playwright test tests/iphone-dashboard.spec.js --project=iphone-15-pro-chromium",
+    "test:iphone-new-client": "playwright test tests/iphone-new-client.spec.js --project=iphone-15-pro-safari"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
