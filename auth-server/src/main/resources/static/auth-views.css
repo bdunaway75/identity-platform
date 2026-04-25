@@ -1,16 +1,11 @@
 :root {
     color-scheme: dark;
-    --auth-grid-size: 42px;
-    --auth-grid-fine-size: 10px;
-    --auth-bg-top: rgba(42, 71, 78, 0.22);
-    --auth-bg-bottom: rgba(22, 40, 46, 0.42);
-    --auth-bg-0: #101819;
-    --auth-bg-1: #091112;
-    --auth-bg-2: #050809;
+    --auth-orb-drift: 42px;
+    --auth-bg-0: #071015;
+    --auth-bg-1: #050a0d;
+    --auth-bg-2: #03070d;
     --auth-card: rgba(7, 14, 16, 0.82);
     --auth-card-border: rgba(176, 245, 255, 0.14);
-    --auth-grid: rgba(176, 245, 255, 0.09);
-    --auth-grid-soft: rgba(255, 255, 255, 0.015);
     --auth-text: #e5e7eb;
     --auth-muted: #9ca3af;
     --auth-subtle: rgba(229, 231, 235, 0.68);
@@ -62,56 +57,39 @@ body.auth-page::before {
     position: fixed;
     inset: 0;
     background:
-        radial-gradient(circle at top, var(--auth-bg-top), transparent 38%),
-        radial-gradient(circle at bottom, var(--auth-bg-bottom), transparent 42%),
-        linear-gradient(180deg, var(--auth-bg-0) 0%, var(--auth-bg-1) 52%, var(--auth-bg-2) 100%);
+        radial-gradient(circle at 18% 10%, rgba(18, 214, 232, 0.16), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(55, 83, 105, 0.2), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(7, 43, 48, 0.42), transparent 46%),
+        linear-gradient(180deg, var(--auth-bg-0) 0%, var(--auth-bg-1) 48%, var(--auth-bg-2) 100%);
     pointer-events: none;
 }
 
 body.auth-page::after {
     content: "";
     position: fixed;
-    inset: calc(var(--auth-grid-size) * -1);
+    inset: -12%;
     background-image:
-        linear-gradient(var(--auth-grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--auth-grid) 1px, transparent 1px),
-        linear-gradient(135deg, rgba(132, 224, 255, 0.05), transparent 55%),
-        linear-gradient(var(--auth-grid-soft) 1px, transparent 1px),
-        linear-gradient(90deg, var(--auth-grid-soft) 1px, transparent 1px);
+        radial-gradient(ellipse at 16% 22%, rgba(18, 214, 232, 0.16), transparent 34%),
+        radial-gradient(ellipse at 84% 8%, rgba(120, 165, 185, 0.13), transparent 32%),
+        radial-gradient(ellipse at 76% 92%, rgba(10, 83, 91, 0.22), transparent 40%),
+        linear-gradient(135deg, rgba(176, 245, 255, 0.055), transparent 44%);
     background-size:
-        var(--auth-grid-size) var(--auth-grid-size),
-        var(--auth-grid-size) var(--auth-grid-size),
-        100% 100%,
-        var(--auth-grid-fine-size) var(--auth-grid-fine-size),
-        var(--auth-grid-fine-size) var(--auth-grid-fine-size);
-    background-position:
-        0 0,
-        0 0,
-        0 0,
-        0 0,
-        0 0;
-    opacity: 0.75;
+        120% 120%,
+        110% 110%,
+        120% 120%,
+        100% 100%;
+    opacity: 0.74;
+    filter: blur(18px);
     pointer-events: none;
-    animation: auth-grid-drift 18s linear infinite;
-    will-change: background-position;
+    animation: auth-atmosphere-drift 18s ease-in-out infinite alternate;
 }
 
-@keyframes auth-grid-drift {
+@keyframes auth-atmosphere-drift {
     from {
-        background-position:
-            0 0,
-            0 0,
-            0 0,
-            0 0,
-            0 0;
+        transform: translate3d(calc(var(--auth-orb-drift) * -0.25), calc(var(--auth-orb-drift) * -0.15), 0) scale(1);
     }
     to {
-        background-position:
-            var(--auth-grid-size) var(--auth-grid-size),
-            var(--auth-grid-size) var(--auth-grid-size),
-            0 0,
-            calc(var(--auth-grid-fine-size) * -1) calc(var(--auth-grid-fine-size) * -1),
-            calc(var(--auth-grid-fine-size) * -1) calc(var(--auth-grid-fine-size) * -1);
+        transform: translate3d(calc(var(--auth-orb-drift) * 0.35), calc(var(--auth-orb-drift) * 0.18), 0) scale(1.04);
     }
 }
 

@@ -834,7 +834,11 @@
     padding: 2rem;
     position: relative;
     overflow: hidden;
-    background: radial-gradient(circle at top, #1a1818, #0b0b0b);
+    background:
+        radial-gradient(circle at 20% 8%, rgba(18, 214, 232, 0.14), transparent 32%),
+        radial-gradient(circle at 88% 18%, rgba(63, 93, 112, 0.16), transparent 34%),
+        radial-gradient(circle at 50% 100%, rgba(7, 43, 48, 0.34), transparent 48%),
+        linear-gradient(180deg, #071015, #050a0d 50%, #03070d);
 }
 
 .clients-locked-page-embedded {
@@ -846,20 +850,33 @@
     border-radius: 22px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     background:
-        radial-gradient(circle at top, #17171d, #0b0b0f),
-        linear-gradient(180deg, rgba(16, 19, 30, 0.9), rgba(12, 14, 23, 0.82));
+        radial-gradient(circle at 18% 8%, rgba(18, 214, 232, 0.12), transparent 34%),
+        radial-gradient(circle at 86% 18%, rgba(63, 93, 112, 0.14), transparent 36%),
+        linear-gradient(180deg, rgba(7, 16, 21, 0.94), rgba(5, 10, 13, 0.9));
 }
 
 .clients-locked-page::before {
     content: "";
     position: absolute;
-    inset: 0;
+    inset: -12%;
     background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    animation: grid-drift 10s linear infinite;
+        radial-gradient(ellipse at 16% 22%, rgba(18, 214, 232, 0.14), transparent 34%),
+        radial-gradient(ellipse at 84% 8%, rgba(120, 165, 185, 0.1), transparent 32%),
+        linear-gradient(135deg, rgba(176, 245, 255, 0.04), transparent 44%);
+    background-size: 120% 120%, 110% 110%, 100% 100%;
+    filter: blur(18px);
+    opacity: 0.72;
+    animation: locked-atmosphere-drift 18s ease-in-out infinite alternate;
     pointer-events: none;
+}
+
+@keyframes locked-atmosphere-drift {
+    from {
+        transform: translate3d(-10px, -6px, 0) scale(1);
+    }
+    to {
+        transform: translate3d(14px, 8px, 0) scale(1.04);
+    }
 }
 
 .clients-locked-card {
@@ -945,16 +962,6 @@
     box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.2),
         0 0 15px rgba(99, 102, 241, 0.4);
-}
-
-@keyframes grid-drift {
-    from {
-        background-position: 0 0, 0 0;
-    }
-
-    to {
-        background-position: 40px 40px, 40px 40px;
-    }
 }
 
 @media (max-width: 1180px) {

@@ -2,16 +2,16 @@
 html.login-page-theme,
 body.login-page-theme,
 .login-root {
-  --login-grid-size: 42px;
-  --login-grid-fine-size: 10px;
+  --login-orb-drift: 42px;
 }
 
 html.login-page-theme,
 body.login-page-theme {
   background:
-    radial-gradient(circle at top, rgba(42, 71, 78, 0.22), transparent 38%),
-    radial-gradient(circle at bottom, rgba(22, 40, 46, 0.42), transparent 42%),
-    linear-gradient(180deg, #101819 0%, #091112 52%, #050809 100%);
+    radial-gradient(circle at 18% 10%, rgba(18, 214, 232, 0.16), transparent 28%),
+    radial-gradient(circle at 86% 18%, rgba(55, 83, 105, 0.2), transparent 30%),
+    radial-gradient(circle at 50% 100%, rgba(7, 43, 48, 0.42), transparent 46%),
+    linear-gradient(180deg, #071015 0%, #050a0d 48%, #03070d 100%);
   background-color: #050809;
 }
 
@@ -22,22 +22,20 @@ body.login-page-theme {
 body.login-page-theme::before {
   content: "";
   position: fixed;
-  inset: calc(var(--login-grid-size) * -1);
+  inset: -12%;
   background-image:
-    linear-gradient(rgba(176, 245, 255, 0.09) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(176, 245, 255, 0.09) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(132, 224, 255, 0.05), transparent 55%);
+    radial-gradient(ellipse at 16% 22%, rgba(18, 214, 232, 0.16), transparent 34%),
+    radial-gradient(ellipse at 84% 8%, rgba(120, 165, 185, 0.13), transparent 32%),
+    radial-gradient(ellipse at 76% 92%, rgba(10, 83, 91, 0.22), transparent 40%),
+    linear-gradient(135deg, rgba(176, 245, 255, 0.055), transparent 44%);
   background-size:
-    var(--login-grid-size) var(--login-grid-size),
-    var(--login-grid-size) var(--login-grid-size),
+    120% 120%,
+    110% 110%,
+    120% 120%,
     100% 100%;
-  background-position:
-    0 0,
-    0 0,
-    0 0;
-  opacity: 0.72;
-  animation: login-grid-drift 18s linear infinite;
-  will-change: transform;
+  opacity: 0.74;
+  filter: blur(18px);
+  animation: login-atmosphere-drift 18s ease-in-out infinite alternate;
   pointer-events: none;
   z-index: 0;
 }
@@ -45,19 +43,17 @@ body.login-page-theme::before {
 body.login-page-theme::after {
   content: "";
   position: fixed;
-  inset: calc(var(--login-grid-fine-size) * -2);
+  inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    radial-gradient(circle at 48% 38%, transparent 0 34%, rgba(0, 0, 0, 0.18) 72%, rgba(0, 0, 0, 0.45) 100%),
+    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.025) 36%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 22%, rgba(0, 0, 0, 0.22));
   background-size:
-    var(--login-grid-fine-size) var(--login-grid-fine-size),
-    var(--login-grid-fine-size) var(--login-grid-fine-size);
-  background-position:
-    0 0,
-    0 0;
-  opacity: 0.56;
-  animation: login-grid-drift-fine 10s linear infinite;
-  will-change: transform;
+    100% 100%,
+    160% 160%,
+    100% 100%;
+  background-position: center, 0 0, center;
+  opacity: 0.72;
   pointer-events: none;
   z-index: 0;
 }
@@ -86,21 +82,12 @@ body.login-page-theme #root {
   isolation: isolate;
 }
 
-@keyframes login-grid-drift {
+@keyframes login-atmosphere-drift {
   from {
-    transform: translate3d(0, 0, 0);
+    transform: translate3d(calc(var(--login-orb-drift) * -0.25), calc(var(--login-orb-drift) * -0.15), 0) scale(1);
   }
   to {
-    transform: translate3d(var(--login-grid-size), var(--login-grid-size), 0);
-  }
-}
-
-@keyframes login-grid-drift-fine {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(calc(var(--login-grid-fine-size) * -1), calc(var(--login-grid-fine-size) * -1), 0);
+    transform: translate3d(calc(var(--login-orb-drift) * 0.35), calc(var(--login-orb-drift) * 0.18), 0) scale(1.04);
   }
 }
 
@@ -327,8 +314,7 @@ body.login-page-theme #root {
   html.login-page-theme,
   body.login-page-theme,
   .login-root {
-    --login-grid-size: 34px;
-    --login-grid-fine-size: 8px;
+    --login-orb-drift: 28px;
   }
 
   .login-card {

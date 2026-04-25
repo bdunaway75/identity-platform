@@ -6,19 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "test:e2e": "playwright test",
-    "test:iphone-dashboard": "playwright test tests/iphone-dashboard.spec.js --project=iphone-15-pro-safari",
-    "test:iphone-dashboard:chromium": "playwright test tests/iphone-dashboard.spec.js --project=iphone-15-pro-chromium",
-    "test:iphone-new-client": "playwright test tests/iphone-new-client.spec.js --project=iphone-15-pro-safari"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
     "@mantine/core": "^8.3.18",
-    "@mantine/hooks": "^8.3.18",
     "bootstrap": "^5.3.8",
-    "framer-motion": "^12.24.0",
     "oidc-client-ts": "^3.4.1",
     "react": "^18.2.0",
     "react-bootstrap": "^2.10.10",
@@ -26,15 +18,9 @@
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "eslint": "^9.39.1",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "globals": "^16.5.0",
-    "playwright": "^1.59.1",
     "vite": "^7.2.4"
   }
 }
