@@ -4,6 +4,7 @@ import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.validation.RegisteredClientValidator;
 import io.github.blakedunaway.authserver.integration.repository.gateway.RegisteredClientInternalRepository;
 import io.github.blakedunaway.authserver.util.AuthenticationUtility;
+import io.github.blakedunaway.authserver.util.AuthorityUtility;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +75,25 @@ public class RegisteredClientService {
         validateRegisteredClient(resolvedRegisteredClient);
         registeredClientInternalRepository.update(resolvedRegisteredClient);
         return findRegisteredClientById(existingRegisteredClient.getId());
+    }
+
+    public RegisteredClientModel updateRegisteredClientAuthorities(final UUID id,
+                                                                   final Set<String> authoritiesAndRoles) {
+        final RegisteredClientModel existingRegisteredClient = findRegisteredClientById(id);
+        if (existingRegisteredClient == null) {
+            return null;
+        }
+
+        return updateRegisteredClient(
+                existingRegisteredClient,
+                RegisteredClientModel.builder()
+                                     .redirectUris(existingRegisteredClient.getRedirectUris())
+                                     .postLogoutRedirectUris(existingRegisteredClient.getPostLogoutRedirectUris())
+                                     .scopes(existingRegisteredClient.getScopes())
+                                     .authorities(AuthorityUtility.extractAuthorities(authoritiesAndRoles))
+                                     .roles(AuthorityUtility.extractRoles(authoritiesAndRoles))
+                                     .build()
+        );
     }
 
     public RegisteredClientModel previewUpdatedRegisteredClient(final RegisteredClientModel existingRegisteredClient,
