@@ -33,7 +33,7 @@ import java.time.LocalDateTime
 class PlatformUserServiceSpec extends TestSpec {
 
     private static final String HASH = "\$argon2id\$v=19\$m=65536,t=2,p=1\$deadbeef\$deadbeef"
-    private static final String FRONTEND_CLIENT_ID = "test-frontend-client"
+    private static final String FRONTEND_CLIENT_ID = "identity-platform"
 
     @Autowired
     private UserService service
@@ -59,7 +59,7 @@ class PlatformUserServiceSpec extends TestSpec {
     def setup() {
         redisStore.get(_ as String) >> [:]
         ensureFrontendClient()
-        ensureBasicTier()
+        ensureFreeTier()
     }
 
     @DirtiesContext
@@ -76,7 +76,7 @@ class PlatformUserServiceSpec extends TestSpec {
         saved.getPasswordHash().startsWith("\$argon2")
         saved.getAuthorities()*.getName() as Set == ["ROLE_PLATFORM_USER"] as Set
         saved.getTier() != null
-        saved.getTier().getName() == "BASIC"
+        saved.getTier().getName() == "FREE"
 
         and:
         def loaded = service.loadPlatformUserByEmail("platform@example.com")
@@ -378,12 +378,12 @@ class PlatformUserServiceSpec extends TestSpec {
         )
     }
 
-    private void ensureBasicTier() {
-        if (platformUserTierJpaRepository.findByTierNameIgnoreCase("BASIC").present) {
+    private void ensureFreeTier() {
+        if (platformUserTierJpaRepository.findByTierNameIgnoreCase("FREE").present) {
             return
         }
 
-        platformUserTierJpaRepository.save(new PlatformUserTierEntity(null, null, "BASIC", 0, "basic tier", 1, 5, 500, 500, 500))
+        platformUserTierJpaRepository.save(new PlatformUserTierEntity(null, null, "FREE", 0, "free tier", 1, 5, 500, 500, 500))
     }
 
     private RegisteredClientModel saveClient(final String clientName) {

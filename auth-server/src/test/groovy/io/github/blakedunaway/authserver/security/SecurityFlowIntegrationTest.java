@@ -446,7 +446,8 @@ public class SecurityFlowIntegrationTest {
                 null,
                 demoCode,
                 platformUserEntity,
-                false
+                1,
+                0
         ));
 
         final MultiValueMap<String, String> authorizeParams = new LinkedMultiValueMap<>();
@@ -483,8 +484,8 @@ public class SecurityFlowIntegrationTest {
         assertThat(demoAccessCodeJpaRepository.findByAccessCode(demoCode))
                 .isPresent()
                 .get()
-                .extracting(code -> code.isDispensed())
-                .isEqualTo(true);
+                .extracting(DemoAccessCodeEntity::getUseCount)
+                .isEqualTo(1);
     }
 
     @Test

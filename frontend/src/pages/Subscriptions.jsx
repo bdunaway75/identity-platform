@@ -124,7 +124,6 @@ export default function Subscriptions() {
     Number(left?.tierOrder ?? left?.price ?? 0) - Number(right?.tierOrder ?? right?.price ?? 0)
   );
   const currentTier = sortedTiers.find((tier) => normalizeTierKey(tier?.name) === currentTierKey) ?? null;
-  const visibleTiers = isDemoUser && currentTier ? [currentTier] : sortedTiers;
   const currentTierOrder = Number(
     currentTier?.tierOrder ?? currentTier?.price ?? 0
   );
@@ -227,20 +226,20 @@ export default function Subscriptions() {
         <div className="subscriptions-kicker">Plans</div>
         <p>
           {isDemoUser
-            ? "Demo accounts stay on their assigned plan. Subscription changes are disabled."
+            ? "Demo accounts can view every plan, but subscription changes are disabled."
             : "Each plan below shows the client, user, scope, and authority limits."}
         </p>
         {error ? <div className="subscriptions-error">{error}</div> : null}
         {checkoutError ? <div className="subscriptions-error">{checkoutError}</div> : null}
         {isDemoUser ? (
           <div className="subscriptions-demo-note">
-            This demo account is locked to its current tier for now.
+            Demo access is locked to the assigned tier for now.
           </div>
         ) : null}
       </section>
 
       <section className="subscriptions-tier-grid">
-        {visibleTiers.map((plan) => {
+        {sortedTiers.map((plan) => {
           const planId = String(plan?.id ?? plan?.name ?? "").trim();
           const isPendingPlan = planId.length > 0 && planId === pendingPlanId;
           const isCurrentPlan = shouldHighlightCurrentPlan && normalizeTierKey(plan?.name) === currentTierKey;
@@ -251,11 +250,12 @@ export default function Subscriptions() {
           const canCheckoutPlan = !isSelectedPlan && String(plan?.stripePriceId ?? "").trim().length > 0;
           const cardHoverable = !isSelectedPlan && !isDemoUser;
           const cardClickable = canCheckoutPlan && !isDemoUser;
+          const isDisabledDemoPlan = isDemoUser && !isCurrentPlan;
           const cardActionLabel = isHigherTier ? "Upgrade plan" : isLowerTier ? "Downgrade plan" : "Select plan";
           const downgradeConsequences = isLowerTier ? buildDowngradeConsequences(plan, usage) : [];
           return (
             <article
-              className={`subscriptions-tier-card${isCurrentPlan ? " is-current" : ""}${isLowerTier ? " is-downgrade-option" : ""}${cardHoverable ? " is-hoverable" : ""}${cardClickable ? " is-clickable" : ""}${isPendingPlan ? " is-busy" : ""}${isWorking && !isPendingPlan ? " is-blocked" : ""}`}
+              className={`subscriptions-tier-card${isCurrentPlan ? " is-current" : ""}${isLowerTier && !isDemoUser ? " is-downgrade-option" : ""}${cardHoverable ? " is-hoverable" : ""}${cardClickable ? " is-clickable" : ""}${isDisabledDemoPlan ? " is-disabled-demo" : ""}${isPendingPlan ? " is-busy" : ""}${isWorking && !isPendingPlan ? " is-blocked" : ""}`}
               key={plan?.id || plan?.name}
               onClick={() => handleSelectPlan(plan)}
               onKeyDown={(event) => {
@@ -279,6 +279,8 @@ export default function Subscriptions() {
                         <span className="subscriptions-tier-action-spinner" aria-hidden="true" />
                         {pendingActionLabel || "Opening checkout..."}
                       </span>
+                    ) : isDemoUser ? (
+                      <span className="subscriptions-tier-disabled-badge">Demo locked</span>
                     ) : isLowerTier ? (
                       <span className="subscriptions-tier-downgrade-badge">
                         {downgradeConsequences.length > 0 ? "Cleanup warning" : "Lower tier"}
