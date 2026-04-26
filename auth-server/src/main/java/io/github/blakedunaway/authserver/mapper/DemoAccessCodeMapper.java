@@ -21,7 +21,8 @@ public abstract class DemoAccessCodeMapper {
                              .id(entity.getAccessCodeId())
                              .accessCode(entity.getAccessCode())
                              .user(entity.getUser() == null ? null : userMapper.platformUserEntityToPlatformUser(entity.getUser()))
-                             .dispensed(entity.isDispensed())
+                             .useLimit(entity.getUseLimit())
+                             .useCount(entity.getUseCount())
                              .build();
     }
 
@@ -37,7 +38,8 @@ public abstract class DemoAccessCodeMapper {
                 demoAccessCode.getId(),
                 demoAccessCode.getAccessCode(),
                 platformUserEntity,
-                demoAccessCode.isDispensed()
+                demoAccessCode.getUseLimit(),
+                demoAccessCode.getUseCount()
         );
     }
 

@@ -37,6 +37,9 @@ public class DemoAccessCodeEntity {
     @JoinColumn(name = "platform_user_id", nullable = false)
     private PlatformUserEntity user;
 
-    @Column(name = "code_dispensed")
-    private boolean dispensed;
+    @Column(name = "use_limit")
+    private int useLimit;
+
+    @Column(name = "use_count")
+    private int useCount;
 }

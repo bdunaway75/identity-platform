@@ -19,6 +19,17 @@ public final class DemoAccessCode {
 
     private final PlatformUser user;
 
-    private final boolean dispensed;
+    private final int useLimit;
 
+    private final int useCount;
+
+    public boolean isExhausted() {
+        return useCount >= useLimit;
+    }
+
+    public DemoAccessCode recordUse() {
+        return toBuilder()
+                .useCount(useCount + 1)
+                .build();
+    }
 }

@@ -161,12 +161,12 @@ class AuthorizationServiceSpec extends TestSpec {
     }
 
     @DirtiesContext
-    def "findByToken guards: null tokenType throws"() {
+    def "findByToken guards: null tokenType returns null when no token matches"() {
         when:
-        service.findByToken("whatever", null)
+        def resolved = service.findByToken("whatever", null)
 
         then:
-        thrown(NoSuchElementException)
+        resolved == null
     }
 
     // This is the natural flow of spring. Whenever an Auth is saved, the request ends. If it needs to be fetched again, it will use the token endpoint.

@@ -38,7 +38,8 @@ public class DemoAccessCodeRepositoryImpl implements DemoAccessCodeRepository {
                         existingEntity.getAccessCodeId(),
                         existingEntity.getAccessCode(),
                         existingEntity.getUser(),
-                        demoAccessCode.isDispensed()
+                        demoAccessCode.getUseLimit(),
+                        demoAccessCode.getUseCount()
                 );
                 return demoAccessCodeMapper.demoAccessCodeEntityToDemoAccessCode(
                         demoAccessCodeJpaRepository.save(updatedEntity)
