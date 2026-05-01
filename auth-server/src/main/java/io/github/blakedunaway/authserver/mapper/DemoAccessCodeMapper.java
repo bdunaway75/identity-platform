@@ -1,5 +1,6 @@
 package io.github.blakedunaway.authserver.mapper;
 
+import io.github.blakedunaway.authserver.business.api.dto.response.DemoAccessCodeDetailsResponse;
 import io.github.blakedunaway.authserver.business.model.DemoAccessCode;
 import io.github.blakedunaway.authserver.integration.entity.DemoAccessCodeEntity;
 import io.github.blakedunaway.authserver.integration.entity.PlatformUserEntity;
@@ -41,6 +42,17 @@ public abstract class DemoAccessCodeMapper {
                 demoAccessCode.getUseLimit(),
                 demoAccessCode.getUseCount()
         );
+    }
+
+    public DemoAccessCodeDetailsResponse demoAccessCodeToDemoAccessCodeDetailsResponse(final DemoAccessCode code) {
+        if (code == null) {
+            return null;
+        }
+        return DemoAccessCodeDetailsResponse.builder()
+                                            .accessCode(code.getAccessCode())
+                                            .useLimit(code.getUseLimit())
+                                            .useCount(code.getUseCount())
+                                            .build();
     }
 
 }

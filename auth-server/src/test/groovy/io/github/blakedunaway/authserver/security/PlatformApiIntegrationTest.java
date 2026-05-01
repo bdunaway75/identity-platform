@@ -742,6 +742,29 @@ public class PlatformApiIntegrationTest {
                .andExpect(status().isNotFound());
     }
 
+    @Test
+    void adminDashboardRequiresAdminRoleAndAuthority() throws Exception {
+        final String platformEmail = uniqueEmail("platform-admin-dashboard");
+        savePlatformUser(platformEmail, "Password123!");
+
+        mockMvc.perform(post("/platform/api/admin/dashboard")
+                                .header("Authorization", bearerToken(
+                                        platformEmail,
+                                        PLATFORM_CLIENT_ID,
+                                        List.of("ROLE_PLATFORM_USER", "PLATFORM_TIER_PAID")
+                                )))
+               .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/platform/api/admin/dashboard")
+                                .header("Authorization", bearerToken(
+                                        platformEmail,
+                                        PLATFORM_CLIENT_ID,
+                                        List.of("ROLE_PLATFORM_ADMIN", "PLATFORM_ADMIN_ACCESS")
+                                )))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.demoCodes").isArray());
+    }
+
     private CreatedPlatformClient createRegisteredClientViaPlatformApi(final String bearerToken,
                                                                        final RegisteredClientRequest request)
             throws Exception {

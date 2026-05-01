@@ -16,6 +16,7 @@ import Subscriptions from "./pages/Subscriptions";
 import SubscriptionCheckoutSuccess from "./pages/SubscriptionCheckoutSuccess";
 import SubscriptionCheckoutCancel from "./pages/SubscriptionCheckoutCancel";
 import Docs from "./pages/Docs";
+import Admin from "./pages/Admin";
 import Layout from "./Layout";
 import { SubscriptionProvider } from "./context/SubscriptionContext";
 import { useSubscription } from "./context/SubscriptionContext";
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/subscriptions/success" element={<SubscriptionCheckoutSuccess />} />
           <Route path="/subscriptions/cancel" element={<SubscriptionCheckoutCancel />} />
           <Route path="/docs" element={<Docs />} />
+          <Route path="/admin" element={<Admin />} />
         </Route>
       </Route>
     </Routes>

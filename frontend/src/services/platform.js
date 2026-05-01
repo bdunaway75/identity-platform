@@ -46,6 +46,7 @@ function buildLocalDevDashboardPayload() {
 
   return normalizeDashboardPayload({
     isDemoUser: false,
+    isAdmin: false,
     tier: {
       name: tierName,
       allowedNumberOfRegisteredClients: tierLimits.allowedNumberOfRegisteredClients,
@@ -343,6 +344,33 @@ function normalizeActivityPayload(value) {
   };
 }
 
+function normalizeDemoAccessCodePayload(value) {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  return {
+    accessCode: String(value.accessCode ?? "").trim(),
+    useLimit: toSafeInteger(value.useLimit, 0),
+    useCount: toSafeInteger(value.useCount, 0),
+  };
+}
+
+function normalizeAdminDashboardPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return {
+      demoCodes: [],
+    };
+  }
+
+  return {
+    demoCodes: normalizeArray(payload.demoCodes)
+      .map(normalizeDemoAccessCodePayload)
+      .filter(Boolean)
+      .sort((left, right) => left.accessCode.localeCompare(right.accessCode)),
+  };
+}
+
 function normalizeTier(tierValue) {
   if (tierValue && typeof tierValue === "object") {
     const name = typeof tierValue.name === "string" && tierValue.name.trim().length > 0
@@ -388,6 +416,7 @@ function normalizeDashboardPayload(payload) {
   if (!payload || typeof payload !== "object") {
     return {
       isDemoUser: false,
+      isAdmin: false,
       tier: normalizeTier(null),
       clientIds: [],
       registeredClientResponses: [],
@@ -408,7 +437,8 @@ function normalizeDashboardPayload(payload) {
   const clientIds = normalizeStringArray(payload.clientIds);
 
   return {
-    isDemoUser: Boolean(payload.isDemoUser ?? payload.demoUser),
+    isDemoUser: payload.isDemoUser ?? payload.demoUser ?? false,
+    isAdmin: payload.isAdmin ?? payload.admin ?? false,
     tier: normalizeTier(payload.tier),
     clientIds,
     registeredClientResponses,
@@ -504,6 +534,38 @@ export async function fetchPlatformUserTiers(options = {}) {
       }
 
       return normalizeTierResponses(await response.json());
+    },
+  });
+}
+
+export async function fetchAdminDashboard(options = {}) {
+  const { force = false } = options;
+
+  if (isDevAuthBypassed()) {
+    return normalizeAdminDashboardPayload({
+      demoCodes: [],
+    });
+  }
+
+  return fetchWithPlatformCache({
+    force,
+    cacheKey: getPlatformCacheKey("admin-dashboard"),
+    request: async () => {
+      const accessToken = await getAccessToken("Missing access token for admin dashboard lookup.");
+
+      const response = await authenticatedFetch(REGISTERED_CLIENT_ENDPOINTS.adminDashboard, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Admin dashboard lookup failed with status ${response.status}.`);
+      }
+
+      return normalizeAdminDashboardPayload(await response.json());
     },
   });
 }

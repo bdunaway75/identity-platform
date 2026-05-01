@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +27,10 @@ public class DemoAccessCodeService {
 
     public DemoAccessCode findByAccessCode(final String accessCode) {
         return demoAccessCodeRepository.findByAccessCode(accessCode).orElse(null);
+    }
+
+    public List<DemoAccessCode> findAll() {
+        return demoAccessCodeRepository.findAll();
     }
 
     public Optional<DemoAccessCode> findByPlatformUserId(final UUID platformUserId) {

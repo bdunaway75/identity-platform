@@ -28,6 +28,8 @@ public class PlatformUserDetailsReponse {
 
     private final boolean isDemoUser;
 
+    private final boolean isAdmin;
+
     public static PlatformUserDetailsReponseBuilder from(final Set<RegisteredClientResponse> registeredClients,
                                                          final PlatformUserTier tier) {
         final Set<RegisteredClientResponse> registeredClientResponses = new HashSet<>();

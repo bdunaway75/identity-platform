@@ -129,6 +129,13 @@ export const APP_ENDPOINTS = {
           import.meta.env.VITE_PLATFORM_REGISTERED_CLIENT_RECENT_ACTIVITY_ENDPOINT
         )
       ),
+      adminDashboard: resolveEndpointUrl(
+        `${registeredClientBaseEndpoint}/admin/dashboard`,
+        firstEnvValue(
+          import.meta.env.VITE_PLATFORM_API_ADMIN_DASHBOARD_ENDPOINT,
+          import.meta.env.VITE_PLATFORM_REGISTERED_CLIENT_ADMIN_DASHBOARD_ENDPOINT
+        )
+      ),
     },
   },
 };

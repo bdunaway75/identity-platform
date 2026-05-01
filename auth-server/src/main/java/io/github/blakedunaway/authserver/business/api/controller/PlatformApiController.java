@@ -1,22 +1,27 @@
 package io.github.blakedunaway.authserver.business.api.controller;
 
+import io.github.blakedunaway.authserver.business.api.dto.request.ClientUserRequest;
+import io.github.blakedunaway.authserver.business.api.dto.request.RegisteredClientRequest;
+import io.github.blakedunaway.authserver.business.api.dto.response.AdminDashboardResponse;
 import io.github.blakedunaway.authserver.business.api.dto.response.AuthTokenResponse;
 import io.github.blakedunaway.authserver.business.api.dto.response.ClientUserActivity;
 import io.github.blakedunaway.authserver.business.api.dto.response.ClientUserActivityResponse;
-import io.github.blakedunaway.authserver.business.api.dto.request.ClientUserRequest;
 import io.github.blakedunaway.authserver.business.api.dto.response.ClientUserResponse;
+import io.github.blakedunaway.authserver.business.api.dto.response.DemoAccessCodeDetailsResponse;
 import io.github.blakedunaway.authserver.business.api.dto.response.PlatformUserDetailsReponse;
 import io.github.blakedunaway.authserver.business.api.dto.response.PlatformUserTierResponse;
-import io.github.blakedunaway.authserver.business.api.dto.request.RegisteredClientRequest;
 import io.github.blakedunaway.authserver.business.api.dto.response.RegisteredClientResponse;
+import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
 import io.github.blakedunaway.authserver.business.service.AuthTokenService;
+import io.github.blakedunaway.authserver.business.service.DemoAccessCodeService;
 import io.github.blakedunaway.authserver.business.service.PlatformUserTierService;
 import io.github.blakedunaway.authserver.business.service.RegisteredClientService;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import io.github.blakedunaway.authserver.config.redis.RedisStore;
+import io.github.blakedunaway.authserver.mapper.DemoAccessCodeMapper;
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper;
 import io.github.blakedunaway.authserver.util.RedisUtility;
 import jakarta.validation.ValidationException;
@@ -52,6 +57,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PlatformApiController {
 
+    private final DemoAccessCodeMapper demoAccessCodeMapper;
+
     private final RedisStore redisStore;
 
     private final UserService userService;
@@ -63,6 +70,8 @@ public class PlatformApiController {
     private final PlatformUserTierService platformUserTierService;
 
     private final RegisteredClientMapper registeredClientMapper;
+
+    private final DemoAccessCodeService demoAccessCodeService;
 
     private <T> ResponseEntity<T> unauthorized() {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -123,6 +132,11 @@ public class PlatformApiController {
                 PlatformUserDetailsReponse.from(registeredClients, platformUser.getTier())
                                           .totalUsers(userService.getTotalUserCount(platformUser.getEmail()))
                                           .isDemoUser(platformUser.isDemoUser())
+                                          .isAdmin(platformUser.getAuthorities() != null
+                                                   && platformUser.getAuthorities().stream()
+                                                                  .map(Authority::getName)
+                                                                  .collect(Collectors.toSet())
+                                                                  .containsAll(Set.of("ROLE_PLATFORM_ADMIN", "PLATFORM_ADMIN_ACCESS")))
                                           .build();
         return ResponseEntity.ok(platformUserDetailsReponse);
     }
@@ -339,6 +353,22 @@ public class PlatformApiController {
                                                            .logins(logins)
                                                            .signups(signups)
                                                            .build());
+    }
+
+    @PostMapping("/admin/dashboard")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN') and hasAuthority('PLATFORM_ADMIN_ACCESS')")
+    public ResponseEntity<AdminDashboardResponse> getAdminDashboard(@AuthenticationPrincipal final Jwt jwt) {
+        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
+        if (platformUser == null) {
+            return unauthorized();
+        }
+
+        final List<DemoAccessCodeDetailsResponse> responses = demoAccessCodeService.findAll()
+                                                                                   .stream()
+                                                                                   .map(demoAccessCodeMapper::demoAccessCodeToDemoAccessCodeDetailsResponse)
+                                                                                   .toList();
+
+        return ResponseEntity.ok(AdminDashboardResponse.builder().demoCodes(responses).build());
     }
 
     private ResponseEntity<Void> logInvalidateTokenNotFound(final UUID authTokenId,

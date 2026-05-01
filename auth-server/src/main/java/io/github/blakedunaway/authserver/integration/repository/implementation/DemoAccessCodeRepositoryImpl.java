@@ -10,8 +10,10 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -66,6 +68,14 @@ public class DemoAccessCodeRepositoryImpl implements DemoAccessCodeRepository {
     public Optional<DemoAccessCode> findByPlatformUserId(final UUID platformUserId) {
         return demoAccessCodeJpaRepository.findByUser_UserId(platformUserId)
                                           .map(demoAccessCodeMapper::demoAccessCodeEntityToDemoAccessCode);
+    }
+
+    @Override
+    public List<DemoAccessCode> findAll() {
+        return demoAccessCodeJpaRepository.findAll()
+                                          .stream()
+                                          .map(demoAccessCodeMapper::demoAccessCodeEntityToDemoAccessCode)
+                                          .collect(Collectors.toList());
     }
 
 }

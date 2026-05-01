@@ -14,6 +14,7 @@ const DEFAULT_SUBSCRIPTION_SNAPSHOT = Object.freeze({
   source: "unknown",
   tiers: [],
   isDemoUser: false,
+  isAdmin: false,
   allowedNumberOfRegisteredClients: 0,
   allowedNumberOfGlobalUsers: 0,
   allowedNumberOfGlobalScopes: 0,
@@ -82,6 +83,7 @@ export function SubscriptionProvider({ children }) {
     tierName: subscriptionSnapshot.tierName,
     tiers: subscriptionSnapshot.tiers,
     isDemoUser: subscriptionSnapshot.isDemoUser,
+    isAdmin: subscriptionSnapshot.isAdmin,
     isPaid:
       subscriptionSnapshot.allowedNumberOfRegisteredClients > 0 ||
       subscriptionSnapshot.allowedNumberOfGlobalUsers > 0,

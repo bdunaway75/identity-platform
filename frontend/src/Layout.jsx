@@ -45,7 +45,7 @@ export default function Layout() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const { tierName, status, isPaid } = useSubscription();
+  const { tierName, status, isPaid, isAdmin } = useSubscription();
 
   const navItems = useMemo(() => {
     const items = [
@@ -56,6 +56,15 @@ export default function Layout() {
         matches: (pathname) => pathname === "/" || pathname === "/success",
       },
     ];
+
+    if (isAdmin) {
+      items.push({
+        to: "/admin",
+        label: "Admin",
+        end: false,
+        matches: (pathname) => pathname.startsWith("/admin"),
+      });
+    }
 
     if (isPaid) {
       items.push(
@@ -97,7 +106,7 @@ export default function Layout() {
     );
 
     return items;
-  }, [isPaid]);
+  }, [isAdmin, isPaid]);
 
   const currentPath = useMemo(() => {
     if (location.pathname === "/success" && typeof location.state?.redirectTo === "string") {
