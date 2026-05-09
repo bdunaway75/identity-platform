@@ -1,5 +1,6 @@
 package io.github.blakedunaway.authserver.security.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,6 +14,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @Component
 public class AuthorizationServerSecurityConfig {
 
@@ -33,6 +35,7 @@ public class AuthorizationServerSecurityConfig {
                 server.oidc(Customizer.withDefaults());
                 server.authorizationEndpoint(authorization ->
                                                      authorization.errorResponseHandler((request, response, exception) -> {
+                                                         log.error("OAuth authorization endpoint failed.", exception);
                                                          response.sendRedirect(
                                                                  "/oauth-error?error=" + URLEncoder.encode(String.valueOf(response.getStatus()),
                                                                                                            StandardCharsets.UTF_8) +

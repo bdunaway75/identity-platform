@@ -1,5 +1,6 @@
 package io.github.blakedunaway.authserver.business.api.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,8 +27,10 @@ public class PlatformUserDetailsReponse {
 
     private final PlatformUserTier tier;
 
+    @JsonProperty("isDemoUser")
     private final boolean isDemoUser;
 
+    @JsonProperty("isAdmin")
     private final boolean isAdmin;
 
     public static PlatformUserDetailsReponseBuilder from(final Set<RegisteredClientResponse> registeredClients,

@@ -22,21 +22,30 @@
 .app-root {
     display: flex;
     width: 100%;
+    height: 100vh;
+    height: 100svh;
+    height: 100dvh;
     min-height: 100vh;
     min-height: 100svh;
     min-height: 100dvh;
     position: relative;
+    overflow: hidden;
     overflow-x: clip;
     background:
         radial-gradient(circle at top, #111122, #0a0a0f 56%, #050809 100%);
+    background-color: #000000;
 }
 
 .app-shell {
     flex: 1;
+    height: 100%;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
     background:
         linear-gradient(180deg, rgba(7, 9, 16, 0.98), rgba(5, 8, 9, 0.98)),
         radial-gradient(circle at top right, rgba(34, 211, 238, 0.06), transparent 28%);
@@ -45,10 +54,13 @@
 .sidebar {
     width: 240px;
     min-width: 240px;
+    height: 100%;
     background: linear-gradient(180deg, #0d0d16, #09090f);
     border-right: 1px solid var(--border-subtle);
     padding: 1.5rem 1rem;
-    position: relative;
+    position: sticky;
+    top: 0;
+    align-self: stretch;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -141,11 +153,52 @@
 }
 
 .brand {
+    position: relative;
+    display: inline-block;
+    width: fit-content;
+    min-width: 0;
+    max-width: max-content;
     font-weight: 600;
     letter-spacing: 0.04em;
-    transition: opacity 180ms ease, transform 180ms ease;
+    color: var(--text-main);
+    transition: opacity 180ms ease, transform 180ms ease, color 180ms ease;
     white-space: nowrap;
-    flex: 1;
+    flex: 0 0 auto;
+}
+
+.brand::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.45rem;
+    width: 100%;
+    height: 1px;
+    background:
+        linear-gradient(
+            100deg,
+            rgba(34, 211, 238, 0) 0%,
+            rgba(34, 211, 238, 0) 30%,
+            rgba(125, 211, 252, 0.12) 40%,
+            rgba(186, 230, 253, 0.95) 50%,
+            rgba(99, 102, 241, 0.72) 60%,
+            rgba(99, 102, 241, 0) 70%,
+            rgba(99, 102, 241, 0) 100%
+        );
+    background-size: 240% 100%;
+    background-position: 155% 50%;
+    opacity: 0.94;
+    pointer-events: none;
+    animation: brand-title-sheen 4.2s linear infinite;
+}
+
+@keyframes brand-title-sheen {
+    0% {
+        background-position: 155% 50%;
+    }
+
+    100% {
+        background-position: -55% 50%;
+    }
 }
 
 .nav {
@@ -232,6 +285,7 @@
 
 .content {
     flex: 1;
+    min-height: 0;
     padding: 2rem;
     display: flex;
     flex-direction: column;
@@ -249,7 +303,7 @@
 }
 
 html, body {
-    background: #050809;
+    background: #000000;
     color: var(--text-main) !important;
     font-family: Inter, system-ui, sans-serif;
     overflow-x: clip;
@@ -258,6 +312,19 @@ html, body {
 @media (max-width: 900px) {
     .app-root {
         display: block;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100svh;
+        min-height: 100dvh;
+        overflow: visible;
+        background-color: #000000;
+    }
+
+    .app-shell {
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+        background-color: #000000;
     }
 
     .sidebar {
@@ -273,6 +340,7 @@ html, body {
         background:
             linear-gradient(180deg, rgba(10, 10, 15, 0.98), rgba(10, 10, 15, 0.9) 78%, rgba(10, 10, 15, 0)),
             radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 36%);
+        background-color: #000000;
         backdrop-filter: blur(18px);
     }
 
@@ -293,13 +361,42 @@ html, body {
     }
 
     .mobile-topbar-kicker {
-        flex: 1 1 auto;
+        position: relative;
+        flex: 0 0 auto;
         min-width: 0;
+        max-width: max-content;
         color: rgba(229, 231, 235, 0.82);
         font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.16em;
         text-transform: uppercase;
+        width: fit-content;
+        transition: color 180ms ease;
+    }
+
+    .mobile-topbar-kicker::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: -0.35rem;
+        width: 100%;
+        height: 1px;
+        background:
+            linear-gradient(
+                100deg,
+                rgba(34, 211, 238, 0) 0%,
+                rgba(34, 211, 238, 0) 30%,
+                rgba(125, 211, 252, 0.12) 40%,
+                rgba(186, 230, 253, 0.95) 50%,
+                rgba(99, 102, 241, 0.72) 60%,
+                rgba(99, 102, 241, 0) 70%,
+                rgba(99, 102, 241, 0) 100%
+            );
+        background-size: 240% 100%;
+        background-position: 155% 50%;
+        opacity: 0.94;
+        pointer-events: none;
+        animation: brand-title-sheen 4.2s linear infinite;
     }
 
     .mobile-topbar-tier {
@@ -408,7 +505,10 @@ html, body {
     }
 
     .mobile-nav-sheet.is-open {
-        max-height: 34rem;
+        max-height: min(34rem, calc(var(--app-visible-viewport-height, 100vh) - 7.5rem - var(--app-safe-area-top, 0px) - var(--app-safe-area-bottom, 0px)));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
         opacity: 1;
         transform: translateY(0);
         padding-top: 0.75rem;
@@ -417,6 +517,7 @@ html, body {
     }
 
     .mobile-nav-panel {
+        min-height: 0;
         border-radius: 20px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         background:
@@ -485,8 +586,21 @@ html, body {
         transform: translateY(-1px);
     }
 
-.mobile-nav-item.active {
+    .mobile-nav-item.active {
         box-shadow: 0 12px 28px rgba(4, 47, 46, 0.18);
+    }
+
+    .mobile-nav-auth-item {
+        appearance: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .mobile-nav-auth-item:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
     }
 
     .mobile-nav-footer {
@@ -534,7 +648,7 @@ html, body {
     }
 
     .content {
-        padding: 1rem;
+        padding: 1.25rem 1rem 1rem;
         min-height: calc(var(--app-visible-viewport-height, 100vh) - var(--app-safe-area-top, 0px));
     }
 
