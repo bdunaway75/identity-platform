@@ -5,11 +5,21 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.authentication.AccountExpiredException;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.CredentialsExpiredException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @UtilityClass
@@ -59,6 +69,65 @@ public class AuthenticationUtility {
 
     public static boolean isArgon2Hash(final String value) {
         return value != null && value.startsWith("$argon2");
+    }
+
+    public static void rejectGlobalError(final BindingResult bindingResult, final String code) {
+        if (bindingResult == null || StringUtils.isBlank(code)) {
+            return;
+        }
+        bindingResult.reject(code);
+    }
+
+    public static void rejectAuthenticationFailure(final BindingResult bindingResult, final AuthenticationException exception) {
+        rejectGlobalError(bindingResult, resolveAuthenticationFailureCode(exception));
+    }
+
+    public static String resolveAuthenticationFailureCode(final AuthenticationException exception) {
+        return switch (exception) {
+            case LockedException ignored -> "validation.auth.locked";
+            case DisabledException ignored -> "validation.auth.disabled";
+            case AccountExpiredException ignored -> "validation.auth.accountExpired";
+            case CredentialsExpiredException ignored -> "validation.auth.credentialsExpired";
+            case AuthenticationServiceException ignored -> "validation.auth.serviceFailure";
+            default -> "validation.auth.failed";
+        };
+    }
+
+    public static String buildOAuthErrorPath(final String error, final String errorDescription) {
+        return UriComponentsBuilder.fromPath("/oauth-error")
+                                   .queryParam("error", error)
+                                   .queryParam("error_description", errorDescription)
+                                   .build()
+                                   .encode()
+                                   .toUriString();
+    }
+
+    public static String buildPlatformLoginRedirect(final String message) {
+        return buildLoginRedirect("/platform/login", null, "message", message);
+    }
+
+    public static String buildClientLoginRedirect(final String clientId, final String message) {
+        return buildLoginRedirect("/login", clientId, "message", message);
+    }
+
+    public static String buildPlatformLoginErrorRedirect(final String error) {
+        return buildLoginRedirect("/platform/login", null, "error", error);
+    }
+
+    public static String buildClientLoginErrorRedirect(final String clientId, final String error) {
+        return buildLoginRedirect("/login", clientId, "error", error);
+    }
+
+    private static String buildLoginRedirect(final String path,
+                                             final String clientId,
+                                             final String parameterName,
+                                             final String parameterValue) {
+        return UriComponentsBuilder.fromPath(path)
+                                   .queryParamIfPresent("client_id", Optional.ofNullable(clientId))
+                                   .queryParam(parameterName, parameterValue)
+                                   .build()
+                                   .encode()
+                                   .toUriString();
     }
 
 }

@@ -5,9 +5,9 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class RedisUtility {
 
-    public final static String AUTHORIZATION_ATTRIBUTES = "auth:attrs:";
+    public static final String AUTHORIZATION_ATTRIBUTES = "auth:attrs:";
 
-    private final static String CLIENT_USER_ACTIVITY_ATTRIBUTES = "user:activity:";
+    private static final String CLIENT_USER_ACTIVITY_ATTRIBUTES = "user:activity:";
 
     public static final String CLIENT_LOGIN_ATTRIBUTE = CLIENT_USER_ACTIVITY_ATTRIBUTES + "login:";
 
@@ -15,5 +15,8 @@ public class RedisUtility {
 
     public static final String SUBSCRIPTION_CHECKOUT_STATUS = "subscription:checkout:status:";
 
+    public static final String TWO_FACTOR_SIGN_UP = "two-factor:sign-up:";
+
+    public static final String TWO_FACTOR_VERIFICATION_STATUS = "two-factor:verification-status:";
 
 }

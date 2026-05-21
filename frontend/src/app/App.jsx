@@ -14,6 +14,7 @@ import CreateClient from "../features/clients/pages/CreateClient";
 import ClientUpdateSuccess from "../features/clients/pages/ClientUpdateSuccess";
 import ClientUserDetail from "../features/clients/pages/ClientUserDetail";
 import Subscriptions from "../features/subscriptions/pages/Subscriptions";
+import SubscriptionCheckoutPending from "../features/subscriptions/pages/SubscriptionCheckoutPending";
 import SubscriptionCheckoutSuccess from "../features/subscriptions/pages/SubscriptionCheckoutSuccess";
 import SubscriptionCheckoutCancel from "../features/subscriptions/pages/SubscriptionCheckoutCancel";
 import Docs from "../features/docs/pages/Docs";
@@ -192,6 +193,10 @@ export default function App() {
                         element={<Subscriptions/>}
                     />
                     <Route
+                        path="/subscriptions/checkout"
+                        element={<SubscriptionCheckoutPending/>}
+                    />
+                    <Route
                         path="/subscriptions/success"
                         element={<SubscriptionCheckoutSuccess/>}
                     />
@@ -208,3 +213,4 @@ export default function App() {
         </Routes>
     );
 }
+

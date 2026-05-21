@@ -2,6 +2,7 @@ package io.github.blakedunaway.authserver.business.validation;
 
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
 import io.github.blakedunaway.authserver.util.AuthenticationUtility;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.util.CollectionUtils;
@@ -20,7 +21,7 @@ public final class RegisteredClientValidator {
     private static final Set<String> LOOPBACK_HOSTS = Set.of("localhost", "127.0.0.1", "::1");
 
     private static boolean isPublicClient(final RegisteredClientModel client) {
-        final boolean hasSecret = client.getClientSecret() != null && !client.getClientSecret().isBlank();
+        final boolean hasSecret = StringUtils.isNotBlank(client.getClientSecret());
         return !(hasSecret || AuthenticationUtility.declaredConfidential(client.getClientAuthenticationMethods()));
     }
 
@@ -35,7 +36,7 @@ public final class RegisteredClientValidator {
     }
 
     private static boolean isBlank(final String s) {
-        return s == null || s.isBlank();
+        return StringUtils.isBlank(s);
     }
 
     private static boolean validateRedirectUri(final String redirectUri) {
@@ -50,7 +51,7 @@ public final class RegisteredClientValidator {
                 return false;
             }
 
-            if (validRedirectUri.getHost() == null || validRedirectUri.getHost().isBlank()) {
+            if (StringUtils.isBlank(validRedirectUri.getHost())) {
                 return false;
             }
 

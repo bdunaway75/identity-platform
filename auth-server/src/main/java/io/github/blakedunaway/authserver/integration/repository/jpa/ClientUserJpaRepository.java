@@ -38,5 +38,7 @@ public interface ClientUserJpaRepository extends JpaRepository<ClientUserEntity,
     Optional<ClientUserEntity> findByIdAndRegisteredClientIds(@Param("clientUserId") final UUID clientUserId,
                                                               @Param("registeredClientIds") final Set<UUID> registeredClientIds);
 
+    boolean existsByClientIdAndEmail(String clientId, String email);
+
 }
 

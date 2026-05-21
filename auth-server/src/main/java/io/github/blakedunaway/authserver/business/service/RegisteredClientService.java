@@ -49,6 +49,10 @@ public class RegisteredClientService {
         return registeredClientInternalRepository.findById(id.toString());
     }
 
+    public boolean existsByClientId(final String clientId) {
+        return registeredClientInternalRepository.existsByClientId(clientId);
+    }
+
     public Set<RegisteredClientModel> findRegisteredClientsByIds(final Set<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
             return new HashSet<>();

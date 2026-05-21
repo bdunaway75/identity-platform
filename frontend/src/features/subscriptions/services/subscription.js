@@ -212,30 +212,6 @@ export function clearSubscriptionTierCache() {
   inFlightTierRequest = null;
 }
 
-export async function fetchSubscriptionCheckoutStatus(sessionId) {
-  const normalizedSessionId = String(sessionId ?? "").trim();
-  if (!normalizedSessionId) {
-    throw new Error("Checkout session id is required.");
-  }
-
-  const response = await fetch(
-    `${APP_ENDPOINTS.platform.subscriptionStatus}?session_id=${encodeURIComponent(normalizedSessionId)}`,
-    {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`Subscription status lookup failed with status ${response.status}.`);
-  }
-
-  const payload = await response.json();
-  return String(payload?.status ?? "").trim().toLowerCase() || "pending";
-}
-
 export async function createSubscriptionCheckoutSession(platformUserTier) {
   if (!platformUserTier?.id || !platformUserTier?.stripePriceId) {
     throw new Error("A billable subscription tier is required.");
@@ -356,3 +332,4 @@ export async function fetchSubscriptionTier(options = {}) {
     inFlightTierRequest = null;
   }
 }
+

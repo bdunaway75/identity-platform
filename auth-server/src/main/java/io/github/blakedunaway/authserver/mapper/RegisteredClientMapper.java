@@ -14,6 +14,7 @@ import io.github.blakedunaway.authserver.integration.entity.RegisteredClientRedi
 import io.github.blakedunaway.authserver.integration.entity.RegisteredClientScopeEntity;
 import io.github.blakedunaway.authserver.util.AuthenticationUtility;
 import io.github.blakedunaway.authserver.util.AuthorityUtility;
+import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +49,7 @@ public abstract class RegisteredClientMapper {
             return Set.of();
         }
         return strings.stream()
-                      .filter(s -> s != null && !s.isBlank())
+                      .filter(StringUtils::isNotBlank)
                       .collect(Collectors.toCollection(HashSet::new));
     }
 

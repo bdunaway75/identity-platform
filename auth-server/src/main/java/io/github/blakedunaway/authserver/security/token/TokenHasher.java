@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.security.token;
 
 import jakarta.annotation.PostConstruct;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -71,7 +72,7 @@ public final class TokenHasher {
     }
 
     private static SecretKeySpec buildKey(final String pepperBase64) {
-        if (pepperBase64 == null || pepperBase64.isBlank()) {
+        if (StringUtils.isBlank(pepperBase64)) {
             throw new IllegalStateException("security.token.pepper-base64 missing");
         }
 
@@ -83,4 +84,3 @@ public final class TokenHasher {
     }
 
 }
-

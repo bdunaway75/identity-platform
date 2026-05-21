@@ -11,6 +11,8 @@ public interface UserRepository {
 
     ClientUser save(final ClientUser clientUser);
 
+    boolean existsByClientIdAndEmail(final String clientId, final String email);
+
     Optional<ClientUser> findByClient_IdAndEmail(final String clientId, final String email);
 
     int getUserCount(final String clientId);

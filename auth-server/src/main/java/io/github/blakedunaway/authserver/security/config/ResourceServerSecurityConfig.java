@@ -3,6 +3,7 @@ package io.github.blakedunaway.authserver.security.config;
 import com.stripe.StripeClient;
 import com.stripe.param.v2.core.AccountCreateParams;
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +50,7 @@ public class ResourceServerSecurityConfig {
                                                                 "/platform/signUp",
                                                                 "/platform/demo-access-code/**",
                                                                 "/platform/credentials-expired",
-                                                                "/platform/subscription-status",
+                                                                "/platform/subscription-events",
                                                                 "/platform/billing-webhook")
                                                .permitAll()
                                                .anyRequest()
@@ -81,7 +82,7 @@ public class ResourceServerSecurityConfig {
             final List<String> claimedAuthorities = jwt.getClaimAsStringList("authorities");
             if (claimedAuthorities != null) {
                 claimedAuthorities.stream()
-                                  .filter(authority -> authority != null && !authority.isBlank())
+                                  .filter(StringUtils::isNotBlank)
                                   .map(authority -> authority.toUpperCase())
                                   .map(SimpleGrantedAuthority::new)
                                   .forEach(authorities::add);

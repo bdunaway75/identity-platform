@@ -1,7 +1,9 @@
 package io.github.blakedunaway.authserver.security.config;
 
+import io.github.blakedunaway.authserver.util.AuthenticationUtility;
 import io.github.blakedunaway.authserver.security.provider.ClientAwareDaoAuthProvider;
 import io.github.blakedunaway.authserver.security.provider.PlatformUserDaoAuthProvider;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AccountExpiredException;
@@ -57,7 +59,7 @@ public class AuthConfig {
                                                                          .queryParam("email", request.getParameter("email"))
                                                                          .queryParam("error", "Your password has expired. Choose a new one to continue.");
                 final String clientId = request.getParameter("clientId");
-                if (!platformFlow && clientId != null && !clientId.isBlank()) {
+                if (!platformFlow && StringUtils.isNotBlank(clientId)) {
                     builder.queryParam("clientId", clientId);
                 }
                 response.sendRedirect(builder.encode().build().toUriString());
@@ -75,13 +77,10 @@ public class AuthConfig {
                 errorMessage = "We could not sign you in with those credentials. Please try again.";
             }
 
-            final UriComponentsBuilder builder = UriComponentsBuilder.fromPath(platformFlow ? "/platform/login" : "/login")
-                                                                     .queryParam("error", errorMessage);
             final String clientId = request.getParameter("clientId");
-            if (!platformFlow && clientId != null && !clientId.isBlank()) {
-                builder.queryParam("client_id", clientId);
-            }
-            response.sendRedirect(builder.encode().build().toUriString());
+            response.sendRedirect(platformFlow
+                                  ? AuthenticationUtility.buildPlatformLoginErrorRedirect(errorMessage)
+                                  : AuthenticationUtility.buildClientLoginErrorRedirect(clientId, errorMessage));
         };
     }
 

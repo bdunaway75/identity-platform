@@ -14,6 +14,7 @@ import io.github.blakedunaway.authserver.integration.repository.jpa.PlatformUser
 import io.github.blakedunaway.authserver.integration.repository.jpa.RegisterClientJpaRepository;
 import io.github.blakedunaway.authserver.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +68,7 @@ public class PlatformUserRepositoryImpl implements PlatformUserRepository {
 
     @Override
     public int getTotalUserCount(final String email) {
-        if (email == null || email.isBlank()) {
+        if (StringUtils.isBlank(email)) {
             return 0;
         }
         return platformUserJpaRepository.getTotalUserCount(email);
@@ -75,7 +76,7 @@ public class PlatformUserRepositoryImpl implements PlatformUserRepository {
 
     @Override
     public int getTotalClientCount(final String email) {
-        if (email == null || email.isBlank()) {
+        if (StringUtils.isBlank(email)) {
             return 0;
         }
         return platformUserJpaRepository.getTotalClientCount(email);
@@ -92,7 +93,7 @@ public class PlatformUserRepositoryImpl implements PlatformUserRepository {
                                                     : platformUser.getAuthorities()
                                                                   .stream()
                                                                   .map(Authority::getName)
-                                                                  .filter(name -> name != null && !name.isBlank())
+                                                                  .filter(StringUtils::isNotBlank)
                                                                   .map(String::toUpperCase)
                                                                   .collect(Collectors.toSet());
 
@@ -149,7 +150,7 @@ public class PlatformUserRepositoryImpl implements PlatformUserRepository {
                                                .orElseThrow(() -> new IllegalArgumentException("Platform user tier not found"));
         }
 
-        if (requestedTier.getName() != null && !requestedTier.getName().isBlank()) {
+        if (StringUtils.isNotBlank(requestedTier.getName())) {
             return platformUserTierJpaRepository.findByTierNameIgnoreCase(requestedTier.getName())
                                                .orElseThrow(() -> new IllegalArgumentException("Platform user tier not found"));
         }

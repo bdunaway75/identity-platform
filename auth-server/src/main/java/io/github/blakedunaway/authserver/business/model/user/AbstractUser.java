@@ -1,7 +1,6 @@
 package io.github.blakedunaway.authserver.business.model.user;
 
 import io.github.blakedunaway.authserver.business.model.Authority;
-import io.github.blakedunaway.authserver.business.validation.ValidEmail;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,7 +26,6 @@ public class AbstractUser {
 
     protected UUID id;
 
-    @ValidEmail
     private String email;
 
     private String passwordHash;

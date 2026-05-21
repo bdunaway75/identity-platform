@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,13 +13,18 @@
 </head>
 <body class="auth-page">
 <c:set var="isPlatformFlow" value="${not empty platformRegisterDto}" />
+<c:set var="modelName" value="${isPlatformFlow ? 'platformRegisterDto' : 'registerDto'}" />
 <c:set var="loginAction" value="${isPlatformFlow ? '/platform/login' : '/login'}" />
 <c:set var="signUpHref" value="${isPlatformFlow ? '/platform/signUp' : '/signUp'}" />
 <c:set var="resolvedClientId" value="${not empty registerDto.clientId ? registerDto.clientId : param.client_id}" />
-<c:set var="hasAuthError" value="${not empty param.error}" />
+<c:if test="${not isPlatformFlow and not empty resolvedClientId}">
+    <c:url var="signUpHref" value="/signUp">
+        <c:param name="client_id" value="${resolvedClientId}" />
+    </c:url>
+</c:if>
 <c:set var="hasAuthMessage" value="${not empty param.message}" />
 <div class="auth-shell">
-    <form class="auth-card" method="post" action="${loginAction}" autocomplete="on">
+    <form:form cssClass="auth-card" method="post" action="${loginAction}" modelAttribute="${modelName}" autocomplete="on">
         <div class="auth-content">
             <div class="auth-header">
                 <div class="auth-badge">Sign In</div>
@@ -40,60 +46,37 @@
             </div>
             </c:if>
 
-            <c:if test="${hasAuthError}">
-            <div class="auth-error" aria-live="polite">
-                <c:choose>
-                    <c:when test="${param.error eq 'true'}">
-                        We could not find a user with those credentials, or the password was incorrect. Please try again.
-                    </c:when>
-                    <c:when test="${param.error eq 'locked'}">
-                        Your account is locked. Contact your support team to regain access.
-                    </c:when>
-                    <c:when test="${param.error eq 'disabled'}">
-                        Your account is disabled. Contact your support team if you believe this is a mistake.
-                    </c:when>
-                    <c:when test="${param.error eq 'account_expired'}">
-                        Your account has expired. Contact your support team to continue.
-                    </c:when>
-                    <c:otherwise>
-                        ${param.error}
-                    </c:otherwise>
-                </c:choose>
-            </div>
-            </c:if>
+            <form:errors path="*" element="div" cssClass="auth-error-list" />
 
             <c:if test="${not isPlatformFlow}">
-            <input type="hidden" name="clientId"
-                   value="${resolvedClientId}" />
+            <form:hidden path="clientId" value="${resolvedClientId}" />
             </c:if>
 
             <div class="auth-field">
                 <label class="auth-label" for="email">Email</label>
-                <input
+                <form:input
+                        path="email"
                         id="email"
-                        name="email"
-                        class="auth-input"
+                        cssClass="auth-input"
                         type="email"
-                        inputmode="email"
                         autocomplete="username"
                         placeholder="you@example.com"
-                        required
-                        autofocus
+                        required="true"
+                        autofocus="true"
                 />
             </div>
 
             <div class="auth-field">
                 <label class="auth-label" for="password">Password</label>
-                <input
+                <form:password
+                        path="password"
                         id="password"
-                        name="password"
-                        class="auth-input"
-                        type="password"
+                        cssClass="auth-input"
                         autocomplete="current-password"
                         placeholder="At least 8 characters"
                         minlength="8"
                         maxlength="72"
-                        required
+                        required="true"
                 />
             </div>
 
@@ -108,7 +91,7 @@
                 <a href="${signUpHref}">Create one here</a>
             </div>
         </div>
-    </form>
+    </form:form>
 </div>
 </body>
 </html>

@@ -11,6 +11,8 @@ import io.github.blakedunaway.authserver.integration.entity.ClientUserEntity;
 import io.github.blakedunaway.authserver.integration.entity.PlatformUserEntity;
 import io.github.blakedunaway.authserver.integration.entity.PlatformUserTierEntity;
 import io.github.blakedunaway.authserver.integration.entity.RegisteredClientEntity;
+import io.github.blakedunaway.authserver.util.AuthorityUtility;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -37,7 +39,7 @@ public class UserMapper {
                          .authorities(authorities -> authorities.addAll(clientUserEntity.getAuthorities()
                                                                                         .stream()
                                                                                         .map(AuthorityEntity::getName)
-                                                                                        .filter(name -> name != null && !name.isBlank())
+                                                                                        .filter(StringUtils::isNotBlank)
                                                                                         .map(Authority::from)
                                                                                         .collect(Collectors.toSet())))
                          .locked(clientUserEntity.isLocked())
@@ -58,7 +60,7 @@ public class UserMapper {
                            .authorities(authorities -> authorities.addAll(platformUserEntity.getAuthorities()
                                                                                             .stream()
                                                                                             .map(AuthorityEntity::getName)
-                                                                                            .filter(name -> name != null && !name.isBlank())
+                                                                                            .filter(StringUtils::isNotBlank)
                                                                                             .map(Authority::from)
                                                                                             .collect(Collectors.toSet())))
                            .registeredClientIds(ids -> ids.addAll(platformUserEntity.getRegisteredClients() == null
@@ -191,7 +193,7 @@ public class UserMapper {
         return PlatformUser.from(platformRegisterDto.getEmail())
                            .email(platformRegisterDto.getEmail())
                            .registeredClientIds(Set::clear)
-                           .authorities(authorities -> authorities.add(Authority.from("ROLE_PLATFORM_USER")))
+                           .authorities(authorities -> authorities.add(Authority.from(AuthorityUtility.ROLE_PLATFORM_USER)))
                            .expired(false)
                            .credentialsExpired(false)
                            .verified(false)

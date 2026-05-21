@@ -15,6 +15,7 @@ import io.github.blakedunaway.authserver.business.model.enums.SigningKeyStatus;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
+import io.github.blakedunaway.authserver.business.service.EmailService;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import io.github.blakedunaway.authserver.config.app.Application;
 import io.github.blakedunaway.authserver.config.redis.RedisStore;
@@ -146,6 +147,9 @@ public class SecurityFlowIntegrationTest {
 
     @MockitoBean
     private StripeClient stripeClient;
+
+    @MockitoBean
+    private EmailService emailService;
 
     private final Map<String, Object> redisValues = new HashMap<>();
 
@@ -1012,7 +1016,7 @@ public class SecurityFlowIntegrationTest {
         final Set<String> requestedScopes = scopes == null
                                             ? Collections.emptySet()
                                             : scopes.stream()
-                                                    .filter(scope -> scope != null && !scope.isBlank())
+                                                    .filter(org.apache.commons.lang3.StringUtils::isNotBlank)
                                                     .map(String::trim)
                                                     .collect(Collectors.toCollection(LinkedHashSet::new));
         if (requestedScopes.isEmpty()) {

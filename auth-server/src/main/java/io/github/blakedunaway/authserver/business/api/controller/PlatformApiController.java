@@ -94,8 +94,7 @@ public class PlatformApiController {
                     registeredClientService.findRegisteredClientsByIds(platformUser.getRegisteredClientIds());
 
             registeredClientModels.add(requestedRegisteredClient);
-            userService.validatePlatformUserTierCompliance(platformUser,
-                                                           registeredClientModels);
+            platformUser.validateTierCompliance(registeredClientModels);
 
             final RegisteredClientModel model = registeredClientService.saveRegisteredClient(requestedRegisteredClient);
             userService.attachRegisteredClientToPlatformUser(jwt.getSubject(), model.getId());
@@ -258,7 +257,7 @@ public class PlatformApiController {
             }
             clients.removeIf(client -> registeredClientId.equals(client.getId()));
             clients.add(resolvedUpdatedRegisteredClient);
-            userService.validatePlatformUserTierCompliance(platformUser, clients);
+            platformUser.validateTierCompliance(clients);
         } catch (final ValidationException e) {
             log.warn("Registered client {} update failed tier validation for platform user {}.", registeredClientId, jwt.getSubject(), e);
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));

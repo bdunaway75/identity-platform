@@ -1,5 +1,6 @@
 package io.github.blakedunaway.authserver.security.config;
 
+import io.github.blakedunaway.authserver.util.AuthenticationUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
@@ -10,9 +11,6 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
-
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
@@ -29,19 +27,15 @@ public class AuthorizationServerSecurityConfig {
             .formLogin(form ->
                                form.loginPage("/platform/login")
                                    .loginProcessingUrl("/platform/login")
-                                   .failureUrl("/platform/login?error=true")
+                                   .failureUrl(AuthenticationUtility.buildPlatformLoginErrorRedirect(String.valueOf(true)))
                                    .permitAll())
             .with(as, (server) -> {
                 server.oidc(Customizer.withDefaults());
                 server.authorizationEndpoint(authorization ->
                                                      authorization.errorResponseHandler((request, response, exception) -> {
                                                          log.error("OAuth authorization endpoint failed.", exception);
-                                                         response.sendRedirect(
-                                                                 "/oauth-error?error=" + URLEncoder.encode(String.valueOf(response.getStatus()),
-                                                                                                           StandardCharsets.UTF_8) +
-                                                                 "&error_description=" + URLEncoder.encode(exception.getMessage(),
-                                                                                                           StandardCharsets.UTF_8)
-                                                         );
+                                                         response.sendRedirect(AuthenticationUtility.buildOAuthErrorPath(String.valueOf(response.getStatus()),
+                                                                                                                        exception.getMessage()));
                                                      })
                 );
 
