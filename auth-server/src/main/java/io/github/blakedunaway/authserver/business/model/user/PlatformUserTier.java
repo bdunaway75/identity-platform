@@ -32,4 +32,12 @@ public final class PlatformUserTier {
 
     private final int allowedNumberOfGlobalAuthorities;
 
+    public boolean isHigherThan(final PlatformUserTier other) {
+        return other != null && tierOrder > other.getTierOrder();
+    }
+
+    public boolean isLowerThan(final PlatformUserTier other) {
+        return other != null && tierOrder < other.getTierOrder();
+    }
+
 }

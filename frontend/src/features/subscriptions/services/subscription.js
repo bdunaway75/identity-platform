@@ -249,16 +249,16 @@ export async function createSubscriptionCheckoutSession(platformUserTier) {
   return checkoutUrl;
 }
 
-async function changeExistingSubscription(endpoint, platformUserTier, defaultErrorMessage) {
+export async function createSubscriptionPortalSession(platformUserTier) {
   if (!platformUserTier?.id || !platformUserTier?.stripePriceId) {
     throw new Error("A billable subscription tier is required.");
   }
 
   const accessToken = await getValidAccessToken("Missing access token for subscription change.");
-  const response = await authenticatedFetch(endpoint, {
+  const response = await authenticatedFetch(APP_ENDPOINTS.platform.subscriptionPortal, {
     method: "POST",
     headers: {
-      Accept: "application/json",
+      Accept: "text/plain",
       "Content-Type": "text/plain",
       Authorization: `Bearer ${accessToken}`,
     },
@@ -268,29 +268,30 @@ async function changeExistingSubscription(endpoint, platformUserTier, defaultErr
   if (!response.ok) {
     const message = await readErrorMessage(
       response,
-      `${defaultErrorMessage} failed with status ${response.status}.`
+      `Subscription management failed with status ${response.status}.`
     );
-    throw new Error(message || `${defaultErrorMessage} failed with status ${response.status}.`);
+    throw new Error(message || `Subscription management failed with status ${response.status}.`);
   }
 
-  clearSubscriptionTierCache();
-  return response.status === 204 ? {} : response.json().catch(() => ({}));
+  const portalUrl = (await response.text()).trim();
+  if (!portalUrl) {
+    throw new Error("Subscription management did not return a Stripe portal URL.");
+  }
+
+  setPendingSubscriptionCheckout({
+    tierId: platformUserTier.id,
+    tierName: platformUserTier.name,
+    price: platformUserTier.price,
+  });
+  return portalUrl;
 }
 
 export async function upgradeSubscription(platformUserTier) {
-  return changeExistingSubscription(
-    APP_ENDPOINTS.platform.subscriptionUpgrade,
-    platformUserTier,
-    "Subscription upgrade"
-  );
+  return createSubscriptionPortalSession(platformUserTier);
 }
 
 export async function downgradeSubscription(platformUserTier) {
-  return changeExistingSubscription(
-    APP_ENDPOINTS.platform.subscriptionDowngrade,
-    platformUserTier,
-    "Subscription downgrade"
-  );
+  return createSubscriptionPortalSession(platformUserTier);
 }
 
 export async function fetchSubscriptionTier(options = {}) {

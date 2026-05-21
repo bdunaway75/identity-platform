@@ -73,6 +73,10 @@ export const APP_ENDPOINTS = {
       `${platformBaseEndpoint}/subscription`,
       import.meta.env.VITE_PLATFORM_SUBSCRIPTION_ENDPOINT
     ),
+    subscriptionPortal: resolveEndpointUrl(
+      `${platformBaseEndpoint}/subscription/portal`,
+      import.meta.env.VITE_PLATFORM_SUBSCRIPTION_PORTAL_ENDPOINT
+    ),
     subscriptionUpgrade: resolveEndpointUrl(
       `${platformBaseEndpoint}/subscription/upgrade`,
       import.meta.env.VITE_PLATFORM_SUBSCRIPTION_UPGRADE_ENDPOINT

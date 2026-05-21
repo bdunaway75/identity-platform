@@ -2,7 +2,10 @@ package io.github.blakedunaway.authserver.security.config;
 
 import com.stripe.StripeClient;
 import com.stripe.param.v2.core.AccountCreateParams;
+import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
 import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
+import io.github.blakedunaway.authserver.business.service.UserService;
+import io.github.blakedunaway.authserver.security.token.PlatformUserJwtAuthenticationToken;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,9 +21,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
@@ -42,7 +45,8 @@ public class ResourceServerSecurityConfig {
     @Bean
     SecurityFilterChain resourceApi(final HttpSecurity http,
                                     @Qualifier("platformCorsConfiguration") final CorsConfiguration corsConfiguration,
-                                    final JwtDecoder jwtDecoder) throws Exception {
+                                    final JwtDecoder jwtDecoder,
+                                    final UserService userService) throws Exception {
         http.securityMatcher("/platform/**")
             .authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.OPTIONS, "/platform/**")
                                                .permitAll()
@@ -67,29 +71,32 @@ public class ResourceServerSecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .exceptionHandling(eh -> eh.authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint()))
             .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(jwtDecoder)
-                                                               .jwtAuthenticationConverter(platformJwtAuthenticationConverter())))
+                                                               .jwtAuthenticationConverter(platformJwtAuthenticationConverter(userService))))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
 
     @Bean
-    Converter<Jwt, AbstractAuthenticationToken> platformJwtAuthenticationConverter() {
+    Converter<Jwt, AbstractAuthenticationToken> platformJwtAuthenticationConverter(final UserService userService) {
         final JwtGrantedAuthoritiesConverter scopeAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
 
-        final JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
+        return jwt -> {
+            final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
+            if (platformUser == null) {
+                throw new UsernameNotFoundException("Authenticated platform user could not be resolved.");
+            }
+
             final Set<GrantedAuthority> authorities = new HashSet<>(scopeAuthoritiesConverter.convert(jwt));
             final List<String> claimedAuthorities = jwt.getClaimAsStringList("authorities");
             if (claimedAuthorities != null) {
                 claimedAuthorities.stream()
                                   .filter(StringUtils::isNotBlank)
-                                  .map(authority -> authority.toUpperCase())
+                                  .map(String::toUpperCase)
                                   .map(SimpleGrantedAuthority::new)
                                   .forEach(authorities::add);
             }
-            return authorities;
-        });
-        return jwtAuthenticationConverter;
+            return new PlatformUserJwtAuthenticationToken(jwt, authorities, platformUser.getEmail(), platformUser);
+        };
     }
 
     @Bean

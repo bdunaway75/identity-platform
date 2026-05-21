@@ -5,7 +5,6 @@ import {
   upgradeSubscription,
 } from "../services/subscription";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import "../../clients/styles/Clients.css";
 import "../styles/Subscriptions.css";
 
@@ -72,28 +71,7 @@ function buildDowngradeConsequences(plan, usage) {
   return consequences;
 }
 
-function buildPlanChangeConfirmationMessage({
-  currentTierName,
-  targetTierName,
-  isDowngrade,
-  downgradeConsequences,
-}) {
-  const safeCurrentTierName = String(currentTierName ?? "your current tier").trim() || "your current tier";
-  const safeTargetTierName = String(targetTierName ?? "the selected tier").trim() || "the selected tier";
-
-  if (!isDowngrade) {
-    return `Are you sure you want to upgrade from ${safeCurrentTierName} to ${safeTargetTierName}?\n\nYour paid subscription will be updated to the new tier.`;
-  }
-
-  if (downgradeConsequences.length > 0) {
-    return `Are you sure you want to downgrade from ${safeCurrentTierName} to ${safeTargetTierName}?\n\nThis change will apply at the end of your current billing period.\n\nYour current usage is over the new limit for ${downgradeConsequences.join(", ")}, so cleanup may be required.`;
-  }
-
-  return `Are you sure you want to downgrade from ${safeCurrentTierName} to ${safeTargetTierName}?\n\nThis change will apply at the end of your current billing period.`;
-}
-
 export default function Subscriptions() {
-  const navigate = useNavigate();
   const {
     tierName,
     tiers,
@@ -142,24 +120,10 @@ export default function Subscriptions() {
     const canChangePlan = String(plan?.stripePriceId ?? "").trim().length > 0;
     const planTierOrder = Number(plan?.tierOrder ?? plan?.price ?? 0);
     const isDowngrade = planTierOrder < currentTierOrder;
-    const downgradeConsequences = buildDowngradeConsequences(plan, usage);
     const isInitialPaidCheckout = !currentTier || Number(currentTier?.price || 0) <= 0;
 
     if (isCurrentPlan || !canChangePlan) {
       return;
-    }
-
-    if (!isInitialPaidCheckout) {
-      const confirmationMessage = buildPlanChangeConfirmationMessage({
-        currentTierName: currentTier?.name,
-        targetTierName: plan?.name,
-        isDowngrade,
-        downgradeConsequences,
-      });
-
-      if (!window.confirm(confirmationMessage)) {
-        return;
-      }
     }
 
     setCheckoutError("");
@@ -167,32 +131,18 @@ export default function Subscriptions() {
     setPendingActionLabel(
       isInitialPaidCheckout
         ? "Opening checkout..."
-        : isDowngrade
-          ? "Scheduling downgrade..."
-          : "Submitting upgrade..."
+        : "Opening Stripe..."
     );
 
     try {
       if (isDowngrade) {
-        await downgradeSubscription(plan);
-        navigate("/subscriptions/success", {
-          state: {
-            mode: "downgrade",
-            tierName: plan?.name,
-            title: "Downgrade scheduled",
-            message: `Your subscription will change to ${plan?.name || "the selected tier"} at the end of your current billing period.`,
-          },
-        });
+        const portalUrl = await downgradeSubscription(plan);
+        window.location.assign(portalUrl);
+        return;
       } else if (!isInitialPaidCheckout) {
-        await upgradeSubscription(plan);
-        navigate("/subscriptions/success", {
-          state: {
-            mode: "upgrade",
-            tierName: plan?.name,
-            title: "Upgrade submitted",
-            message: `${plan?.name || "Your selected tier"} has been submitted. Your plan will refresh after Stripe syncs the subscription update.`,
-          },
-        });
+        const portalUrl = await upgradeSubscription(plan);
+        window.location.assign(portalUrl);
+        return;
       } else {
         const checkoutUrl = await createSubscriptionCheckoutSession(plan);
         window.location.assign(checkoutUrl);

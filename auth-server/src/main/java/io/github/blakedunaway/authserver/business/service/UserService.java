@@ -3,14 +3,11 @@ package io.github.blakedunaway.authserver.business.service;
 import io.github.blakedunaway.authserver.business.api.dto.request.ClientUserRequest;
 import io.github.blakedunaway.authserver.business.model.Authority;
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
-import io.github.blakedunaway.authserver.business.model.user.ClientRegisterDto;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
-import io.github.blakedunaway.authserver.business.model.user.PlatformRegisterDto;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
 import io.github.blakedunaway.authserver.integration.repository.gateway.PlatformUserRepository;
 import io.github.blakedunaway.authserver.integration.repository.gateway.UserRepository;
-import io.github.blakedunaway.authserver.mapper.UserMapper;
 import io.github.blakedunaway.authserver.util.AuthorityUtility;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -22,13 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
@@ -49,16 +42,9 @@ public class UserService implements UserDetailsService {
         Assert.hasText(passwordHash, "Password hash is required");
         Assert.hasText(clientId, "Client id is required");
 
-        return saveUser(ClientUser.from(email)
-                                  .email(email)
-                                  .clientId(clientId)
-                                  .expired(false)
-                                  .credentialsExpired(false)
-                                  .verified(true)
-                                  .userAttributes(new LinkedHashMap<>())
+        return saveUser(ClientUser.verified(email, passwordHash, clientId)
                                   .updatedAt(LocalDateTime.now())
                                   .createdAt(LocalDateTime.now())
-                                  .passwordHash(passwordHash)
                                   .build());
     }
 
@@ -67,18 +53,9 @@ public class UserService implements UserDetailsService {
         Assert.hasText(email, "Email is required");
         Assert.hasText(passwordHash, "Password hash is required");
 
-        return savePlatformUser(PlatformUser.from(email)
-                                            .email(email)
-                                            .registeredClientIds(Set::clear)
-                                            .authorities(authorities -> authorities.add(Authority.from(AuthorityUtility.ROLE_PLATFORM_USER)))
-                                            .expired(false)
-                                            .credentialsExpired(false)
-                                            .verified(true)
-                                            .userAttributes(new LinkedHashMap<>())
+        return savePlatformUser(PlatformUser.verified(email, passwordHash)
                                             .updatedAt(LocalDateTime.now())
                                             .createdAt(LocalDateTime.now())
-                                            .passwordHash(passwordHash)
-                                            .isDemoUser(false)
                                             .build());
     }
 
@@ -93,13 +70,7 @@ public class UserService implements UserDetailsService {
         Assert.notNull(platformUser, "PlatformUser cannot be null");
         Assert.notNull(platformUser.getPasswordHash(), "Password hash cannot be null");
         Assert.isTrue(platformUser.getPasswordHash().startsWith("$argon2"), "Password has not been hashed");
-        final PlatformUser resolvedPlatformUser = platformUser.getTier() == null
-                                                  ? PlatformUser.from(platformUser)
-                                                                .tier(PlatformUserTier.builder()
-                                                                                      .name("FREE")
-                                                                                      .build())
-                                                                .build()
-                                                  : platformUser;
+        final PlatformUser resolvedPlatformUser = platformUser.withDefaultTierIfMissing();
         resolvedPlatformUser.validateTierCompliance(registeredClientService.findRegisteredClientsByIds(platformUser.getRegisteredClientIds()));
         return platformUserRepository.save(resolvedPlatformUser);
     }
@@ -133,11 +104,7 @@ public class UserService implements UserDetailsService {
             return false;
         }
 
-        final PlatformUser updatedPlatformUser = PlatformUser.from(existingPlatformUser)
-                                                             .passwordHash(passwordEncoder.encode(newPassword))
-                                                             .expired(false)
-                                                             .credentialsExpired(false)
-                                                             .build();
+        final PlatformUser updatedPlatformUser = existingPlatformUser.resetPassword(passwordEncoder.encode(newPassword));
         savePlatformUser(updatedPlatformUser);
         return true;
     }
@@ -155,11 +122,7 @@ public class UserService implements UserDetailsService {
             return false;
         }
 
-        final ClientUser updatedClientUser = ClientUser.from(existingClientUser)
-                                                       .passwordHash(passwordEncoder.encode(newPassword))
-                                                       .expired(false)
-                                                       .credentialsExpired(false)
-                                                       .build();
+        final ClientUser updatedClientUser = existingClientUser.resetPassword(passwordEncoder.encode(newPassword));
         saveUser(updatedClientUser);
         return true;
     }
@@ -212,36 +175,7 @@ public class UserService implements UserDetailsService {
             return null;
         }
 
-        final ClientUser updatedClientUser = ClientUser.from(existingClientUser)
-                                                       .email(request.getEmail() != null ? request.getEmail() : existingClientUser.getEmail())
-                                                       .verified(request.getVerified() != null
-                                                                 ? request.getVerified()
-                                                                 : existingClientUser.isVerified())
-                                                       .locked(request.getLocked() != null ? request.getLocked() : existingClientUser.isLocked())
-                                                       .expired(request.getExpired() != null ? request.getExpired() : existingClientUser.isExpired())
-                                                       .credentialsExpired(request.getCredentialsExpired() != null
-                                                                           ? request.getCredentialsExpired()
-                                                                           : existingClientUser.isCredentialsExpired())
-                                                       .userAttributes(request.getUserAttributes() != null
-                                                                       ? request.getUserAttributes()
-                                                                       : existingClientUser.getUserAttributes())
-                                                       .authorities(resolvedAuthorities -> {
-                                                           resolvedAuthorities.clear();
-                                                           if (request.getAuthorities() == null) {
-                                                               resolvedAuthorities.addAll(existingClientUser.getAuthorities());
-                                                               return;
-                                                           }
-
-                                                           resolvedAuthorities.addAll(
-                                                                   AuthorityUtility.normalizeAuthorityAndRoleNames(request.getAuthorities())
-                                                                                   .stream()
-                                                                                   .map(Authority::from)
-                                                                                   .collect(Collectors.toSet())
-                                                           );
-                                                       })
-                                                       .build();
-
-        return saveUser(updatedClientUser);
+        return saveUser(existingClientUser.applyRequest(request));
     }
 
     public void removeRemovedRegisteredClientAuthorities(final RegisteredClientModel existingRegisteredClient,
@@ -250,34 +184,17 @@ public class UserService implements UserDetailsService {
             return;
         }
 
-        final Set<String> removedAuthorityNames = new HashSet<>(AuthorityUtility.normalizeAuthorities(existingRegisteredClient.getAuthorities()));
-        removedAuthorityNames.addAll(AuthorityUtility.normalizeRoles(existingRegisteredClient.getRoles()));
-        removedAuthorityNames.removeAll(AuthorityUtility.normalizeAuthorities(updatedRegisteredClient.getAuthorities()));
-        removedAuthorityNames.removeAll(AuthorityUtility.normalizeRoles(updatedRegisteredClient.getRoles()));
+        final Set<String> removedAuthorityNames = existingRegisteredClient.removedAuthorityAndRoleNamesComparedTo(updatedRegisteredClient);
         if (removedAuthorityNames.isEmpty()) {
             return;
         }
 
         for (final ClientUser clientUser : findClientUsersByRegisteredClientIds(Set.of(existingRegisteredClient.getId()))) {
-            final Set<Authority> retainedAuthorities = clientUser.getAuthorities() == null
-                                                       ? Collections.emptySet()
-                                                       : clientUser.getAuthorities()
-                                                                   .stream()
-                                                                   .filter(authority -> authority != null
-                                                                                        && authority.getName() != null
-                                                                                        && !removedAuthorityNames.contains(authority.getName()
-                                                                                                                                    .toUpperCase()))
-                                                                   .collect(Collectors.toSet());
-            if (clientUser.getAuthorities() != null && retainedAuthorities.size() == clientUser.getAuthorities().size()) {
+            final ClientUser updatedClientUser = clientUser.removeAuthoritiesNamed(removedAuthorityNames);
+            if (updatedClientUser == clientUser) {
                 continue;
             }
 
-            final ClientUser updatedClientUser = ClientUser.from(clientUser)
-                                                           .authorities(authorities -> {
-                                                               authorities.clear();
-                                                               authorities.addAll(retainedAuthorities);
-                                                           })
-                                                           .build();
             saveUser(updatedClientUser);
         }
     }

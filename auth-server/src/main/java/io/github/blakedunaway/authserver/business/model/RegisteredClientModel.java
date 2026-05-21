@@ -1,6 +1,7 @@
 package io.github.blakedunaway.authserver.business.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.github.blakedunaway.authserver.util.AuthorityUtility;
 import lombok.*;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -96,6 +98,68 @@ public final class RegisteredClientModel {
 
     public Set<String> getRoles() {
         return this.roles == null ? Set.of() : Set.copyOf(this.roles);
+    }
+
+    public boolean hasId(final UUID registeredClientId) {
+        return id != null && id.equals(registeredClientId);
+    }
+
+    public RegisteredClientModel merge(final RegisteredClientModel requested) {
+        if (requested == null) {
+            return null;
+        }
+
+        final ClientSettings resolvedClientSettings = requested.getClientSettings().isEmpty()
+                                              ? ClientSettings.withSettings(getClientSettings()).build()
+                                              : ClientSettings.withSettings(requested.getClientSettings()).build();
+        final TokenSettings resolvedTokenSettings = requested.getTokenSettings().isEmpty()
+                                            ? TokenSettings.withSettings(getTokenSettings()).build()
+                                            : TokenSettings.withSettings(requested.getTokenSettings()).build();
+
+        return RegisteredClientModel.builder()
+                                    .clientId(getClientId())
+                                    .clientIdIssuedAt(getClientIdIssuedAt())
+                                    .clientSecret(getClientSecret())
+                                    .clientSecretExpiresAt(getClientSecretExpiresAt())
+                                    .clientName(requested.getClientName() == null || requested.getClientName().isBlank()
+                                                ? getClientName()
+                                                : requested.getClientName())
+                                    .clientAuthenticationMethods(getClientAuthenticationMethods().stream()
+                                                                                        .map(ClientAuthenticationMethod::new)
+                                                                                        .collect(Collectors.toSet()))
+                                    .authorizationGrantTypes(getAuthorizationGrantTypes().stream()
+                                                                                    .map(AuthorizationGrantType::new)
+                                                                                    .collect(Collectors.toSet()))
+                                    .redirectUris(requested.getRedirectUris())
+                                    .postLogoutRedirectUris(requested.getPostLogoutRedirectUris())
+                                    .scopes(requested.getScopes())
+                                    .authorities(requested.getAuthorities())
+                                    .roles(requested.getRoles())
+                                    .clientSettings(resolvedClientSettings)
+                                    .tokenSettings(resolvedTokenSettings)
+                                    .build();
+    }
+
+    public RegisteredClientModel withAuthoritiesAndRoles(final Set<String> authoritiesAndRoles) {
+        return RegisteredClientModel.builder()
+                                    .redirectUris(getRedirectUris())
+                                    .postLogoutRedirectUris(getPostLogoutRedirectUris())
+                                    .scopes(getScopes())
+                                    .authorities(AuthorityUtility.extractAuthorities(authoritiesAndRoles))
+                                    .roles(AuthorityUtility.extractRoles(authoritiesAndRoles))
+                                    .build();
+    }
+
+    public Set<String> removedAuthorityAndRoleNamesComparedTo(final RegisteredClientModel updated) {
+        if (updated == null) {
+            return Set.of();
+        }
+
+        final Set<String> removedAuthorityNames = new HashSet<>(AuthorityUtility.normalizeAuthorities(getAuthorities()));
+        removedAuthorityNames.addAll(AuthorityUtility.normalizeRoles(getRoles()));
+        removedAuthorityNames.removeAll(AuthorityUtility.normalizeAuthorities(updated.getAuthorities()));
+        removedAuthorityNames.removeAll(AuthorityUtility.normalizeRoles(updated.getRoles()));
+        return Set.copyOf(removedAuthorityNames);
     }
 
     public RegisteredClient toOAuth2RegisteredClient() {

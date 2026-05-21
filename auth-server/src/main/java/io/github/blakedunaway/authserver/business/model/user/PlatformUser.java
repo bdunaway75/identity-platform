@@ -1,6 +1,8 @@
 package io.github.blakedunaway.authserver.business.model.user;
 
 import io.github.blakedunaway.authserver.business.model.RegisteredClientModel;
+import io.github.blakedunaway.authserver.business.model.Authority;
+import io.github.blakedunaway.authserver.util.AuthorityUtility;
 import jakarta.validation.ValidationException;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -38,15 +40,80 @@ public class PlatformUser extends AbstractUser {
         return new PlatformUserBuilder().from(email);
     }
 
+    public static PlatformUserBuilder verified(final String email, final String passwordHash) {
+        return PlatformUser.from(email)
+                           .email(email)
+                           .registeredClientIds(Set::clear)
+                           .authorities(authorities -> authorities.add(Authority.from(AuthorityUtility.ROLE_PLATFORM_USER)))
+                           .expired(false)
+                           .credentialsExpired(false)
+                           .verified(true)
+                           .userAttributes(Collections.emptyMap())
+                           .passwordHash(passwordHash)
+                           .isDemoUser(false);
+    }
+
+    public Set<UUID> registeredClientIdsOrEmpty() {
+        return getRegisteredClientIds() == null ? Collections.emptySet() : getRegisteredClientIds();
+    }
+
     public Set<UUID> filterOwnedRegisteredClientIds(final Set<UUID> requestedIds) {
         if (requestedIds == null || requestedIds.isEmpty()) {
             return Collections.emptySet();
         }
 
-        final Set<UUID> ownedIds = getRegisteredClientIds();
+        final Set<UUID> ownedIds = registeredClientIdsOrEmpty();
         return requestedIds.stream()
                            .filter(ownedIds::contains)
                            .collect(Collectors.toCollection(HashSet::new));
+    }
+
+    public boolean ownsRegisteredClientId(final UUID registeredClientId) {
+        return registeredClientId != null && registeredClientIdsOrEmpty().contains(registeredClientId);
+    }
+
+    public boolean ownsAllRegisteredClientIds(final Set<UUID> registeredClientIds) {
+        return registeredClientIds != null
+               && !registeredClientIds.isEmpty()
+               && filterOwnedRegisteredClientIds(registeredClientIds).size() == registeredClientIds.size();
+    }
+
+    public boolean ownsAnyClientIds(final Set<RegisteredClientModel> registeredClients,
+                                    final Set<String> requestedClientIds) {
+        if (registeredClients == null || registeredClients.isEmpty() || requestedClientIds == null || requestedClientIds.isEmpty()) {
+            return false;
+        }
+
+        return registeredClients.stream()
+                                .map(RegisteredClientModel::getClientId)
+                                .anyMatch(requestedClientIds::contains);
+    }
+
+    public RegisteredClientModel findOwnedRegisteredClientById(final Set<RegisteredClientModel> registeredClients,
+                                                               final UUID registeredClientId) {
+        if (!ownsRegisteredClientId(registeredClientId) || registeredClients == null || registeredClients.isEmpty()) {
+            return null;
+        }
+
+        return registeredClients.stream()
+                                .filter(client -> client != null && client.hasId(registeredClientId))
+                                .findFirst()
+                                .orElse(null);
+    }
+
+    public Set<RegisteredClientModel> replaceRegisteredClientAndValidateTier(final Set<RegisteredClientModel> registeredClients,
+                                                                             final RegisteredClientModel updatedRegisteredClient) {
+        final Set<RegisteredClientModel> resolvedRegisteredClients = registeredClients == null
+                                                                     ? new HashSet<>()
+                                                                     : new HashSet<>(registeredClients);
+        if (updatedRegisteredClient == null) {
+            return resolvedRegisteredClients;
+        }
+
+        resolvedRegisteredClients.removeIf(client -> client != null && client.hasId(updatedRegisteredClient.getId()));
+        resolvedRegisteredClients.add(updatedRegisteredClient);
+        validateTierCompliance(resolvedRegisteredClients);
+        return Set.copyOf(resolvedRegisteredClients);
     }
 
     public PlatformUser attachRegisteredClientId(final UUID registeredClientId) {
@@ -55,6 +122,42 @@ public class PlatformUser extends AbstractUser {
         return PlatformUser.from(this)
                            .registeredClientIds(ids -> ids.add(registeredClientId))
                            .build();
+    }
+
+    public PlatformUser withDefaultTierIfMissing() {
+        if (getTier() != null) {
+            return this;
+        }
+
+        return PlatformUser.from(this)
+                           .tier(PlatformUserTier.builder()
+                                                 .name("FREE")
+                                                 .build())
+                           .build();
+    }
+
+    public PlatformUser resetPassword(final String passwordHash) {
+        return PlatformUser.from(this)
+                           .passwordHash(passwordHash)
+                           .expired(false)
+                           .credentialsExpired(false)
+                           .build();
+    }
+
+    public boolean isPlatformAdmin() {
+        return getAuthorities() != null
+               && getAuthorities().stream()
+                                  .map(Authority::getName)
+                                  .collect(Collectors.toSet())
+                                  .containsAll(Set.of("ROLE_PLATFORM_ADMIN", "PLATFORM_ADMIN_ACCESS"));
+    }
+
+    public boolean canUpgradeTo(final PlatformUserTier requestedTier) {
+        return requestedTier != null && getTier() != null && requestedTier.isHigherThan(getTier());
+    }
+
+    public boolean canDowngradeTo(final PlatformUserTier requestedTier) {
+        return requestedTier != null && getTier() != null && requestedTier.isLowerThan(getTier());
     }
 
     public void validateTierCompliance(final Set<RegisteredClientModel> registeredClients) {

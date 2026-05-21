@@ -1,5 +1,4 @@
 package io.github.blakedunaway.authserver.business.api.controller;
-
 import io.github.blakedunaway.authserver.business.api.dto.request.ClientUserRequest;
 import io.github.blakedunaway.authserver.business.api.dto.request.RegisteredClientRequest;
 import io.github.blakedunaway.authserver.business.api.dto.response.AdminDashboardResponse;
@@ -27,13 +26,11 @@ import io.github.blakedunaway.authserver.util.RedisUtility;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,56 +70,36 @@ public class PlatformApiController {
 
     private final DemoAccessCodeService demoAccessCodeService;
 
-    private <T> ResponseEntity<T> unauthorized() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-
     @PostMapping("/create")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<?> createClient(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<?> createClient(@AuthenticationPrincipal final PlatformUser platformUser,
                                           @RequestBody final RegisteredClientRequest registeredClientRequest) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Create client request rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
         try {
             final RegisteredClientModel requestedRegisteredClient =
                     registeredClientMapper.registeredClientRequestToRegisteredClientModel(registeredClientRequest);
 
             final Set<RegisteredClientModel> registeredClientModels =
-                    registeredClientService.findRegisteredClientsByIds(platformUser.getRegisteredClientIds());
+                    registeredClientService.findRegisteredClientsByIds(platformUser.registeredClientIdsOrEmpty());
 
-            registeredClientModels.add(requestedRegisteredClient);
-            platformUser.validateTierCompliance(registeredClientModels);
+            platformUser.replaceRegisteredClientAndValidateTier(registeredClientModels, requestedRegisteredClient);
 
             final RegisteredClientModel model = registeredClientService.saveRegisteredClient(requestedRegisteredClient);
-            userService.attachRegisteredClientToPlatformUser(jwt.getSubject(), model.getId());
+            userService.attachRegisteredClientToPlatformUser(platformUser.getEmail(), model.getId());
             return ResponseEntity.ok(RegisteredClientResponse.fromCreatedModel(model));
         } catch (final ValidationException | IllegalArgumentException e) {
-            log.warn("Create client validation failed for platform user {}.", jwt.getSubject(), e);
+            log.warn("Create client validation failed for platform user {}.", platformUser.getEmail(), e);
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (final Exception e) {
-            log.error("Create client failed unexpectedly for platform user {}.", jwt.getSubject(), e);
+            log.error("Create client failed unexpectedly for platform user {}.", platformUser.getEmail(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
     @GetMapping("/dashboard")
     @PreAuthorize("hasRole('PLATFORM_USER')")
-    public ResponseEntity<PlatformUserDetailsReponse> getDashboard(@AuthenticationPrincipal final Jwt jwt) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Dashboard request rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
-        final Set<UUID> registeredClientIds = platformUser.getRegisteredClientIds() == null
-                                              ? Collections.emptySet()
-                                              : platformUser.getRegisteredClientIds();
-
+    public ResponseEntity<PlatformUserDetailsReponse> getDashboard(@AuthenticationPrincipal final PlatformUser platformUser) {
         final Set<RegisteredClientResponse> registeredClients =
-                registeredClientService.findRegisteredClientsByIds(registeredClientIds)
+                registeredClientService.findRegisteredClientsByIds(platformUser.registeredClientIdsOrEmpty())
                                        .stream()
                                        .map(RegisteredClientResponse::fromModel)
                                        .collect(Collectors.toCollection(HashSet::new));
@@ -131,11 +108,7 @@ public class PlatformApiController {
                 PlatformUserDetailsReponse.from(registeredClients, platformUser.getTier())
                                           .totalUsers(userService.getTotalUserCount(platformUser.getEmail()))
                                           .isDemoUser(platformUser.isDemoUser())
-                                          .isAdmin(platformUser.getAuthorities() != null
-                                                   && platformUser.getAuthorities().stream()
-                                                                  .map(Authority::getName)
-                                                                  .collect(Collectors.toSet())
-                                                                  .containsAll(Set.of("ROLE_PLATFORM_ADMIN", "PLATFORM_ADMIN_ACCESS")))
+                                          .isAdmin(platformUser.isPlatformAdmin())
                                           .build();
         return ResponseEntity.ok(platformUserDetailsReponse);
     }
@@ -151,17 +124,10 @@ public class PlatformApiController {
 
     @PostMapping("/users")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<Set<ClientUserResponse>> getClientUsers(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<Set<ClientUserResponse>> getClientUsers(@AuthenticationPrincipal final PlatformUser platformUser,
                                                                   @RequestBody Set<UUID> registeredClientIds) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Client user lookup rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
         return ResponseEntity.ok(userService.findClientUsersByRegisteredClientIds(
-                                                    userService.filterOwnedRegisteredClientIds(platformUser,
-                                                                                               registeredClientIds))
+                                                    platformUser.filterOwnedRegisteredClientIds(registeredClientIds))
                                             .stream()
                                             .map(ClientUserResponse::fromModel)
                                             .collect(Collectors.toCollection(HashSet::new)));
@@ -169,15 +135,9 @@ public class PlatformApiController {
 
     @PatchMapping("/users/{clientUserId}")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<ClientUserResponse> updateClientUser(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<ClientUserResponse> updateClientUser(@AuthenticationPrincipal final PlatformUser platformUser,
                                                                @PathVariable final UUID clientUserId,
                                                                @RequestBody final ClientUserRequest request) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Client user update rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
         final ClientUser updatedClientUser =
                 userService.updateClientUser(
                         clientUserId,
@@ -186,7 +146,7 @@ public class PlatformApiController {
                 );
 
         if (updatedClientUser == null) {
-            log.warn("Client user {} was not found or not owned by platform user {}.", clientUserId, jwt.getSubject());
+            log.warn("Client user {} was not found or not owned by platform user {}.", clientUserId, platformUser.getEmail());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -195,17 +155,10 @@ public class PlatformApiController {
 
     @PostMapping("/tokens")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<Set<AuthTokenResponse>> getClientAuthTokens(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<Set<AuthTokenResponse>> getClientAuthTokens(@AuthenticationPrincipal final PlatformUser platformUser,
                                                                       @RequestBody Set<UUID> registeredClientIds) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Token lookup rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
         return ResponseEntity.ok(authTokenService.findAllByRegisteredClientIds(
-                                                         userService.filterOwnedRegisteredClientIds(platformUser,
-                                                                                                    registeredClientIds))
+                                                         platformUser.filterOwnedRegisteredClientIds(registeredClientIds))
                                                  .stream()
                                                  .map(AuthTokenResponse::fromModel)
                                                  .collect(Collectors.toCollection(HashSet::new)));
@@ -213,37 +166,28 @@ public class PlatformApiController {
 
     @PatchMapping("/{registeredClientId}/update")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<?> updateRegisteredClient(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<?> updateRegisteredClient(@AuthenticationPrincipal final PlatformUser platformUser,
                                                     @PathVariable final UUID registeredClientId,
                                                     @RequestBody final RegisteredClientRequest registeredClientRequest) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Registered client update rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
         final RegisteredClientModel updated;
         try {
             updated = registeredClientMapper.registeredClientRequestToRegisteredClientModel(registeredClientRequest);
         } catch (final ValidationException | IllegalArgumentException e) {
-            log.warn("Registered client update validation failed for client {} by platform user {}.", registeredClientId, jwt.getSubject(), e);
+            log.warn("Registered client update validation failed for client {} by platform user {}.", registeredClientId, platformUser.getEmail(), e);
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
 
-        if (CollectionUtils.isEmpty(platformUser.getRegisteredClientIds()) || !platformUser.getRegisteredClientIds().contains(registeredClientId)) {
-            log.warn("Platform user {} attempted to update unowned registered client {}.", jwt.getSubject(), registeredClientId);
+        if (!platformUser.ownsRegisteredClientId(registeredClientId)) {
+            log.warn("Platform user {} attempted to update unowned registered client {}.", platformUser.getEmail(), registeredClientId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
         final Set<RegisteredClientModel> clients = new HashSet<>(
-                registeredClientService.findRegisteredClientsByIds(platformUser.getRegisteredClientIds())
+                registeredClientService.findRegisteredClientsByIds(platformUser.registeredClientIdsOrEmpty())
         );
-        final RegisteredClientModel existingRegisteredClient = clients.stream()
-                                                                      .filter(client -> registeredClientId.equals(client.getId()))
-                                                                      .findFirst()
-                                                                      .orElse(null);
+        final RegisteredClientModel existingRegisteredClient = platformUser.findOwnedRegisteredClientById(clients, registeredClientId);
         if (existingRegisteredClient == null) {
-            log.warn("Registered client {} could not be resolved for platform user {} during update.", registeredClientId, jwt.getSubject());
+            log.warn("Registered client {} could not be resolved for platform user {} during update.", registeredClientId, platformUser.getEmail());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -252,14 +196,12 @@ public class PlatformApiController {
             resolvedUpdatedRegisteredClient =
                     registeredClientService.previewUpdatedRegisteredClient(existingRegisteredClient, updated);
             if (resolvedUpdatedRegisteredClient == null) {
-                log.warn("Registered client {} preview update returned null for platform user {}.", registeredClientId, jwt.getSubject());
+                log.warn("Registered client {} preview update returned null for platform user {}.", registeredClientId, platformUser.getEmail());
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
-            clients.removeIf(client -> registeredClientId.equals(client.getId()));
-            clients.add(resolvedUpdatedRegisteredClient);
-            platformUser.validateTierCompliance(clients);
+            platformUser.replaceRegisteredClientAndValidateTier(clients, resolvedUpdatedRegisteredClient);
         } catch (final ValidationException e) {
-            log.warn("Registered client {} update failed tier validation for platform user {}.", registeredClientId, jwt.getSubject(), e);
+            log.warn("Registered client {} update failed tier validation for platform user {}.", registeredClientId, platformUser.getEmail(), e);
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
 
@@ -269,7 +211,7 @@ public class PlatformApiController {
                 registeredClientService.updateRegisteredClient(existingRegisteredClient, updated);
 
         if (savedUpdatedRegisteredClient == null) {
-            log.warn("Registered client {} update did not persist for platform user {}.", registeredClientId, jwt.getSubject());
+            log.warn("Registered client {} update did not persist for platform user {}.", registeredClientId, platformUser.getEmail());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -278,31 +220,19 @@ public class PlatformApiController {
 
     @PostMapping("/tokens/{authTokenId}/invalidate")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<Void> invalidateClientAuthToken(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<Void> invalidateClientAuthToken(@AuthenticationPrincipal final PlatformUser platformUser,
                                                           @PathVariable final UUID authTokenId) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Token invalidate request rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
         return authTokenService.invalidateByIdAndRegisteredClientIds(authTokenId, platformUser.getRegisteredClientIds())
                ? ResponseEntity.noContent().build()
-               : logInvalidateTokenNotFound(authTokenId, jwt.getSubject());
+               : logInvalidateTokenNotFound(authTokenId, platformUser.getEmail());
     }
 
     @PostMapping("/{registeredClientId}/tokens/invalidate")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<Integer> invalidateRegisteredClientTokens(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<Integer> invalidateRegisteredClientTokens(@AuthenticationPrincipal final PlatformUser platformUser,
                                                                     @PathVariable final UUID registeredClientId) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Registered client token invalidate request rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
-        if (CollectionUtils.isEmpty(platformUser.getRegisteredClientIds()) || !platformUser.getRegisteredClientIds().contains(registeredClientId)) {
-            log.warn("Platform user {} attempted to invalidate tokens for unowned registered client {}.", jwt.getSubject(), registeredClientId);
+        if (!platformUser.ownsRegisteredClientId(registeredClientId)) {
+            log.warn("Platform user {} attempted to invalidate tokens for unowned registered client {}.", platformUser.getEmail(), registeredClientId);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -311,14 +241,8 @@ public class PlatformApiController {
 
     @PostMapping("/recent-user-activity")
     @PreAuthorize("hasRole('PLATFORM_USER') and hasAuthority('PLATFORM_TIER_PAID')")
-    public ResponseEntity<ClientUserActivityResponse> getRecentUserActivity(@AuthenticationPrincipal final Jwt jwt,
+    public ResponseEntity<ClientUserActivityResponse> getRecentUserActivity(@AuthenticationPrincipal final PlatformUser platformUser,
                                                                             @RequestBody final Set<String> clientIds) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            log.warn("Recent user activity request rejected because the platform user {} could not be resolved.", jwt.getSubject());
-            return unauthorized();
-        }
-
         final Set<String> requestedClientIds = clientIds == null ? Collections.emptySet() : clientIds;
         if (requestedClientIds.isEmpty()) {
             return ResponseEntity.ok(ClientUserActivityResponse.builder()
@@ -327,12 +251,9 @@ public class PlatformApiController {
                                                                .build());
         }
 
-        final Set<UUID> ownedRegisteredClientIds = platformUser.getRegisteredClientIds() == null
-                                                   ? Collections.emptySet()
-                                                   : platformUser.getRegisteredClientIds();
-        final Set<RegisteredClientModel> ownedClients = registeredClientService.findRegisteredClientsByIds(ownedRegisteredClientIds);
-        if (CollectionUtils.isEmpty(ownedClients) || ownedClients.stream().map(RegisteredClientModel::getClientId).noneMatch(clientIds::contains)) {
-            log.warn("Platform user {} requested recent activity for unowned or unknown client ids {}.", jwt.getSubject(), requestedClientIds);
+        final Set<RegisteredClientModel> ownedClients = registeredClientService.findRegisteredClientsByIds(platformUser.registeredClientIdsOrEmpty());
+        if (!platformUser.ownsAnyClientIds(ownedClients, requestedClientIds)) {
+            log.warn("Platform user {} requested recent activity for unowned or unknown client ids {}.", platformUser.getEmail(), requestedClientIds);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
@@ -356,12 +277,7 @@ public class PlatformApiController {
 
     @PostMapping("/admin/dashboard")
     @PreAuthorize("hasRole('PLATFORM_ADMIN') and hasAuthority('PLATFORM_ADMIN_ACCESS')")
-    public ResponseEntity<AdminDashboardResponse> getAdminDashboard(@AuthenticationPrincipal final Jwt jwt) {
-        final PlatformUser platformUser = userService.loadPlatformUserByEmail(jwt.getSubject());
-        if (platformUser == null) {
-            return unauthorized();
-        }
-
+    public ResponseEntity<AdminDashboardResponse> getAdminDashboard(@AuthenticationPrincipal final PlatformUser platformUser) {
         final List<DemoAccessCodeDetailsResponse> responses = demoAccessCodeService.findAll()
                                                                                    .stream()
                                                                                    .map(demoAccessCodeMapper::demoAccessCodeToDemoAccessCodeDetailsResponse)

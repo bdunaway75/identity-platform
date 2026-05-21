@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { clearPlatformApiCache } from "../../clients/services/platform";
 import { clearSubscriptionTierCache, clearPendingSubscriptionCheckout, getPendingSubscriptionCheckout } from "../services/subscription";
 import { useSubscription } from "../context/SubscriptionContext";
@@ -12,7 +12,6 @@ function buildCountdownDigits(seconds) {
 }
 
 export default function SubscriptionCheckoutSuccess() {
-  const navigate = useNavigate();
   const { refreshTier } = useSubscription();
   const location = useLocation();
   const [secondsRemaining, setSecondsRemaining] = useState(REDIRECT_SECONDS);
@@ -23,11 +22,20 @@ export default function SubscriptionCheckoutSuccess() {
   const customMessage = location.state?.message || "";
   const hasSyncedSubscriptionRef = useRef(false);
 
-  async function syncSubscriptionState() {
+  function clearSubscriptionState() {
     clearPendingSubscriptionCheckout();
     clearPlatformApiCache();
     clearSubscriptionTierCache();
+  }
+
+  async function syncSubscriptionState() {
+    clearSubscriptionState();
     await refreshTier();
+  }
+
+  function hardRefreshSubscriptions() {
+    clearSubscriptionState();
+    window.location.replace("/subscriptions");
   }
 
   useEffect(() => {
@@ -51,7 +59,7 @@ export default function SubscriptionCheckoutSuccess() {
 
   useEffect(() => {
     if (secondsRemaining <= 0) {
-      navigate("/subscriptions", { replace: true });
+      hardRefreshSubscriptions();
       return undefined;
     }
 
@@ -60,7 +68,7 @@ export default function SubscriptionCheckoutSuccess() {
     }, 1000);
 
     return () => window.clearTimeout(timeoutId);
-  }, [navigate, secondsRemaining]);
+  }, [secondsRemaining]);
 
   const title = customTitle || "Subscription active";
   const message = customMessage || "Your billing completed successfully and the subscription upgrade is confirmed.";
@@ -71,7 +79,7 @@ export default function SubscriptionCheckoutSuccess() {
     } catch (error) {
       console.error("Unable to refresh subscription tier before returning", error);
     } finally {
-      navigate("/subscriptions");
+      hardRefreshSubscriptions();
     }
   };
 
