@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -73,7 +74,7 @@ public class PlatformUser extends AbstractUser {
                                                               .mapToInt(registeredClient -> registeredClient.getAuthorities().size())
                                                               .sum();
 
-        final List<String> errors = new java.util.ArrayList<>();
+        final List<String> errors = new ArrayList<>();
         if (registeredClientCount > resolvedTier.getAllowedNumberOfRegisteredClients()) {
             errors.add("registered clients exceed tier allowance");
         }

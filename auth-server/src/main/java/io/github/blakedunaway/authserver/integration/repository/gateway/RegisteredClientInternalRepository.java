@@ -10,6 +10,8 @@ public interface RegisteredClientInternalRepository {
 
     RegisteredClientModel findByClientId(final String clientId);
 
+    boolean existsByClientId(final String clientId);
+
     RegisteredClientModel findById(final String id);
 
     Set<RegisteredClientModel> findAllByIds(final Set<UUID> ids);

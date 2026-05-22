@@ -11,6 +11,7 @@ import io.github.blakedunaway.authserver.integration.repository.jpa.ClientUserJp
 import io.github.blakedunaway.authserver.integration.repository.jpa.RegisterClientJpaRepository;
 import io.github.blakedunaway.authserver.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,13 +45,18 @@ public class SpringUserRepositoryImpl implements UserRepository {
         return userMapper.clientUserEntityToClientUser(clientUserJpaRepository.save(clientUserEntity));
     }
 
+    @Override
+    public boolean existsByClientIdAndEmail(final String clientId, final String email) {
+        return clientUserJpaRepository.existsByClientIdAndEmail(clientId, email);
+    }
+
     private Set<AuthorityEntity> resolveManagedAuthorities(final ClientUser clientUser) {
         final Set<String> requestedAuthorityNames = clientUser.getAuthorities() == null
                                                     ? Collections.emptySet()
                                                     : clientUser.getAuthorities()
                                                                 .stream()
                                                                 .map(Authority::getName)
-                                                                .filter(name -> name != null && !name.isBlank())
+                                                                .filter(StringUtils::isNotBlank)
                                                                 .map(String::toUpperCase)
                                                                 .collect(Collectors.toSet());
 

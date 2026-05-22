@@ -5,6 +5,23 @@
     min-height: 100%;
 }
 
+.subscriptions-header .client-title {
+    color: rgba(244, 247, 255, 0.98);
+    text-shadow:
+        0 0 24px rgba(99, 102, 241, 0.14),
+        0 0 12px rgba(34, 211, 238, 0.08);
+    letter-spacing: -0.055em;
+}
+
+.subscriptions-header .client-subtitle {
+    margin-top: 0.55rem;
+}
+
+.subscriptions-alert-stack {
+    display: grid;
+    gap: 0.7rem;
+}
+
 .subscriptions-loading-state {
     min-height: 55vh;
     display: grid;
@@ -364,6 +381,39 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     align-items: center;
+}
+
+@media (max-width: 760px) {
+    .subscriptions-page {
+        overflow: visible;
+    }
+
+    .subscriptions-tier-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .subscriptions-tier-card {
+        min-height: 0;
+        border-radius: 18px;
+    }
+
+    .subscriptions-tier-name-row,
+    .subscriptions-tier-limit-row,
+    .subscriptions-tier-usage-row {
+        align-items: flex-start;
+    }
+
+    .subscriptions-tier-limit-row,
+    .subscriptions-tier-usage-row {
+        flex-direction: column;
+        gap: 0.32rem;
+    }
+
+    .subscriptions-tier-limit-label,
+    .subscriptions-tier-usage-label {
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
 }
 
 @keyframes subscriptions-action-spin {

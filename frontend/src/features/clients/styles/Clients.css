@@ -846,12 +846,13 @@
     min-height: min(32rem, calc(100vh - 16rem));
     min-height: min(32rem, calc(100svh - 16rem));
     min-height: min(32rem, calc(100dvh - 16rem));
-    border-radius: 22px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background:
-        radial-gradient(circle at 18% 8%, rgba(18, 214, 232, 0.12), transparent 34%),
-        radial-gradient(circle at 86% 18%, rgba(63, 93, 112, 0.14), transparent 36%),
-        linear-gradient(180deg, rgba(7, 16, 21, 0.94), rgba(5, 10, 13, 0.9));
+    border-radius: 0;
+    border: 0;
+    background: transparent;
+}
+
+.clients-locked-page-embedded::before {
+    display: none;
 }
 
 .clients-locked-page::before {

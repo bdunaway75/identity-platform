@@ -17,6 +17,8 @@
     --accent-alt: #22d3ee; /* cyan */
 
     --glow-soft: 0 0 20px rgba(99, 102, 241, 0.25);
+
+    --app-atmosphere-drift: 42px;
 }
 
 .app-root {
@@ -32,11 +34,67 @@
     overflow: hidden;
     overflow-x: clip;
     background:
-        radial-gradient(circle at top, #111122, #0a0a0f 56%, #050809 100%);
+        radial-gradient(circle at 18% 10%, rgba(18, 214, 232, 0.16), transparent 28%),
+        radial-gradient(circle at 86% 18%, rgba(55, 83, 105, 0.2), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(7, 43, 48, 0.42), transparent 46%),
+        linear-gradient(180deg, #071015 0%, #050a0d 48%, #03070d 100%);
     background-color: #000000;
+    isolation: isolate;
+}
+
+.app-root::before {
+    content: "";
+    position: fixed;
+    inset: -12%;
+    z-index: 0;
+    background-image:
+        radial-gradient(ellipse at 16% 22%, rgba(18, 214, 232, 0.16), transparent 34%),
+        radial-gradient(ellipse at 84% 8%, rgba(120, 165, 185, 0.13), transparent 32%),
+        radial-gradient(ellipse at 76% 92%, rgba(10, 83, 91, 0.22), transparent 40%),
+        linear-gradient(135deg, rgba(176, 245, 255, 0.055), transparent 44%);
+    background-size:
+        120% 120%,
+        110% 110%,
+        120% 120%,
+        100% 100%;
+    opacity: 0.74;
+    filter: blur(18px);
+    pointer-events: none;
+    animation: app-atmosphere-drift 18s ease-in-out infinite alternate;
+}
+
+.app-root::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0, rgba(0, 0, 0, 0.62) 3.25rem, rgba(0, 0, 0, 0.16) 8rem, rgba(0, 0, 0, 0) 13rem),
+        radial-gradient(circle at 48% 38%, transparent 0 40%, rgba(0, 0, 0, 0.08) 74%, rgba(0, 0, 0, 0.26) 100%),
+        linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.025) 36%, transparent 58%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 24%, rgba(0, 0, 0, 0.1));
+    background-size:
+        100% 100%,
+        100% 100%,
+        160% 160%,
+        100% 100%;
+    background-position: center, center, 0 0, center;
+    opacity: 0.68;
+    pointer-events: none;
+}
+
+@keyframes app-atmosphere-drift {
+    from {
+        transform: translate3d(calc(var(--app-atmosphere-drift) * -0.25), calc(var(--app-atmosphere-drift) * -0.15), 0) scale(1);
+    }
+
+    to {
+        transform: translate3d(calc(var(--app-atmosphere-drift) * 0.35), calc(var(--app-atmosphere-drift) * 0.18), 0) scale(1.04);
+    }
 }
 
 .app-shell {
+    z-index: 1;
     flex: 1;
     height: 100%;
     min-width: 0;
@@ -46,16 +104,17 @@
     position: relative;
     overflow-y: auto;
     overflow-x: hidden;
-    background:
-        linear-gradient(180deg, rgba(7, 9, 16, 0.98), rgba(5, 8, 9, 0.98)),
-        radial-gradient(circle at top right, rgba(34, 211, 238, 0.06), transparent 28%);
+    background: transparent;
 }
 
 .sidebar {
+    z-index: 1;
     width: 240px;
     min-width: 240px;
     height: 100%;
-    background: linear-gradient(180deg, #0d0d16, #09090f);
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.78), rgba(5, 10, 13, 0.74)),
+        radial-gradient(circle at top right, rgba(34, 211, 238, 0.07), transparent 34%);
     border-right: 1px solid var(--border-subtle);
     padding: 1.5rem 1rem;
     position: sticky;
@@ -67,6 +126,7 @@
     transition: width 220ms ease, min-width 220ms ease, padding 220ms ease, transform 220ms ease, opacity 220ms ease;
     overflow: hidden;
     flex-shrink: 0;
+    backdrop-filter: blur(18px);
 }
 
 .sidebar::after {
@@ -311,12 +371,18 @@ html, body {
 
 @media (max-width: 900px) {
     .app-root {
+        --app-atmosphere-drift: 28px;
         display: block;
         height: auto;
         min-height: 100vh;
         min-height: 100svh;
         min-height: 100dvh;
         overflow: visible;
+        background:
+            radial-gradient(circle at 18% 10%, rgba(18, 214, 232, 0.16), transparent 28%),
+            radial-gradient(circle at 86% 18%, rgba(55, 83, 105, 0.2), transparent 30%),
+            radial-gradient(circle at 50% 100%, rgba(7, 43, 48, 0.42), transparent 46%),
+            linear-gradient(180deg, #071015 0%, #050a0d 48%, #03070d 100%);
         background-color: #000000;
     }
 
@@ -324,7 +390,7 @@ html, body {
         height: auto;
         min-height: 0;
         overflow: visible;
-        background-color: #000000;
+        background: transparent;
     }
 
     .sidebar {
@@ -338,7 +404,7 @@ html, body {
         display: block;
         padding: max(0.6rem, var(--app-safe-area-top, 0px)) 1rem 0;
         background:
-            linear-gradient(180deg, rgba(10, 10, 15, 0.98), rgba(10, 10, 15, 0.9) 78%, rgba(10, 10, 15, 0)),
+            linear-gradient(180deg, rgba(0, 0, 0, 0.98), rgba(4, 8, 10, 0.9) 78%, rgba(4, 8, 10, 0)),
             radial-gradient(circle at top left, rgba(34, 211, 238, 0.08), transparent 36%);
         background-color: #000000;
         backdrop-filter: blur(18px);

@@ -17,6 +17,11 @@
 <c:set var="signUpAction" value="${isPlatformFlow ? '/platform/signUp' : '/signUp'}" />
 <c:set var="loginHref" value="${isPlatformFlow ? '/platform/login' : '/login'}" />
 <c:set var="resolvedClientId" value="${not empty registerDto.clientId ? registerDto.clientId : param.client_id}" />
+<c:if test="${not isPlatformFlow and not empty resolvedClientId}">
+    <c:url var="loginHref" value="/login">
+        <c:param name="client_id" value="${resolvedClientId}" />
+    </c:url>
+</c:if>
 <div class="auth-shell">
     <form:form cssClass="auth-card" method="post" action="${signUpAction}" modelAttribute="${modelName}" autocomplete="on">
         <div class="auth-content">

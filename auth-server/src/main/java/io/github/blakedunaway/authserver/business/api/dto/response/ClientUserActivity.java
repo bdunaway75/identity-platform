@@ -15,4 +15,11 @@ public class ClientUserActivity {
 
     private final LocalDateTime activityTs;
 
+    public static ClientUserActivity recordActivity(final String email) {
+        return ClientUserActivity.builder()
+                                 .email(email)
+                                 .activityTs(LocalDateTime.now())
+                                 .build();
+    }
+
 }

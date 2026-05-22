@@ -6,6 +6,7 @@ import {
 } from "../services/subscription";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "../../clients/styles/Clients.css";
 import "../styles/Subscriptions.css";
 
 function normalizeTierKey(value) {
@@ -207,118 +208,127 @@ export default function Subscriptions() {
 
   return (
     <div className="subscriptions-page">
-      <section className="subscriptions-intro-card">
-        <div className="subscriptions-kicker">Plans</div>
-        <p>
-          {isDemoUser
-            ? "Demo accounts stay on their assigned plan. Subscription changes are disabled."
-            : "Each plan below shows the client, user, scope, and authority limits."}
-        </p>
-        {error ? <div className="subscriptions-error">{error}</div> : null}
-        {checkoutError ? <div className="subscriptions-error">{checkoutError}</div> : null}
-      </section>
+      <div className="client-shell">
+        <div className="client-header subscriptions-header">
+          <div className="client-header-copy">
+            <div className="client-title">Subscriptions</div>
+            <div className="client-subtitle">
+              {isDemoUser
+                ? "Demo accounts stay on their assigned plan. Subscription changes are disabled."
+                : "Compare plan limits and manage subscription access for your platform."}
+            </div>
+          </div>
+        </div>
 
-      <section className="subscriptions-tier-grid">
-        {visibleTiers.map((plan) => {
-          const planId = String(plan?.id ?? plan?.name ?? "").trim();
-          const isPendingPlan = planId.length > 0 && planId === pendingPlanId;
-          const isCurrentPlan = normalizeTierKey(plan?.name) === currentTierKey;
-          const isSelectedPlan = normalizeTierKey(plan?.name) === currentTierKey;
-          const planTierOrder = Number(plan?.tierOrder ?? plan?.price ?? 0);
-          const isHigherTier = planTierOrder > currentTierOrder;
-          const isLowerTier = planTierOrder < currentTierOrder;
-          const canCheckoutPlan = !isSelectedPlan && String(plan?.stripePriceId ?? "").trim().length > 0;
-          const cardHoverable = !isSelectedPlan && !isDemoUser;
-          const cardClickable = canCheckoutPlan && !isDemoUser;
-          const cardActionLabel = isHigherTier ? "Upgrade plan" : isLowerTier ? "Downgrade plan" : "Select plan";
-          const downgradeConsequences = isLowerTier ? buildDowngradeConsequences(plan, usage) : [];
-          return (
-            <article
-              className={`subscriptions-tier-card${isCurrentPlan ? " is-current" : ""}${isLowerTier ? " is-downgrade-option" : ""}${cardHoverable ? " is-hoverable" : ""}${cardClickable ? " is-clickable" : ""}${isPendingPlan ? " is-busy" : ""}${isWorking && !isPendingPlan ? " is-blocked" : ""}`}
-              key={plan?.id || plan?.name}
-              onClick={() => handleSelectPlan(plan)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  handleSelectPlan(plan);
-                }
-              }}
-              role={cardClickable ? "button" : "article"}
-              tabIndex={cardClickable ? 0 : -1}
-              aria-disabled={cardClickable ? isWorking : undefined}
-            >
-              <div className="subscriptions-tier-top">
-                <div>
-                  <div className="subscriptions-tier-name-row">
-                    <h2 className="subscriptions-tier-name">{plan?.name}</h2>
-                    {isCurrentPlan ? (
-                      <>
-                        <span className="subscriptions-tier-current-badge">Current plan</span>
-                        {isDemoUser ? (
-                          <span className="subscriptions-tier-locked-badge">Locked</span>
-                        ) : null}
-                      </>
-                    ) : isPendingPlan ? (
-                      <span className="subscriptions-tier-action-badge is-busy">
-                        <span className="subscriptions-tier-action-spinner" aria-hidden="true" />
-                        {pendingActionLabel || "Opening checkout..."}
-                      </span>
-                    ) : isLowerTier ? (
-                      <span className="subscriptions-tier-downgrade-badge">
-                        {downgradeConsequences.length > 0 ? "Cleanup warning" : "Lower tier"}
-                      </span>
-                    ) : cardClickable ? (
-                      <span className="subscriptions-tier-action-badge">
-                        {cardActionLabel}
-                      </span>
-                    ) : null}
+        {(error || checkoutError) ? (
+          <section className="subscriptions-alert-stack" aria-live="polite">
+            {error ? <div className="subscriptions-error">{error}</div> : null}
+            {checkoutError ? <div className="subscriptions-error">{checkoutError}</div> : null}
+          </section>
+        ) : null}
+
+        <section className="subscriptions-tier-grid">
+          {visibleTiers.map((plan) => {
+            const planId = String(plan?.id ?? plan?.name ?? "").trim();
+            const isPendingPlan = planId.length > 0 && planId === pendingPlanId;
+            const isCurrentPlan = normalizeTierKey(plan?.name) === currentTierKey;
+            const isSelectedPlan = normalizeTierKey(plan?.name) === currentTierKey;
+            const planTierOrder = Number(plan?.tierOrder ?? plan?.price ?? 0);
+            const isHigherTier = planTierOrder > currentTierOrder;
+            const isLowerTier = planTierOrder < currentTierOrder;
+            const canCheckoutPlan = !isSelectedPlan && String(plan?.stripePriceId ?? "").trim().length > 0;
+            const cardHoverable = !isSelectedPlan && !isDemoUser;
+            const cardClickable = canCheckoutPlan && !isDemoUser;
+            const cardActionLabel = isHigherTier ? "Upgrade plan" : isLowerTier ? "Downgrade plan" : "Select plan";
+            const downgradeConsequences = isLowerTier ? buildDowngradeConsequences(plan, usage) : [];
+            return (
+              <article
+                className={`subscriptions-tier-card${isCurrentPlan ? " is-current" : ""}${isLowerTier ? " is-downgrade-option" : ""}${cardHoverable ? " is-hoverable" : ""}${cardClickable ? " is-clickable" : ""}${isPendingPlan ? " is-busy" : ""}${isWorking && !isPendingPlan ? " is-blocked" : ""}`}
+                key={plan?.id || plan?.name}
+                onClick={() => handleSelectPlan(plan)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleSelectPlan(plan);
+                  }
+                }}
+                role={cardClickable ? "button" : "article"}
+                tabIndex={cardClickable ? 0 : -1}
+                aria-disabled={cardClickable ? isWorking : undefined}
+              >
+                <div className="subscriptions-tier-top">
+                  <div>
+                    <div className="subscriptions-tier-name-row">
+                      <h2 className="subscriptions-tier-name">{plan?.name}</h2>
+                      {isCurrentPlan ? (
+                        <>
+                          <span className="subscriptions-tier-current-badge">Current plan</span>
+                          {isDemoUser ? (
+                            <span className="subscriptions-tier-locked-badge">Locked</span>
+                          ) : null}
+                        </>
+                      ) : isPendingPlan ? (
+                        <span className="subscriptions-tier-action-badge is-busy">
+                          <span className="subscriptions-tier-action-spinner" aria-hidden="true" />
+                          {pendingActionLabel || "Opening checkout..."}
+                        </span>
+                      ) : isLowerTier ? (
+                        <span className="subscriptions-tier-downgrade-badge">
+                          {downgradeConsequences.length > 0 ? "Cleanup warning" : "Lower tier"}
+                        </span>
+                      ) : cardClickable ? (
+                        <span className="subscriptions-tier-action-badge">
+                          {cardActionLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="subscriptions-tier-price">{formatPrice(plan?.price)}</div>
                   </div>
-                  <div className="subscriptions-tier-price">{formatPrice(plan?.price)}</div>
+                  <p className="subscriptions-tier-description">{buildTierDescription(plan)}</p>
                 </div>
-                <p className="subscriptions-tier-description">{buildTierDescription(plan)}</p>
-              </div>
 
-              <div className="subscriptions-tier-limits">
-                {buildTierHighlights(plan).map((highlight) => (
-                  <div className="subscriptions-tier-limit-row" key={`${plan?.name}-${highlight.label}`}>
-                    <span className="subscriptions-tier-limit-label">{highlight.label}</span>
-                    <span className="subscriptions-tier-limit-value">{highlight.value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {isLowerTier ? (
-                <div className="subscriptions-tier-warning">
-                  {downgradeConsequences.length > 0
-                    ? `This downgrade would leave you over the new limit for ${downgradeConsequences.join(", ")}.`
-                    : "This lower tier may require cleanup if your usage later exceeds its limits."}
+                <div className="subscriptions-tier-limits">
+                  {buildTierHighlights(plan).map((highlight) => (
+                    <div className="subscriptions-tier-limit-row" key={`${plan?.name}-${highlight.label}`}>
+                      <span className="subscriptions-tier-limit-label">{highlight.label}</span>
+                      <span className="subscriptions-tier-limit-value">{highlight.value}</span>
+                    </div>
+                  ))}
                 </div>
-              ) : null}
 
-              {isCurrentPlan ? (
-                <div className="subscriptions-tier-usage">
-                  <div className="subscriptions-tier-usage-row">
-                    <span className="subscriptions-tier-usage-label">Clients in use</span>
-                    <span className="subscriptions-tier-usage-value">{`${totalClients}/${allowedClients}`}</span>
+                {isLowerTier ? (
+                  <div className="subscriptions-tier-warning">
+                    {downgradeConsequences.length > 0
+                      ? `This downgrade would leave you over the new limit for ${downgradeConsequences.join(", ")}.`
+                      : "This lower tier may require cleanup if your usage later exceeds its limits."}
                   </div>
-                  <div className="subscriptions-tier-usage-row">
-                    <span className="subscriptions-tier-usage-label">Users in use</span>
-                    <span className="subscriptions-tier-usage-value">{`${totalUsers}/${allowedUsers}`}</span>
+                ) : null}
+
+                {isCurrentPlan ? (
+                  <div className="subscriptions-tier-usage">
+                    <div className="subscriptions-tier-usage-row">
+                      <span className="subscriptions-tier-usage-label">Clients in use</span>
+                      <span className="subscriptions-tier-usage-value">{`${totalClients}/${allowedClients}`}</span>
+                    </div>
+                    <div className="subscriptions-tier-usage-row">
+                      <span className="subscriptions-tier-usage-label">Users in use</span>
+                      <span className="subscriptions-tier-usage-value">{`${totalUsers}/${allowedUsers}`}</span>
+                    </div>
+                    <div className="subscriptions-tier-usage-row">
+                      <span className="subscriptions-tier-usage-label">Scopes in use</span>
+                      <span className="subscriptions-tier-usage-value">{`${totalScopes}/${formatLimitValue(limits?.globalScopes)}`}</span>
+                    </div>
+                    <div className="subscriptions-tier-usage-row">
+                      <span className="subscriptions-tier-usage-label">Authorities in use</span>
+                      <span className="subscriptions-tier-usage-value">{`${totalAuthorities}/${formatLimitValue(limits?.globalAuthorities)}`}</span>
+                    </div>
                   </div>
-                  <div className="subscriptions-tier-usage-row">
-                    <span className="subscriptions-tier-usage-label">Scopes in use</span>
-                    <span className="subscriptions-tier-usage-value">{`${totalScopes}/${formatLimitValue(limits?.globalScopes)}`}</span>
-                  </div>
-                  <div className="subscriptions-tier-usage-row">
-                    <span className="subscriptions-tier-usage-label">Authorities in use</span>
-                    <span className="subscriptions-tier-usage-value">{`${totalAuthorities}/${formatLimitValue(limits?.globalAuthorities)}`}</span>
-                  </div>
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
-      </section>
+                ) : null}
+              </article>
+            );
+          })}
+        </section>
+      </div>
     </div>
   );
 }

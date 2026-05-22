@@ -1,9 +1,10 @@
 package io.github.blakedunaway.authserver.business.api.controller;
 
 import com.stripe.StripeClient;
-import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
-import com.stripe.model.*;
+import com.stripe.model.Event;
+import com.stripe.model.Subscription;
+import com.stripe.model.SubscriptionItem;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import com.stripe.param.SubscriptionListParams;
@@ -11,27 +12,31 @@ import com.stripe.param.SubscriptionUpdateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
+import io.github.blakedunaway.authserver.business.service.EventStreamService;
+import io.github.blakedunaway.authserver.business.service.EventStreamService.StreamEvent;
 import io.github.blakedunaway.authserver.business.service.PlatformUserTierService;
 import io.github.blakedunaway.authserver.business.service.UserService;
-import io.github.blakedunaway.authserver.config.redis.RedisStore;
+import io.github.blakedunaway.authserver.util.EventStreamUtility;
 import io.github.blakedunaway.authserver.util.RedisUtility;
 import io.github.blakedunaway.authserver.util.StripeEventUtility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.Duration;
 import java.util.Map;
@@ -50,7 +55,11 @@ public class PlatformUserSubscriptionController {
 
     private final StripeClient stripeClient;
 
-    private final RedisStore redisStore;
+    private final EventStreamService eventStreamService;
+
+    private static final Duration CHECKOUT_REDIRECT_TTL = Duration.ofMinutes(30);
+    private static final String SUBSCRIPTIONS_REDIRECT_PATH = "/subscriptions/success";
+    private static final String SUBSCRIPTIONS_CANCEL_REDIRECT_PATH = "/subscriptions/cancel";
 
     @Value("${auth-server.frontend.origin}")
     private String frontendOrigin;
@@ -79,7 +88,7 @@ public class PlatformUserSubscriptionController {
         final SessionCreateParams params = SessionCreateParams.builder()
                                                                      .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
                                                                      .setSuccessUrl(
-                                                                             frontendOrigin + "/subscriptions/success?session_id={CHECKOUT_SESSION_ID}")
+                                                                             frontendOrigin + "/subscriptions/checkout?session_id={CHECKOUT_SESSION_ID}")
                                                                      .setCancelUrl(frontendOrigin + "/subscriptions/cancel")
                                                                      .addLineItem(
                                                                              SessionCreateParams.LineItem.builder()
@@ -98,19 +107,20 @@ public class PlatformUserSubscriptionController {
                                                                      .build();
 
         final Session session = stripeClient.v1().checkout().sessions().create(params);
-        redisStore.put(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + session.getId(), "pending", Duration.ofMinutes(30));
         return ResponseEntity.ok(session.getUrl());
     }
 
-    @GetMapping(value = "/subscription-status", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, String>> getSubscriptionStatus(@RequestParam("session_id") final String sessionId) {
+    @GetMapping(value = "/subscription-events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeToCheckoutStatus(@RequestParam("session_id") final String sessionId) {
         if (sessionId.isBlank()) {
-            log.warn("Subscription status lookup was requested without a session id.");
-            return ResponseEntity.badRequest().body(Map.of("status", "invalid"));
+            throw new IllegalArgumentException("session_id is required");
         }
 
-        final String status = redisStore.get(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + sessionId);
-        return ResponseEntity.ok(Map.of("status", status == null || status.isBlank() ? "pending" : status));
+        return eventStreamService.subscribe(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + sessionId,
+                                            EventStreamUtility.REDIRECT_EVENT,
+                                            new StreamEvent(EventStreamUtility.WAITING_EVENT,
+                                                            EventStreamUtility.CONNECTED_MESSAGE,
+                                                            false));
     }
 
     @PreAuthorize("hasRole('PLATFORM_USER')")
@@ -157,12 +167,18 @@ public class PlatformUserSubscriptionController {
                                                              session.getMetadata().get("tierId"),
                                                              null)) {
                     log.error("Stripe checkout session webhook failed to sync a platform user tier for session {}.", session.getId());
-                    redisStore.put(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + session.getId(), "failed", Duration.ofMinutes(30));
+                    eventStreamService.storeAndSend(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + session.getId(),
+                                                    SUBSCRIPTIONS_CANCEL_REDIRECT_PATH,
+                                                    CHECKOUT_REDIRECT_TTL,
+                                                    EventStreamUtility.REDIRECT_EVENT);
                     return ResponseEntity.badRequest()
                                          .body(Map.of("message", "An error occurred processing your subscription, support has been notified."));
                 }
                 if (session != null) {
-                    redisStore.put(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + session.getId(), "completed", Duration.ofMinutes(30));
+                    eventStreamService.storeAndSend(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + session.getId(),
+                                                    SUBSCRIPTIONS_REDIRECT_PATH,
+                                                    CHECKOUT_REDIRECT_TTL,
+                                                    EventStreamUtility.REDIRECT_EVENT);
                 }
             }
 
@@ -268,7 +284,7 @@ public class PlatformUserSubscriptionController {
     private boolean syncPlatformUserTier(final String platformUserId,
                                          final String tierId,
                                          final Subscription subscription) {
-        if (platformUserId == null || platformUserId.isBlank()) {
+        if (StringUtils.isBlank(platformUserId)) {
             return false;
         }
 
@@ -284,7 +300,7 @@ public class PlatformUserSubscriptionController {
 
     private PlatformUserTier resolvePlatformUserTier(final String tierId,
                                                      final Subscription subscription) {
-        if (tierId != null && !tierId.isBlank()) {
+        if (StringUtils.isNotBlank(tierId)) {
             final PlatformUserTier tier = platformUserTierService.findTierById(tierId);
             if (tier != null) {
                 return tier;

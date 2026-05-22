@@ -148,7 +148,7 @@ public class RegisteredClientEntity {
     }
 
     public void addClientAuthenticationMethod(final String method) {
-        if (method == null || method.isBlank()) {
+        if (StringUtils.isBlank(method)) {
             return;
         }
         if (clientAuthenticationMethods == null) {
@@ -176,7 +176,7 @@ public class RegisteredClientEntity {
     }
 
     public void addAuthorizationGrantType(final String grantType) {
-        if (grantType == null || grantType.isBlank()) {
+        if (StringUtils.isBlank(grantType)) {
             return;
         }
         if (authorizationGrantTypes == null) {
@@ -237,7 +237,7 @@ public class RegisteredClientEntity {
     }
 
     public void addRedirectUri(final String uri) {
-        if (uri == null || uri.isBlank()) {
+        if (StringUtils.isBlank(uri)) {
             return;
         }
         if (redirectUris == null) {
@@ -265,7 +265,7 @@ public class RegisteredClientEntity {
     }
 
     public void addPostLogoutRedirectUri(final String uri) {
-        if (uri == null || uri.isBlank()) {
+        if (StringUtils.isBlank(uri)) {
             return;
         }
         if (postLogoutRedirectUris == null) {
@@ -294,7 +294,7 @@ public class RegisteredClientEntity {
     }
 
     public void addScope(final String scope) {
-        if (scope == null || scope.isBlank()) {
+        if (StringUtils.isBlank(scope)) {
             return;
         }
         if (scopes == null) {

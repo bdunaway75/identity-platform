@@ -21,6 +21,7 @@ body.login-page-theme {
 
 body.login-page-theme::before {
   content: "";
+  display: block;
   position: fixed;
   inset: -12%;
   background-image:
@@ -42,18 +43,21 @@ body.login-page-theme::before {
 
 body.login-page-theme::after {
   content: "";
+  display: block;
   position: fixed;
   inset: 0;
   background-image:
-    radial-gradient(circle at 48% 38%, transparent 0 34%, rgba(0, 0, 0, 0.18) 72%, rgba(0, 0, 0, 0.45) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0, rgba(0, 0, 0, 0.62) 3.25rem, rgba(0, 0, 0, 0.16) 8rem, rgba(0, 0, 0, 0) 13rem),
+    radial-gradient(circle at 48% 38%, transparent 0 40%, rgba(0, 0, 0, 0.08) 74%, rgba(0, 0, 0, 0.26) 100%),
     linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.025) 36%, transparent 58%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 22%, rgba(0, 0, 0, 0.22));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 24%, rgba(0, 0, 0, 0.1));
   background-size:
+    100% 100%,
     100% 100%,
     160% 160%,
     100% 100%;
-  background-position: center, 0 0, center;
-  opacity: 0.72;
+  background-position: center, center, 0 0, center;
+  opacity: 0.68;
   pointer-events: none;
   z-index: 0;
 }
@@ -61,6 +65,7 @@ body.login-page-theme::after {
 body.login-page-theme #root {
   position: relative;
   z-index: 1;
+  background: transparent;
 }
 
 .login-root {
@@ -80,6 +85,53 @@ body.login-page-theme #root {
   font-family: system-ui, sans-serif;
   overflow: hidden;
   isolation: isolate;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(18, 214, 232, 0.16), transparent 28%),
+    radial-gradient(circle at 86% 18%, rgba(55, 83, 105, 0.2), transparent 30%),
+    radial-gradient(circle at 50% 100%, rgba(7, 43, 48, 0.42), transparent 46%),
+    linear-gradient(180deg, #071015 0%, #050a0d 48%, #03070d 100%);
+  background-color: #050809;
+}
+
+.login-root::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background-image:
+    radial-gradient(ellipse at 16% 22%, rgba(18, 214, 232, 0.16), transparent 34%),
+    radial-gradient(ellipse at 84% 8%, rgba(120, 165, 185, 0.13), transparent 32%),
+    radial-gradient(ellipse at 76% 92%, rgba(10, 83, 91, 0.22), transparent 40%),
+    linear-gradient(135deg, rgba(176, 245, 255, 0.055), transparent 44%);
+  background-size:
+    120% 120%,
+    110% 110%,
+    120% 120%,
+    100% 100%;
+  opacity: 0.74;
+  filter: blur(18px);
+  animation: login-atmosphere-drift 18s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0, rgba(0, 0, 0, 0.62) 3.25rem, rgba(0, 0, 0, 0.16) 8rem, rgba(0, 0, 0, 0) 13rem),
+    radial-gradient(circle at 48% 38%, transparent 0 40%, rgba(0, 0, 0, 0.08) 74%, rgba(0, 0, 0, 0.26) 100%),
+    linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.025) 36%, transparent 58%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 24%, rgba(0, 0, 0, 0.1));
+  background-size:
+    100% 100%,
+    100% 100%,
+    160% 160%,
+    100% 100%;
+  background-position: center, center, 0 0, center;
+  opacity: 0.68;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @keyframes login-atmosphere-drift {

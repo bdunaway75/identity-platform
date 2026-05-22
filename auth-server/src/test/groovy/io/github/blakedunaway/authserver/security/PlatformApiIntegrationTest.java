@@ -16,6 +16,7 @@ import io.github.blakedunaway.authserver.business.model.enums.MetaDataKeys;
 import io.github.blakedunaway.authserver.business.model.user.ClientUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUser;
 import io.github.blakedunaway.authserver.business.model.user.PlatformUserTier;
+import io.github.blakedunaway.authserver.business.service.EmailService;
 import io.github.blakedunaway.authserver.business.service.RegisteredClientService;
 import io.github.blakedunaway.authserver.business.service.UserService;
 import io.github.blakedunaway.authserver.config.app.Application;
@@ -142,6 +143,9 @@ public class PlatformApiIntegrationTest {
 
     @MockitoBean
     private StripeClient stripeClient;
+
+    @MockitoBean
+    private EmailService emailService;
 
     private final Map<String, Object> redisValues = new HashMap<>();
 
@@ -960,7 +964,7 @@ public class PlatformApiIntegrationTest {
                                                                      .locked(false)
                                                                      .expired(false)
                                                                      .credentialsExpired(false);
-        if (tierName != null && !tierName.isBlank()) {
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(tierName)) {
             builder.tier(resolvePlatformUserTier(tierName));
         }
         final PlatformUser platformUser = builder.build();
@@ -1286,7 +1290,7 @@ public class PlatformApiIntegrationTest {
         final Set<String> requestedScopes = scopes == null
                                             ? Collections.emptySet()
                                             : scopes.stream()
-                                                    .filter(scope -> scope != null && !scope.isBlank())
+                                                    .filter(org.apache.commons.lang3.StringUtils::isNotBlank)
                                                     .map(String::trim)
                                                     .collect(Collectors.toCollection(LinkedHashSet::new));
         if (requestedScopes.isEmpty()) {

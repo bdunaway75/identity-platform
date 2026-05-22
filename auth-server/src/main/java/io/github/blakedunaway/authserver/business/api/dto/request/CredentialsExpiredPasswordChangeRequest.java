@@ -1,6 +1,5 @@
 package io.github.blakedunaway.authserver.business.api.dto.request;
 
-import io.github.blakedunaway.authserver.business.validation.ValidEmail;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -10,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CredentialsExpiredPasswordChangeRequest {
 
-    @ValidEmail
     @NotBlank(message = "Email is required")
     private String email;
 

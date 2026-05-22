@@ -9,6 +9,7 @@ import io.github.blakedunaway.authserver.integration.repository.jpa.RegisteredCl
 import io.github.blakedunaway.authserver.mapper.RegisteredClientMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -70,6 +71,11 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientInternalR
     }
 
     @Override
+    public boolean existsByClientId(final String clientId) {
+        return registerClientJpaRepository.existsByClientId(clientId);
+    }
+
+    @Override
     public Set<RegisteredClientModel> findAllByIds(final Set<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
             return Collections.emptySet();
@@ -85,7 +91,7 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientInternalR
         final Set<String> requestedScopes = scopes == null
                                             ? Collections.emptySet()
                                             : scopes.stream()
-                                                    .filter(scope -> scope != null && !scope.isBlank())
+                                                    .filter(StringUtils::isNotBlank)
                                                     .map(String::trim)
                                                     .collect(Collectors.toCollection(HashSet::new));
 
@@ -96,7 +102,7 @@ public class RegisteredClientRepositoryImpl implements RegisteredClientInternalR
         final Set<RegisteredClientScopeEntity> attachedScopes = registeredClientScopeJpaRepository.findAllByScopeIn(requestedScopes);
         final Set<String> existingScopes = attachedScopes.stream()
                                                          .map(RegisteredClientScopeEntity::getScope)
-                                                         .filter(scope -> scope != null && !scope.isBlank())
+                                                         .filter(StringUtils::isNotBlank)
                                                          .collect(Collectors.toSet());
 
         final Set<RegisteredClientScopeEntity> createdScopes = requestedScopes.stream()

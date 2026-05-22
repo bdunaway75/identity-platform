@@ -2,9 +2,12 @@ package io.github.blakedunaway.authserver.business.api.controller;
 
 import io.github.blakedunaway.authserver.business.api.dto.request.CredentialsExpiredPasswordChangeRequest;
 import io.github.blakedunaway.authserver.business.service.UserService;
+import io.github.blakedunaway.authserver.business.validation.EmailDomainValidator;
+import io.github.blakedunaway.authserver.util.AuthenticationUtility;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,7 +15,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequiredArgsConstructor
@@ -21,18 +23,17 @@ public class CredentialsExpiredController {
 
     private final UserService userService;
 
+    private final EmailDomainValidator emailDomainValidator;
+
     @GetMapping("/credentials-expired")
     public String clientCredentialsExpired(@RequestParam(required = false) final String email,
                                            @RequestParam(required = false) final String clientId,
                                            @RequestParam(required = false) final String error,
                                            final Model model) {
-        if (email == null || email.isBlank() || clientId == null || clientId.isBlank()) {
+        if (StringUtils.isBlank(email) || StringUtils.isBlank(clientId)) {
             log.warn("Client credentials-expired flow was requested without the required email/client id values.");
-            return "redirect:" + UriComponentsBuilder.fromPath("/login")
-                                                     .queryParam("message", "Unable to start the password update flow. Please sign in again.")
-                                                     .encode()
-                                                     .build()
-                                                     .toUriString();
+            return "redirect:" + AuthenticationUtility.buildClientLoginRedirect(null,
+                                                                                "Unable to start the password update flow. Please sign in again.");
         }
 
         final CredentialsExpiredPasswordChangeRequest request = new CredentialsExpiredPasswordChangeRequest();
@@ -49,13 +50,14 @@ public class CredentialsExpiredController {
                                            @Valid final CredentialsExpiredPasswordChangeRequest request,
                                            final BindingResult bindingResult,
                                            final Model model) {
-        if (request.getClientId() == null || request.getClientId().isBlank()) {
+        if (StringUtils.isBlank(request.getClientId())) {
             log.warn("Client password update for {} was rejected because the client id was missing.", request.getEmail());
-            return "redirect:" + UriComponentsBuilder.fromPath("/login")
-                                                     .queryParam("message", "Unable to determine which client user is changing their password.")
-                                                     .encode()
-                                                     .build()
-                                                     .toUriString();
+            return "redirect:" + AuthenticationUtility.buildClientLoginRedirect(null,
+                                                                                "Unable to determine which client user is changing their password.");
+        }
+
+        if (!bindingResult.hasFieldErrors("email") && !emailDomainValidator.isValidEmail(request.getEmail())) {
+            bindingResult.rejectValue("email", "validation.email.invalid", "Invalid email address");
         }
 
         if (bindingResult.hasErrors()) {
@@ -88,25 +90,17 @@ public class CredentialsExpiredController {
             return "credentials-expired";
         }
 
-        return "redirect:" + UriComponentsBuilder.fromPath("/login")
-                                                 .queryParam("client_id", request.getClientId())
-                                                 .queryParam("message", "Password updated successfully. Please sign in with your new password.")
-                                                 .encode()
-                                                 .build()
-                                                 .toUriString();
+        return "redirect:" + AuthenticationUtility.buildClientLoginRedirect(request.getClientId(),
+                                                                            "Password updated successfully. Please sign in with your new password.");
     }
 
     @GetMapping("/platform/credentials-expired")
     public String platformCredentialsExpired(@RequestParam(required = false) final String email,
                                              @RequestParam(required = false) final String error,
                                              final Model model) {
-        if (email == null || email.isBlank()) {
+        if (StringUtils.isBlank(email)) {
             log.warn("Platform credentials-expired flow was requested without an email.");
-            return "redirect:" + UriComponentsBuilder.fromPath("/platform/login")
-                                                     .queryParam("message", "Unable to start the password update flow. Please sign in again.")
-                                                     .encode()
-                                                     .build()
-                                                     .toUriString();
+            return "redirect:" + AuthenticationUtility.buildPlatformLoginRedirect("Unable to start the password update flow. Please sign in again.");
         }
 
         final CredentialsExpiredPasswordChangeRequest request = new CredentialsExpiredPasswordChangeRequest();
@@ -122,6 +116,10 @@ public class CredentialsExpiredController {
                                              @Valid final CredentialsExpiredPasswordChangeRequest request,
                                              final BindingResult bindingResult,
                                              final Model model) {
+        if (!bindingResult.hasFieldErrors("email") && !emailDomainValidator.isValidEmail(request.getEmail())) {
+            bindingResult.rejectValue("email", "validation.email.invalid", "Invalid email address");
+        }
+
         if (bindingResult.hasErrors()) {
             log.warn("Platform password update validation failed for {}.", request.getEmail());
             model.addAttribute("passwordChangeRequest", request);
@@ -151,11 +149,7 @@ public class CredentialsExpiredController {
             return "credentials-expired";
         }
 
-        return "redirect:" + UriComponentsBuilder.fromPath("/platform/login")
-                                                 .queryParam("message", "Password updated successfully. Please sign in with your new password.")
-                                                 .encode()
-                                                 .build()
-                                                 .toUriString();
+        return "redirect:" + AuthenticationUtility.buildPlatformLoginRedirect("Password updated successfully. Please sign in with your new password.");
     }
 
 }

@@ -21,8 +21,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -36,24 +38,48 @@ public class UserService implements UserDetailsService {
 
     private final PlatformUserRepository platformUserRepository;
 
-    private final UserMapper userMapper;
-
     private final RegisteredClientService registeredClientService;
 
     private final PasswordEncoder passwordEncoder;
 
-    public ClientUser signUpClientUser(final ClientRegisterDto clientRegisterDto) {
-        if (clientRegisterDto.getEmail().isBlank() || clientRegisterDto.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Username and password are required");
-        }
-        return saveUser(userMapper.clientRegisterDtoToUser(clientRegisterDto));
+    public ClientUser saveVerifiedClientUser(final String email,
+                                             final String passwordHash,
+                                             final String clientId) {
+        Assert.hasText(email, "Email is required");
+        Assert.hasText(passwordHash, "Password hash is required");
+        Assert.hasText(clientId, "Client id is required");
+
+        return saveUser(ClientUser.from(email)
+                                  .email(email)
+                                  .clientId(clientId)
+                                  .expired(false)
+                                  .credentialsExpired(false)
+                                  .verified(true)
+                                  .userAttributes(new LinkedHashMap<>())
+                                  .updatedAt(LocalDateTime.now())
+                                  .createdAt(LocalDateTime.now())
+                                  .passwordHash(passwordHash)
+                                  .build());
     }
 
-    public PlatformUser signUpPlatformUser(final PlatformRegisterDto platformRegisterDto) {
-        if (platformRegisterDto.getEmail().isBlank() || platformRegisterDto.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Username and password are required");
-        }
-        return savePlatformUser(userMapper.platformRegisterDtoToPlatformUser(platformRegisterDto));
+    public PlatformUser saveVerifiedPlatformUser(final String email,
+                                                 final String passwordHash) {
+        Assert.hasText(email, "Email is required");
+        Assert.hasText(passwordHash, "Password hash is required");
+
+        return savePlatformUser(PlatformUser.from(email)
+                                            .email(email)
+                                            .registeredClientIds(Set::clear)
+                                            .authorities(authorities -> authorities.add(Authority.from(AuthorityUtility.ROLE_PLATFORM_USER)))
+                                            .expired(false)
+                                            .credentialsExpired(false)
+                                            .verified(true)
+                                            .userAttributes(new LinkedHashMap<>())
+                                            .updatedAt(LocalDateTime.now())
+                                            .createdAt(LocalDateTime.now())
+                                            .passwordHash(passwordHash)
+                                            .isDemoUser(false)
+                                            .build());
     }
 
     public ClientUser saveUser(final ClientUser clientUser) {
@@ -74,7 +100,7 @@ public class UserService implements UserDetailsService {
                                                                                       .build())
                                                                 .build()
                                                   : platformUser;
-        validatePlatformUserTierCompliance(resolvedPlatformUser);
+        resolvedPlatformUser.validateTierCompliance(registeredClientService.findRegisteredClientsByIds(platformUser.getRegisteredClientIds()));
         return platformUserRepository.save(resolvedPlatformUser);
     }
 
@@ -82,6 +108,12 @@ public class UserService implements UserDetailsService {
         Assert.notNull(email, "Email cannot be null");
         Assert.notNull(clientId, "ClientId cannot be null");
         return userRepository.findByClient_IdAndEmail(clientId, email).map(ClientUser::toSpring).orElse(null);
+    }
+
+    public boolean existsClientIdAndEmail(final String clientId, final String email) {
+        Assert.notNull(email, "Email cannot be null");
+        Assert.notNull(clientId, "ClientId cannot be null");
+        return userRepository.existsByClientIdAndEmail(clientId, email);
     }
 
     public PlatformUser loadPlatformUserByEmail(final String email) throws UsernameNotFoundException {
@@ -152,17 +184,6 @@ public class UserService implements UserDetailsService {
         }
 
         return savePlatformUser(existingPlatformUser.attachRegisteredClientId(registeredClientId));
-    }
-
-    public void validatePlatformUserTierCompliance(final PlatformUser platformUser) {
-        Assert.notNull(platformUser, "PlatformUser cannot be null");
-        validatePlatformUserTierCompliance(platformUser, registeredClientService.findRegisteredClientsByIds(platformUser.getRegisteredClientIds()));
-    }
-
-    public void validatePlatformUserTierCompliance(final PlatformUser platformUser,
-                                                   final Set<RegisteredClientModel> registeredClients) {
-        Assert.notNull(platformUser, "PlatformUser cannot be null");
-        platformUser.validateTierCompliance(registeredClients);
     }
 
     public int getTotalUserCount(final String email) {

@@ -1,11 +1,15 @@
 package io.github.blakedunaway.authserver.util;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class AuthorityUtility {
+
+    public static final String ROLE_PLATFORM_USER = "ROLE_PLATFORM_USER";
 
     private AuthorityUtility() {
     }
@@ -16,7 +20,7 @@ public final class AuthorityUtility {
         }
 
         return values.stream()
-                     .filter(value -> value != null && !value.isBlank())
+                     .filter(StringUtils::isNotBlank)
                      .map(String::trim)
                      .map(String::toUpperCase)
                      .filter(value -> !value.startsWith("ROLE_"))
@@ -29,7 +33,7 @@ public final class AuthorityUtility {
         }
 
         return values.stream()
-                     .filter(value -> value != null && !value.isBlank())
+                     .filter(StringUtils::isNotBlank)
                      .map(String::trim)
                      .map(String::toUpperCase)
                      .map(value -> value.startsWith("ROLE_") ? value : "ROLE_" + value)
@@ -42,7 +46,7 @@ public final class AuthorityUtility {
         }
 
         return values.stream()
-                     .filter(value -> value != null && !value.isBlank())
+                     .filter(StringUtils::isNotBlank)
                      .map(String::trim)
                      .map(String::toUpperCase)
                      .map(value -> value.startsWith("ROLE_") ? value : value)

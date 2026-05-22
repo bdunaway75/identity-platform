@@ -81,9 +81,9 @@ export const APP_ENDPOINTS = {
       `${platformBaseEndpoint}/subscription/downgrade`,
       import.meta.env.VITE_PLATFORM_SUBSCRIPTION_DOWNGRADE_ENDPOINT
     ),
-    subscriptionStatus: resolveEndpointUrl(
-      `${platformBaseEndpoint}/subscription-status`,
-      import.meta.env.VITE_PLATFORM_SUBSCRIPTION_STATUS_ENDPOINT
+    subscriptionEvents: resolveEndpointUrl(
+      `${platformBaseEndpoint}/subscription-events`, 
+      import.meta.env.VITE_PLATFORM_SUBSCRIPTION_EVENTS_ENDPOINT
     ),
     registeredClients: {
       base: registeredClientBaseEndpoint,
@@ -143,3 +143,4 @@ export const APP_ENDPOINTS = {
 export const APP_FLAGS = {
   betaMode: readEnvFlag(import.meta.env.VITE_BETA_MODE),
 };
+

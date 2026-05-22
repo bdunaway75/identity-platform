@@ -14,4 +14,6 @@ public interface RegisterClientJpaRepository extends JpaRepository<RegisteredCli
 
     Optional<RegisteredClientEntity> findByClientId(final String clientId);
 
+    boolean existsByClientId(final String clientId);
+
 }
