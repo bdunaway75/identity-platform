@@ -76,5 +76,7 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
             cd ${{ secrets.DROPLET_DEPLOY_PATH }}
+            git fetch origin
+            git reset --hard origin/main
             docker compose --env-file .env pull
             docker compose --env-file .env up -d --force-recreate
