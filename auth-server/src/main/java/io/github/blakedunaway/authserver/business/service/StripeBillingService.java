@@ -114,7 +114,7 @@ public class StripeBillingService {
         return session.getUrl();
     }
 
-    public com.stripe.model.billingportal.Session createSubscriptionPortalSession(final SubscriptionChange request) throws StripeException {
+    public PortalSession createSubscriptionPortalSession(final SubscriptionChange request) throws StripeException {
         if (request == null
             || request.getSubscription() == null
             || request.getSubscriptionItem() == null
@@ -126,15 +126,28 @@ public class StripeBillingService {
             return null;
         }
 
+        final String portalTrackingId = UUID.randomUUID().toString();
+        final String portalReturnUrl = frontendOrigin + "/subscriptions/checkout?session_id=" + portalTrackingId;
         final com.stripe.param.billingportal.SessionCreateParams params = com.stripe.param.billingportal.SessionCreateParams.builder()
                                                                                                                             .setCustomer(request.getSubscription()
                                                                                                                                                 .getCustomer())
                                                                                                                             .setConfiguration(
                                                                                                                                     billingPortalConfigurationId)
+                                                                                                                            .setReturnUrl(portalReturnUrl)
                                                                                                                             .setFlowData(
                                                                                                                                     com.stripe.param.billingportal.SessionCreateParams.FlowData.builder()
                                                                                                                                                                                                .setType(
                                                                                                                                                                                                        com.stripe.param.billingportal.SessionCreateParams.FlowData.Type.SUBSCRIPTION_UPDATE_CONFIRM)
+                                                                                                                                                                                               .setAfterCompletion(
+                                                                                                                                                                                                       com.stripe.param.billingportal.SessionCreateParams.FlowData.AfterCompletion.builder()
+                                                                                                                                                                                                                                                                                  .setType(
+                                                                                                                                                                                                                                                                                          com.stripe.param.billingportal.SessionCreateParams.FlowData.AfterCompletion.Type.REDIRECT)
+                                                                                                                                                                                                                                                                                  .setRedirect(
+                                                                                                                                                                                                                                                                                          com.stripe.param.billingportal.SessionCreateParams.FlowData.AfterCompletion.Redirect.builder()
+                                                                                                                                                                                                                                                                                                                                                                            .setReturnUrl(
+                                                                                                                                                                                                                                                                                                                                                                                    portalReturnUrl)
+                                                                                                                                                                                                                                                                                                                                                                            .build())
+                                                                                                                                                                                                                                                                                  .build())
                                                                                                                                                                                                .setSubscriptionUpdateConfirm(
                                                                                                                                                                                                        com.stripe.param.billingportal.SessionCreateParams.FlowData.SubscriptionUpdateConfirm.builder()
                                                                                                                                                                                                                                                                                             .setSubscription(
@@ -162,10 +175,14 @@ public class StripeBillingService {
                                                                                                                             )
                                                                                                                             .build();
 
-        return stripeClient.billingPortal()
-                           .sessions()
-                           .create(params);
+        return new PortalSession(stripeClient.billingPortal()
+                                            .sessions()
+                                            .create(params),
+                                 portalTrackingId,
+                                 request.getSubscription().getId());
     }
+
+    public record PortalSession(com.stripe.model.billingportal.Session session, String trackingId, String subscriptionId) {}
 
     public boolean syncPlatformUserTier(final String platformUserId,
                                         final String tierId,
@@ -181,6 +198,9 @@ public class StripeBillingService {
         }
 
         final PlatformUserTier previousTier = platformUser.getTier();
+        if (previousTier.getTierOrder() == tier.getTierOrder()) {
+            return true;
+        }
         userService.savePlatformUser(PlatformUser.from(platformUser).tier(tier).build());
         sendTierChangeEmailIfNeeded(platformUser, previousTier, tier);
         return true;

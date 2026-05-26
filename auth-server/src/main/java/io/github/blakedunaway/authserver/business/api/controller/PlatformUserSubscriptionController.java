@@ -12,6 +12,8 @@ import io.github.blakedunaway.authserver.business.service.EventStreamService;
 import io.github.blakedunaway.authserver.business.service.EventStreamService.StreamEvent;
 import io.github.blakedunaway.authserver.business.service.PlatformUserTierService;
 import io.github.blakedunaway.authserver.business.service.StripeBillingService;
+import io.github.blakedunaway.authserver.business.service.StripeBillingService.PortalSession;
+import io.github.blakedunaway.authserver.config.redis.RedisStore;
 import io.github.blakedunaway.authserver.util.EventStreamUtility;
 import io.github.blakedunaway.authserver.util.RedisUtility;
 import io.github.blakedunaway.authserver.util.StripeUtility;
@@ -56,6 +58,8 @@ public class PlatformUserSubscriptionController {
 
     private final EventStreamService eventStreamService;
 
+    private final RedisStore redisStore;
+
     private final StripeBillingService stripeBillingService;
 
     @Value("${auth-server.frontend.origin}")
@@ -96,13 +100,14 @@ public class PlatformUserSubscriptionController {
                                                                                           "Unable to open subscription management."));
             }
 
-            final com.stripe.model.billingportal.Session session = stripeBillingService.createSubscriptionPortalSession(request);
-            if (session == null) {
+            final PortalSession portalSession = stripeBillingService.createSubscriptionPortalSession(request);
+            if (portalSession == null) {
                 log.warn("Subscription portal rejected for platform user {} because the active Stripe subscription did not include a customer.",
                          platformUser.getEmail());
                 return ResponseEntity.badRequest().body("No active Stripe customer was found for this subscription.");
             }
-            return ResponseEntity.ok(session.getUrl());
+            storePortalTrackingId(portalSession);
+            return ResponseEntity.ok(portalSession.session().getUrl());
         }
         return ResponseEntity.ok(stripeBillingService.createCheckoutSession(platformUser, platformUserTier));
     }
@@ -136,15 +141,16 @@ public class PlatformUserSubscriptionController {
                                                                                       "Unable to open subscription management."));
         }
 
-        final com.stripe.model.billingportal.Session session =
+        final PortalSession portalSession =
                 stripeBillingService.createSubscriptionPortalSession(request);
-        if (session == null) {
+        if (portalSession == null) {
             log.warn("Subscription portal rejected for platform user {} because the active Stripe subscription did not include a customer.",
                      platformUser.getEmail());
             return ResponseEntity.badRequest().body("No active Stripe customer was found for this subscription.");
         }
 
-        return ResponseEntity.ok(session.getUrl());
+        storePortalTrackingId(portalSession);
+        return ResponseEntity.ok(portalSession.session().getUrl());
     }
 
     @PostMapping("/billing-webhook")
@@ -175,18 +181,20 @@ public class PlatformUserSubscriptionController {
                 }
             }
 
-            if (StripeUtility.CUSTOMER_SUBSCRIPTION_UPDATED.equals(event.getType())
-                || StripeUtility.CUSTOMER_SUBSCRIPTION_CREATED.equals(event.getType())) {
+            if (StripeUtility.CUSTOMER_SUBSCRIPTION_UPDATED.equals(event.getType())) {
                 final Subscription subscription = (Subscription) event.getDataObjectDeserializer().deserializeUnsafe();
+                final String portalTrackingId = resolvePortalTrackingId(subscription);
                 if (subscription != null && !stripeBillingService.syncPlatformUserTier(subscription.getMetadata().get("platformUserId"),
                                                                                        subscription.getMetadata().get("tierId"),
                                                                                        subscription)) {
                     log.error("Stripe subscription webhook failed to sync a platform user tier for event {} and subscription {}.",
                               event.getType(),
                               subscription.getId());
+                    sendPortalRedirect(portalTrackingId, SUBSCRIPTIONS_CANCEL_REDIRECT_PATH);
                     return ResponseEntity.badRequest()
                                          .body(Map.of("message", "An error occurred processing your subscription, support has been notified."));
                 }
+                sendPortalRedirect(portalTrackingId, SUBSCRIPTIONS_REDIRECT_PATH);
             }
             if (StripeUtility.INVOICE_PAYMENT_FAILED.equals(event.getType()) && !stripeBillingService.handleRecurringInvoicePaymentFailed(event)) {
                 log.error("Stripe invoice payment failed webhook could not downgrade the affected platform user for event {}.",
@@ -200,6 +208,30 @@ public class PlatformUserSubscriptionController {
             log.error("Stripe billing webhook processing failed.", e);
             return ResponseEntity.badRequest().body(Map.of("message", "An error occurred processing your subscription, support has been notified."));
         }
+    }
+
+    private void storePortalTrackingId(final PortalSession portalSession) {
+        redisStore.put(RedisUtility.SUBSCRIPTION_PORTAL_TRACKING + portalSession.subscriptionId(),
+                       portalSession.trackingId(),
+                       CHECKOUT_REDIRECT_TTL);
+    }
+
+    private String resolvePortalTrackingId(final Subscription subscription) {
+        if (subscription == null || StringUtils.isBlank(subscription.getId())) {
+            return null;
+        }
+        return redisStore.get(RedisUtility.SUBSCRIPTION_PORTAL_TRACKING + subscription.getId());
+    }
+
+    private void sendPortalRedirect(final String portalTrackingId, final String redirectPath) {
+        if (StringUtils.isBlank(portalTrackingId)) {
+            return;
+        }
+
+        eventStreamService.storeAndSend(RedisUtility.SUBSCRIPTION_CHECKOUT_STATUS + portalTrackingId,
+                                        redirectPath,
+                                        CHECKOUT_REDIRECT_TTL,
+                                        EventStreamUtility.REDIRECT_EVENT);
     }
 
 }

@@ -72,12 +72,12 @@ export default function SubscriptionCheckoutPending() {
     <div className="subscription-checkout-page">
       <section className="subscription-checkout-card">
         <div className="subscription-checkout-kicker">Billing</div>
-        <h1 className="subscription-checkout-title">Finishing your upgrade</h1>
+        <h1 className="subscription-checkout-title">Finishing your plan change</h1>
         {expectedTierName ? (
           <div className="subscription-checkout-id">{expectedTierName}</div>
         ) : null}
         <p className="subscription-checkout-copy">
-          Stripe checkout completed, waiting for confirmation
+          Stripe billing completed, waiting for confirmation
         </p>
         {statusError ? (
           <div className="subscriptions-error">{statusError}</div>

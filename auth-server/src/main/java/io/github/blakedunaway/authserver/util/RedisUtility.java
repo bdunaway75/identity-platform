@@ -15,6 +15,8 @@ public class RedisUtility {
 
     public static final String SUBSCRIPTION_CHECKOUT_STATUS = "subscription:checkout:status:";
 
+    public static final String SUBSCRIPTION_PORTAL_TRACKING = "subscription:portal:tracking:";
+
     public static final String TWO_FACTOR_SIGN_UP = "two-factor:sign-up:";
 
     public static final String TWO_FACTOR_VERIFICATION_STATUS = "two-factor:verification-status:";
